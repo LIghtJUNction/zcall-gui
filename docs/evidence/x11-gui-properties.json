@@ -1,0 +1,5 @@
+{
+  "scope": "actual zcall-gui release binary on a private X server with isolated preferences and missing CLI fixture",
+  "xprop": "WM_CLASS(STRING) = \"zcall-gui\", \"Zcall-gui\"\nWM_NORMAL_HINTS(WM_SIZE_HINTS):\n\t\tprogram specified minimum size: 1080 by 740\n_NET_WM_NAME(UTF8_STRING) = \"zcall-gui \u2014 Local AI gateway\"",
+  "geometry": "WINDOW=2097155\nX=80\nY=80\nWIDTH=1080\nHEIGHT=740\nSCREEN=0"
+}

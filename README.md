@@ -49,7 +49,7 @@ zcall-gui --update check
 zcall-gui --update apply
 ```
 
-The updater downloads only the official stable GitHub release for the current platform, checks SHA-256 and the staged executable's version, retains one previous binary, then replaces the installed executable. A user-writable installation can update in place. Files under system package directories use the package manager instead.
+The updater downloads only the official stable GitHub release for the current platform, checks SHA-256 and the staged executable's version, retains one previous binary, then replaces the installed executable. A user-writable installation can update in place. For an AUR installation, the Updates page opens a native terminal with paru or yay, preserves the installed source or binary package, and reports the actual completion result. The terminal retains normal package review and authorization.
 
 Linux and macOS keep the current process alive until you close it and open the new version. Windows uses a small deferred helper after the current process exits. The current first implementation is unsigned; Windows/macOS may require their normal downloaded-application approval.
 

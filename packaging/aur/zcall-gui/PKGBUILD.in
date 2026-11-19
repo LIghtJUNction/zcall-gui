@@ -7,8 +7,10 @@ arch=('x86_64' 'aarch64')
 url='https://github.com/LIghtJUNction/zcall-gui'
 license=('MIT')
 optdepends=('xorg-xwayland: run on Wayland sessions' 'noto-fonts-cjk: Chinese and Japanese glyphs')
-depends=('zcalld>=0.2.0' 'glibc' 'gcc-libs' 'libx11' 'libgl' 'freetype2' 'fontconfig' 'curl')
+depends=('zcalld>=0.2.0' 'glibc' 'libgcc' 'libx11' 'libgl' 'freetype2' 'fontconfig' 'curl' 'hicolor-icon-theme')
 makedepends=('rust>=1.100' 'pkgconf')
+# Rust retains its own thin LTO; keep native C objects compatible with the linker.
+options=('!lto')
 source=("$pkgname-v$pkgver-source.tar.gz::$url/releases/download/v$pkgver/$pkgname-v$pkgver-source.tar.gz")
 sha256sums=('@SOURCE_SHA256@')
 

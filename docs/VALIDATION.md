@@ -30,6 +30,16 @@ These numbers include software-renderer and system-font costs. They are not a ha
 
 ## Platform status
 
-Linux compile, real-window actions and the earlier Intel display path are verified locally. Windows and macOS source implementations remain subject to the native release-candidate workflow before the first release is published. The reusable platform gate records results for Linux x86_64/aarch64, Windows x86_64 and macOS arm64/x86_64.
+The [native release candidate](https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489) passed all five targets for GUI commit 181ab2ab14400e4d88855da9b0ec4b8317b24e97 and zui commit 7444431e5d234e62415ec540edf7e333b6a029f7. Each target compiled, passed Clippy and unit/release-transaction tests, opened its native window, and generated its archive. Linux x86_64 and aarch64 additionally exercised the private-display interaction tests. Windows x86_64 and macOS arm64/x86_64 used bounded startup smoke tests, not a full interaction suite.
+
+Both macOS virtual runners reported Apple Software Renderer and presented two frames. The Windows startup completed successfully; that candidate did not capture the renderer name. These runs establish native build and window startup behavior, not hardware GPU performance. [Machine-readable job evidence](evidence/native-candidate.json) links each native result. The tagged release repeats these gates before publishing artifacts.
 
 Native screen-reader support, a direct Wayland backend, Metal rendering and full complex-script text shaping are outside this first implementation.
+
+## Caller window properties
+
+The follow-up shared-window correction derives Linux WM_CLASS from the caller title and uses the caller content dimensions as the initial minimum on Linux/macOS. A private X11 regression reads actual WM_CLASS, WM_NORMAL_HINTS and geometry for a 660 by 264 ztype probe, a 1080 by 740 gateway-panel probe and an independent 512 by 320 application. UTF-8 window titles are checked through the X11 property and native name lookup. [Shared-window evidence](evidence/x11-window-properties.json) records these results. The [actual rebuilt GUI](evidence/x11-gui-properties.json) was also checked independently and remains 1080 by 740 with its existing desktop class. The Linux native gate includes this regression.
+
+## Arch source-package preflight
+
+The local source recipe was built from an actual hashed development source archive with makepkg build and check functions running Cargo in frozen mode. Runtime dependency checking was deferred because the required zcalld 0.2 package was not installed yet; no package was installed by this preflight. The recipe disables makepkg native C LTO while preserving Cargo Rust thin LTO, declares the hicolor icon hierarchy and the directly linked libgcc runtime, and passes namcap without errors. Its two warnings concern zcalld and curl, which are invoked as runtime executables rather than linked libraries. [The record](evidence/source-package-preflight.json) identifies the exact development source and package hashes; final published-package validation is a separate consumer check.

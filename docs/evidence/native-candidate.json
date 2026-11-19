@@ -1,0 +1,59 @@
+{
+  "candidate_run": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489",
+  "gui_commit": "181ab2ab14400e4d88855da9b0ec4b8317b24e97",
+  "zui_commit": "7444431e5d234e62415ec540edf7e333b6a029f7",
+  "scope": "native build, Clippy, unit and release transaction tests, native window smoke, package archives; Linux additionally runs isolated UI action tests",
+  "jobs": [
+    {
+      "id": 135936446896,
+      "name": "native / build (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+      "conclusion": "success",
+      "started_at": "2026-11-19T22:40:10Z",
+      "completed_at": "2026-11-19T22:41:28Z",
+      "url": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489/job/135936446896",
+      "rendering": []
+    },
+    {
+      "id": 135936446982,
+      "name": "native / build (ubuntu-24.04-arm, aarch64-unknown-linux-gnu)",
+      "conclusion": "success",
+      "started_at": "2026-11-19T22:40:12Z",
+      "completed_at": "2026-11-19T22:41:24Z",
+      "url": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489/job/135936446982",
+      "rendering": []
+    },
+    {
+      "id": 135936447005,
+      "name": "native / build (macos-15, aarch64-apple-darwin)",
+      "conclusion": "success",
+      "started_at": "2026-11-19T22:40:13Z",
+      "completed_at": "2026-11-19T22:40:48Z",
+      "url": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489/job/135936447005",
+      "rendering": [
+        "zcall-gui 0.1.0; renderer: Apple Software Renderer",
+        "Presented frames: 2"
+      ]
+    },
+    {
+      "id": 135936447126,
+      "name": "native / build (macos-15-intel, x86_64-apple-darwin)",
+      "conclusion": "success",
+      "started_at": "2026-11-19T22:40:12Z",
+      "completed_at": "2026-11-19T22:41:25Z",
+      "url": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489/job/135936447126",
+      "rendering": [
+        "zcall-gui 0.1.0; renderer: Apple Software Renderer",
+        "Presented frames: 2"
+      ]
+    },
+    {
+      "id": 135936447143,
+      "name": "native / build (windows-2025, x86_64-pc-windows-msvc)",
+      "conclusion": "success",
+      "started_at": "2026-11-19T22:40:09Z",
+      "completed_at": "2026-11-19T22:41:21Z",
+      "url": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44630759489/job/135936447143",
+      "rendering": []
+    }
+  ]
+}

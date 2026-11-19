@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=zcall GUI
+Comment=Manage the local AI gateway
+Exec=zcall-gui
+Icon=zcall-gui
+Terminal=false
+Categories=Development;Utility;
+StartupWMClass=Zcall-gui

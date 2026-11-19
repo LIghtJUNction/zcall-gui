@@ -1,0 +1,4 @@
+/target/
+/_release/
+/_validation/
+.DS_Store

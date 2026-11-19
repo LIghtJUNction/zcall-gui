@@ -1,0 +1,17 @@
+[package]
+name = "zcall-gui"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.100"
+description = "A small native control panel for the zcalld local AI gateway"
+license = "MIT"
+repository = "https://github.com/LIghtJUNction/zcall-gui"
+[dependencies]
+zui = { path = "vendor/zui", version = "=0.1.0" }
+[workspace]
+exclude = ["vendor/zui"]
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"

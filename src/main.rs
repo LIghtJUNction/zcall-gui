@@ -3,6 +3,7 @@ mod backend;
 mod dialogs;
 mod i18n;
 mod json;
+mod package_update;
 mod pages;
 mod settings;
 mod updater;
@@ -79,6 +80,7 @@ struct App {
     preferences: settings::Preferences,
     settings_panel: bool,
     repaint: bool,
+    executable: Option<std::path::PathBuf>,
 }
 fn words(args: &[&str]) -> Vec<String> {
     args.iter().map(|s| (*s).into()).collect()
@@ -133,6 +135,7 @@ impl App {
             preferences,
             settings_panel: false,
             repaint: false,
+            executable: std::env::current_exe().ok(),
         }
     }
     fn modal(&self) -> bool {
@@ -188,6 +191,11 @@ impl App {
                     }
                 }
                 Ok(data) => {
+                    if reply.label.starts_with("Package update") {
+                        self.state = data.get("state").clone();
+                        self.gateway_update = Json::Null;
+                        self.gui_update = Json::Null;
+                    }
                     if reply.label == "Save provider" {
                         self.provider_panel = 0;
                         self.protocol_menu = false;
@@ -222,6 +230,59 @@ impl App {
             }
         }
         changed
+    }
+    fn package_update(&mut self, gui: bool) {
+        if self.busy {
+            return;
+        }
+        let binary = if gui {
+            self.executable.clone()
+        } else {
+            Some(std::path::PathBuf::from(&self.backend.binary))
+        };
+        let Some(binary) = binary else {
+            self.notice = tr("updates.not_owned").into();
+            self.failed = true;
+            return;
+        };
+        self.busy = true;
+        self.failed = false;
+        self.notice = tr("status.package_wait").into();
+        let sender = self.sender.clone();
+        let backend = self.backend.clone();
+        std::thread::spawn(move || {
+            let owners = if gui {
+                &["zcall-gui", "zcall-gui-bin"]
+            } else {
+                &["zcalld", "zcalld-bin"]
+            };
+            let result = package_update::apply(&binary, owners).map(|version| {
+                Json::object([
+                    ("state".into(), backend.refresh()),
+                    (
+                        "message".into(),
+                        Json::String(i18n::message(
+                            if gui {
+                                "updates.package_restart"
+                            } else {
+                                "updates.package_ready"
+                            },
+                            &[("version", &version)],
+                        )),
+                    ),
+                ])
+            });
+            let _ = sender.send(Reply {
+                label: if gui {
+                    "Package update GUI"
+                } else {
+                    "Package update gateway"
+                }
+                .into(),
+                result,
+                refresh: false,
+            });
+        });
     }
     fn self_update(&mut self, apply: bool) {
         if self.busy {
@@ -601,7 +662,7 @@ fn run() -> Result<(), String> {
             }
             "--help" | "-h" => {
                 println!(
-                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
+                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n\n--theme system|light|dark selects appearance for this session.\n--language system|zh-CN|zh-TW|en|ja selects the interface language.\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
                 );
                 return Ok(());
             }

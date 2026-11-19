@@ -1,0 +1,18 @@
+{
+  "scope": "private native Xvfb window; inert pacman, paru and terminal fixtures",
+  "actual_system_upgrade": false,
+  "helper_arguments": [
+    [
+      "-Syu",
+      "zcalld-bin"
+    ],
+    [
+      "-Syu",
+      "zcalld-bin"
+    ]
+  ],
+  "nonzero_exit_displayed": true,
+  "success_refreshed_state": true,
+  "json_command_not_executed": true,
+  "temporary_result_paths_removed": true
+}

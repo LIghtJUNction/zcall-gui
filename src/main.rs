@@ -1,9 +1,13 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 mod backend;
+mod dialogs;
+mod i18n;
 mod json;
 mod pages;
+mod settings;
 mod updater;
 use backend::{Backend, Reply};
+use i18n::tr;
 use json::Json;
 use std::{
     sync::mpsc,
@@ -12,12 +16,20 @@ use std::{
 use zui::{ButtonStyle as Style, Canvas, Event, Rect, Ui, Window, colors::*};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PAGES: [&str; 6] = [
-    "Overview",
-    "Providers",
-    "Agents",
-    "Plugins",
-    "Privacy",
-    "Updates",
+    "nav.overview",
+    "nav.providers",
+    "nav.agents",
+    "nav.plugins",
+    "nav.privacy",
+    "nav.updates",
+];
+const PAGE_IDS: [&str; 6] = [
+    "overview",
+    "providers",
+    "agents",
+    "plugins",
+    "privacy",
+    "updates",
 ];
 #[derive(Default)]
 struct ProviderForm {
@@ -57,21 +69,41 @@ struct App {
     confirm: Option<Action>,
     gateway_update: Json,
     gui_update: Json,
-    gpu: String,
     quit: bool,
+    provider_panel: u8,
+    provider_edit: bool,
+    plugin_panel: u8,
+    selected_plugin: Json,
+    service_panel: bool,
+    protocol_menu: bool,
+    preferences: settings::Preferences,
+    settings_panel: bool,
+    repaint: bool,
 }
 fn words(args: &[&str]) -> Vec<String> {
     args.iter().map(|s| (*s).into()).collect()
 }
-fn count(state: &Json, section: &str) -> usize {
-    state.get(section).get(section).array().len()
+fn value<'a>(j: &'a Json, key: &str, fallback: &'a str) -> &'a str {
+    let s = j.get(key).text();
+    if s.is_empty() { fallback } else { s }
 }
-fn value<'a>(json: &'a Json, key: &str, fallback: &'a str) -> &'a str {
-    let text = json.get(key).text();
-    if text.is_empty() { fallback } else { text }
+fn human(s: &str) -> &str {
+    match s {
+        "Save provider" => tr("action.save_provider"),
+        "Test provider" => tr("action.test_provider"),
+        "Detect AI tools" => tr("action.detect_agents"),
+        "Set privacy mode" => tr("action.privacy"),
+        "Check gateway update" => tr("action.check_gateway"),
+        "Check GUI update" => tr("action.check_gui"),
+        "Update GUI" => tr("action.update_gui"),
+        "Start gateway" => tr("action.start_gateway"),
+        "Restart gateway" => tr("action.restart_gateway"),
+        "Stop gateway" => tr("action.stop_gateway"),
+        _ => s,
+    }
 }
 impl App {
-    fn new(backend: Backend, gpu: String) -> Self {
+    fn new(backend: Backend, preferences: settings::Preferences) -> Self {
         let (sender, receiver) = mpsc::channel();
         backend.spawn_refresh(sender.clone());
         Self {
@@ -81,7 +113,7 @@ impl App {
             scroll: 0,
             state: Json::Null,
             busy: true,
-            notice: "Reading local gateway state…".into(),
+            notice: tr("status.loading").into(),
             failed: false,
             sender,
             receiver,
@@ -91,14 +123,32 @@ impl App {
             confirm: None,
             gateway_update: Json::Null,
             gui_update: Json::Null,
-            gpu,
             quit: false,
+            provider_panel: 0,
+            provider_edit: false,
+            plugin_panel: 0,
+            selected_plugin: Json::Null,
+            service_panel: false,
+            protocol_menu: false,
+            preferences,
+            settings_panel: false,
+            repaint: false,
         }
+    }
+    fn modal(&self) -> bool {
+        self.confirm.is_some()
+            || self.provider_panel > 0
+            || self.plugin_panel > 0
+            || self.service_panel
+            || self.settings_panel
+    }
+    fn enabled(&self) -> bool {
+        !self.busy && !self.modal()
     }
     fn refresh(&mut self) {
         if !self.busy {
             self.busy = true;
-            self.notice = "Reading local gateway state…".into();
+            self.notice = tr("status.loading").into();
             self.failed = false;
             self.backend.spawn_refresh(self.sender.clone());
         }
@@ -109,7 +159,7 @@ impl App {
         }
         self.busy = true;
         self.failed = false;
-        self.notice = format!("{label}…");
+        self.notice = i18n::message("status.working", &[("action", human(label))]);
         self.backend
             .spawn(self.sender.clone(), label.into(), args, secret);
     }
@@ -130,14 +180,18 @@ impl App {
                     self.state = data;
                     let error = self.state.get("status").get("error").text();
                     if !error.is_empty() {
-                        self.notice = error.to_owned();
+                        self.notice = i18n::message("error.connection", &[("error", error)]);
                         self.failed = true;
                     } else {
-                        self.notice = "Local state is up to date.".into();
+                        self.notice = tr("status.refreshed").into();
                         self.failed = false;
                     }
                 }
                 Ok(data) => {
+                    if reply.label == "Save provider" {
+                        self.provider_panel = 0;
+                        self.protocol_menu = false;
+                    }
                     if reply.label == "Check gateway update" {
                         self.gateway_update = data.clone();
                     }
@@ -147,19 +201,22 @@ impl App {
                     self.notice = if !data.get("message").text().is_empty() {
                         data.get("message").text().into()
                     } else {
-                        format!("{} completed.", reply.label)
+                        i18n::message("status.complete", &[("action", human(&reply.label))])
                     };
                     self.failed = false;
                     if reply.label == "Update GUI" && data.get("exit_required").boolean() {
                         self.quit = true;
                     }
-                    if reply.refresh && reply.label != "Check gateway update" {
+                    if reply.refresh
+                        && reply.label != "Check gateway update"
+                        && reply.label != "Test provider"
+                    {
                         self.backend.spawn_refresh(self.sender.clone());
                         self.busy = true;
                     }
                 }
                 Err(error) => {
-                    self.notice = error;
+                    self.notice = i18n::message("error.action", &[("error", &error)]);
                     self.failed = true;
                 }
             }
@@ -173,9 +230,9 @@ impl App {
         self.busy = true;
         self.failed = false;
         self.notice = if apply {
-            "Updating GUI…"
+            tr("status.updating_gui")
         } else {
-            "Checking GUI release…"
+            tr("status.checking_gui")
         }
         .into();
         let sender = self.sender.clone();
@@ -197,11 +254,22 @@ impl App {
             });
         });
     }
-    fn enabled(&self) -> bool {
-        !self.busy && self.confirm.is_none()
-    }
-    fn draw(&mut self, canvas: &mut Canvas<'_>, event: Option<Event>) {
-        if let Some(Event::Scroll(delta)) = &event {
+    fn draw(&mut self, c: &mut Canvas<'_>, event: Option<Event>) {
+        if matches!(event, Some(Event::Key { code: 27, .. })) {
+            if self.protocol_menu {
+                self.protocol_menu = false;
+            } else {
+                self.confirm = None;
+                self.provider_panel = 0;
+                self.plugin_panel = 0;
+                self.service_panel = false;
+                self.settings_panel = false;
+                self.clear_key();
+            }
+        }
+        if let Some(Event::Scroll(delta)) = &event
+            && !self.modal()
+        {
             self.scroll = if *delta > 0 {
                 self.scroll.saturating_add(1)
             } else {
@@ -209,168 +277,162 @@ impl App {
             };
         }
         self.ui.begin(event);
-        canvas.rect(Rect::new(0., 0., 184., canvas.height), 0., SURFACE);
-        canvas.rect(Rect::new(183., 0., 1., canvas.height), 0., LINE);
-        canvas.rect(Rect::new(22., 31., 32., 32.), 8., BLUE);
-        canvas.text("z", 31., 32., 23, true, SURFACE);
-        canvas.text("zcall", 64., 32., 23, true, TEXT);
-        canvas.text("GATEWAY CONTROL", 24., 79., 11, true, MUTED);
-        for (index, page) in PAGES.iter().enumerate() {
-            if self.page == index {
-                canvas.rect(
-                    Rect::new(13., 124. + index as f32 * 49., 158., 42.),
-                    8.,
-                    BLUE_PALE,
-                );
+        let sidebar = 166.;
+        c.rect(Rect::new(0., 0., sidebar, c.height), 0., 0xf7f9fcff);
+        c.rect(Rect::new(sidebar - 1., 0., 1., c.height), 0., 0xe8edf3ff);
+        brand(c, Rect::new(18., 26., 38., 38.), BG);
+        c.text("zcall", 64., 33., 21, true, TEXT);
+        c.text(tr("brand.subtitle"), 22., 76., 12, false, MUTED);
+        let modal = self.modal();
+        for (index, label) in PAGES.iter().enumerate() {
+            let r = Rect::new(11., 121. + index as f32 * 48., 144., 42.);
+            let selected = self.page == index;
+            if selected {
+                c.rect(r, 12., BLUE_PALE);
             }
-            if self.ui.button(
-                canvas,
-                10 + index as u64,
-                Rect::new(13., 124. + index as f32 * 49., 158., 42.),
-                page,
-                Style::Quiet,
-                self.confirm.is_none(),
-            ) {
+            if self
+                .ui
+                .button(c, 10 + index as u64, r, "", Style::Quiet, !modal)
+            {
                 self.page = index;
                 self.scroll = 0;
             }
+            if selected {
+                c.rect(Rect::new(r.x + 1., r.y + 13., 3., 16.), 1.5, BLUE);
+            }
+            icon(
+                c,
+                index,
+                r.x + 16.,
+                r.y + 13.,
+                if selected { BLUE } else { MUTED },
+                if selected { BLUE_PALE } else { 0xf7f9fcff },
+            );
+            c.text(
+                tr(label),
+                r.x + 45.,
+                r.y + 11.,
+                16,
+                selected,
+                if selected { BLUE } else { TEXT },
+            );
         }
-        canvas.text("PROJECT Z", 24., canvas.height - 88., 11, true, MUTED);
-        canvas.text(
-            &format!("GUI {VERSION}"),
-            24.,
-            canvas.height - 63.,
-            13,
-            false,
-            MUTED,
-        );
-        canvas.text(
-            "Native · on demand",
-            24.,
-            canvas.height - 41.,
+        if self.ui.button(
+            c,
+            40,
+            Rect::new(13., c.height - 108., 138., 38.),
+            "",
+            Style::Quiet,
+            !modal,
+        ) {
+            self.preferences.apply();
+            self.settings_panel = true;
+        }
+        let sy = c.height - 98.;
+        for (dy, cx) in [(0., 32.), (7., 39.), (14., 30.)] {
+            c.line((27., sy + dy), (43., sy + dy), 1.5, MUTED);
+            c.rect(Rect::new(cx - 2., sy + dy - 2., 4., 4.), 2., MUTED);
+        }
+        c.text(tr("settings.open"), 56., c.height - 98., 15, false, TEXT);
+        c.text("Project Z", 23., c.height - 57., 12, false, MUTED);
+        c.text(
+            &format!("v{VERSION}"),
+            23.,
+            c.height - 34.,
             12,
             false,
             MUTED,
         );
-        let x = 216.;
-        let width = (canvas.width - x - 32.).max(480.);
-        canvas.text(PAGES[self.page], x, 35., 29, true, TEXT);
-        let descriptions = [
-            "Your local AI gateway, in one quiet place.",
-            "Connect a provider. Keep credentials on this computer.",
-            "Point your AI tools at the gateway, with a reversible change.",
-            "Install only what you need. Enable each plugin explicitly.",
-            "Choose which values are sanitized before requests leave.",
-            "Update the gateway and this optional control panel.",
-        ];
-        canvas.text(descriptions[self.page], x, 82., 15, false, MUTED);
-        if self.ui.button(
-            canvas,
-            30,
-            Rect::new(canvas.width - 132., 37., 100., 38.),
-            "Refresh",
-            Style::Secondary,
-            self.enabled(),
-        ) {
-            self.refresh();
+        let available = (c.width - sidebar - 64.).max(480.);
+        let width = available.min(1024.).round();
+        let x = (sidebar + 32. + (available - width) / 2.).round();
+        if self.page != 0 {
+            c.text(tr(PAGES[self.page]), x, 34., 26, true, TEXT);
         }
-        let section = match self.page { 1 => "providers", 2 => "agents", 3 => "plugins", 4 => "privacy", _ => "" };
-        let section_error = self.state.get(section).get("error").text().to_owned();
-        if !section_error.is_empty() {
-            card(canvas, Rect::new(x, 130., width, 156.));
-            canvas.text("This section is unavailable", x + 24., 151., 21, true, RED);
-            canvas.ellipsis(&section_error, x + 24., 196., width - 48., 14, false, TEXT);
-            canvas.text("Check the gateway settings or version, then Refresh.", x + 24., 237., 14, false, MUTED);
-        } else { match self.page {
-            0 => self.overview(canvas, x, width),
-            1 => self.providers(canvas, x, width),
-            2 => self.agents(canvas, x, width),
-            3 => self.plugins(canvas, x, width),
-            4 => self.privacy(canvas, x, width),
-            _ => self.updates(canvas, x, width),
-        }}
-        canvas.rect(
-            Rect::new(184., canvas.height - 48., canvas.width - 184., 48.),
+        let descriptions = [
+            tr("page.overview"),
+            tr("page.providers"),
+            tr("page.agents"),
+            tr("page.plugins"),
+            tr("page.privacy"),
+            tr("page.updates"),
+        ];
+        if self.page != 0 {
+            c.text(descriptions[self.page], x, 82., 15, false, MUTED);
+        }
+        let section = match self.page {
+            1 => "providers",
+            2 => "agents",
+            3 => "plugins",
+            4 => "privacy",
+            _ => "",
+        };
+        let error = self.state.get(section).get("error").text().to_owned();
+        if !error.is_empty() {
+            card(c, Rect::new(x, 140., width, 164.));
+            c.text(tr("error.section"), x + 26., 164., 21, true, TEXT);
+            c.ellipsis(&error, x + 26., 207., width - 52., 14, false, RED);
+            c.text(tr("error.section_help"), x + 26., 252., 14, false, MUTED);
+        } else {
+            match self.page {
+                0 => self.overview(c, x, width),
+                1 => self.providers(c, x, width),
+                2 => self.agents(c, x, width),
+                3 => self.plugins(c, x, width),
+                4 => self.privacy(c, x, width),
+                _ => self.updates(c, x, width),
+            }
+        }
+        c.rect(
+            Rect::new(sidebar, c.height - 44., c.width - sidebar, 44.),
             0.,
             SURFACE,
         );
-        canvas.rect(
-            Rect::new(184., canvas.height - 48., canvas.width - 184., 1.),
-            0.,
-            LINE,
-        );
-        canvas.rect(
-            Rect::new(214., canvas.height - 28., 7., 7.),
-            3.5,
+        c.rect(Rect::new(x, c.height - 44., width, 1.), 0., LINE);
+        c.rect(
+            Rect::new(x, c.height - 25., 6., 6.),
+            3.,
             if self.failed {
                 RED
             } else if self.busy {
                 BLUE
             } else {
-                GREEN
+                0x9aa0a6ff
             },
         );
-        canvas.ellipsis(
+        c.ellipsis(
             &self.notice,
-            234.,
-            canvas.height - 34.,
-            canvas.width - 264.,
-            13,
+            x + 17.,
+            c.height - 32.,
+            width - 103.,
+            12,
             false,
             if self.failed { RED } else { MUTED },
         );
+        if self.ui.button(
+            c,
+            30,
+            Rect::new(x + width - 70., c.height - 39., 70., 32.),
+            tr("action.refresh"),
+            Style::Quiet,
+            self.enabled(),
+        ) {
+            self.refresh();
+        }
+        if self.provider_panel > 0 {
+            self.provider_dialog(c);
+        }
+        if self.plugin_panel > 0 {
+            self.plugin_dialog(c);
+        }
+        if self.service_panel {
+            self.service_dialog(c);
+        }
+        if self.settings_panel {
+            self.settings_dialog(c);
+        }
         if self.confirm.is_some() {
-            canvas.rect(
-                Rect::new(0., 0., canvas.width, canvas.height),
-                0.,
-                0x18233366,
-            );
-            let dialog = Rect::new(
-                (canvas.width - 500.) / 2.,
-                (canvas.height - 210.) / 2.,
-                500.,
-                210.,
-            );
-            canvas.rect(dialog, 12., SURFACE);
-            let title = self.confirm.as_ref().unwrap().label.clone();
-            canvas.ellipsis(&title, dialog.x + 28., dialog.y + 26., 444., 22, true, TEXT);
-            canvas.text(
-                "This changes your local gateway configuration.",
-                dialog.x + 28.,
-                dialog.y + 72.,
-                15,
-                false,
-                MUTED,
-            );
-            canvas.text(
-                "You can review the result in the CLI afterwards.",
-                dialog.x + 28.,
-                dialog.y + 98.,
-                15,
-                false,
-                MUTED,
-            );
-            if self.ui.button(
-                canvas,
-                9001,
-                Rect::new(dialog.x + 226., dialog.y + 145., 110., 40.),
-                "Cancel",
-                Style::Secondary,
-                true,
-            ) {
-                self.confirm = None;
-            }
-            if self.ui.button(
-                canvas,
-                9002,
-                Rect::new(dialog.x + 348., dialog.y + 145., 124., 40.),
-                "Confirm",
-                Style::Primary,
-                true,
-            ) && let Some(action) = self.confirm.take()
-            {
-                self.action(&action.label, action.args, action.secret);
-            }
+            self.confirm_dialog(c);
         }
         self.ui.end();
     }
@@ -385,13 +447,24 @@ fn protocols() -> [&'static str; 6] {
         "interactions",
     ]
 }
-fn card(c: &mut Canvas<'_>, r: Rect) {
-    c.rect(r, 11., LINE);
-    c.rect(r.inset(1.), 10., SURFACE);
+fn protocol_name(index: usize) -> &'static str {
+    [
+        "OpenAI Chat",
+        "OpenAI Responses",
+        "Anthropic",
+        "Gemini",
+        "Completions",
+        "Interactions",
+    ][index]
 }
-fn empty(c: &mut Canvas<'_>, x: f32, y: f32, width: f32, title: &str, detail: &str) {
-    c.text(title, x, y, 20, true, TEXT);
-    c.ellipsis(detail, x, y + 39., width, 14, false, MUTED);
+fn card(c: &mut Canvas<'_>, r: Rect) {
+    c.rect(r, 16., LINE);
+    c.rect(r.inset(1.), 15., SURFACE);
+}
+fn empty(c: &mut Canvas<'_>, r: Rect, title: &str, detail: &str) {
+    c.rect(r, 18., 0xf7f9fcff);
+    c.text(title, r.x + 28., r.y + 31., 22, true, TEXT);
+    c.ellipsis(detail, r.x + 28., r.y + 75., r.w - 56., 15, false, MUTED);
 }
 #[allow(
     clippy::too_many_arguments,
@@ -410,22 +483,114 @@ fn field(
     secret: bool,
     enabled: bool,
 ) {
-    c.text(label, x, y, 12, true, MUTED);
+    c.text(label, x, y, 14, true, TEXT);
     ui.input(
         c,
         id,
-        Rect::new(x, y + 23., width, 42.),
+        Rect::new(x, y + 29., width, 46.),
         text,
         placeholder,
         secret,
         enabled,
     );
 }
+fn brand(c: &mut Canvas<'_>, r: Rect, background: u32) {
+    let ink = if c.theme == zui::Theme::Dark {
+        0x8bb7ffff
+    } else {
+        0x1769f5ff
+    };
+    let point = |(x, y): (f32, f32)| (r.x + x * r.w / 64., r.y + y * r.h / 64.);
+    let radius = 5. * r.w / 64.;
+    let mut points = vec![(13., 17.), (48., 17.)];
+    for i in 1..=8 {
+        let t = i as f32 / 8.;
+        let u = 1. - t;
+        points.push((
+            u * u * u * 48. + 3. * u * u * t * 51.6 + 3. * u * t * t * 53.4 + t * t * t * 50.8,
+            u * u * u * 17. + 3. * u * u * t * 17. + 3. * u * t * t * 21.4 + t * t * t * 24.,
+        ));
+    }
+    points.extend([(23.2, 47.), (51., 47.)]);
+    for pair in points.windows(2) {
+        c.line(point(pair[0]), point(pair[1]), radius * 2., ink);
+    }
+    for p in points {
+        let (x, y) = point(p);
+        c.rect(
+            Rect::new(x - radius, y - radius, radius * 2., radius * 2.),
+            radius,
+            ink,
+        );
+    }
+    for p in [(13., 17.), (51., 47.)] {
+        let (x, y) = point(p);
+        let hole = 3. * r.w / 64.;
+        c.rect(
+            Rect::new(x - hole, y - hole, hole * 2., hole * 2.),
+            hole,
+            background,
+        );
+    }
+}
+fn icon(c: &mut Canvas<'_>, index: usize, x: f32, y: f32, ink: u32, bg: u32) {
+    let outline = |c: &mut Canvas<'_>, r: Rect, radius: f32| {
+        c.rect(r, radius, ink);
+        c.rect(r.inset(1.5), (radius - 1.5).max(0.), bg);
+    };
+    match index {
+        0 => {
+            for (dx, dy) in [(0., 0.), (10., 0.), (0., 10.), (10., 10.)] {
+                outline(c, Rect::new(x + dx, y + dy, 7., 7.), 2.);
+            }
+        }
+        1 => {
+            c.line((x + 4., y + 4.), (x + 13., y + 13.), 1.5, ink);
+            outline(c, Rect::new(x, y, 8., 8.), 4.);
+            outline(c, Rect::new(x + 9., y + 9., 8., 8.), 4.);
+        }
+        2 => {
+            outline(c, Rect::new(x, y + 1., 18., 15.), 3.);
+            c.line((x + 4., y + 5.), (x + 7., y + 8.), 1.5, ink);
+            c.line((x + 7., y + 8.), (x + 4., y + 11.), 1.5, ink);
+            c.line((x + 10., y + 11.), (x + 14., y + 11.), 1.5, ink);
+        }
+        3 => {
+            for (dx, dy) in [(0., 0.), (10., 0.), (0., 10.), (10., 10.)] {
+                outline(
+                    c,
+                    Rect::new(x + dx, y + dy, 7., 7.),
+                    if dx == dy { 2. } else { 3.5 },
+                );
+            }
+        }
+        4 => {
+            outline(c, Rect::new(x + 4., y, 9., 11.), 4.5);
+            outline(c, Rect::new(x + 1., y + 7., 15., 11.), 3.);
+            c.line((x + 8.5, y + 11.), (x + 8.5, y + 14.), 1.5, ink);
+        }
+        _ => {
+            let mut previous = None;
+            for i in 0..=18 {
+                let a = (-70. + i as f32 * 300. / 18.).to_radians();
+                let p = (x + 8.5 + a.cos() * 7., y + 8.5 + a.sin() * 7.);
+                if let Some(from) = previous {
+                    c.line(from, p, 1.5, ink);
+                }
+                previous = Some(p);
+            }
+            c.line((x + 11., y + 1.), (x + 11., y + 6.), 1.5, ink);
+            c.line((x + 11., y + 6.), (x + 16., y + 6.), 1.5, ink);
+        }
+    }
+}
+
 fn run() -> Result<(), String> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
     let mut binary = std::env::var("ZCALLD_BIN").unwrap_or_else(|_| "zcalld".into());
     let mut config = None;
     let mut smoke = None;
+    let mut preferences = settings::Preferences::load();
     let mut page = 0;
     let mut index = 0;
     while index < args.len() {
@@ -436,35 +601,45 @@ fn run() -> Result<(), String> {
             }
             "--help" | "-h" => {
                 println!(
-                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n\nThe GUI calls zcalld --json. It does not start the gateway automatically.\n--smoke-seconds N opens a real window for a bounded release smoke test."
+                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
                 );
                 return Ok(());
             }
-            "--zcalld" | "--config" | "--smoke-seconds" | "--page" | "--update" => {
+            "--zcalld" | "--config" | "--smoke-seconds" | "--page" | "--update" | "--theme"
+            | "--language" => {
                 let option = args[index].clone();
                 index += 1;
-                let value = args
+                let text = args
                     .get(index)
                     .ok_or_else(|| format!("{option} needs a value"))?;
                 match option.as_str() {
-                    "--zcalld" => binary = value.clone(),
-                    "--config" => config = Some(value.clone()),
+                    "--theme" => {
+                        preferences.theme =
+                            settings::ThemeChoice::parse(text).ok_or("Unknown theme")?
+                    }
+                    "--language" => {
+                        preferences.language = *i18n::LANGUAGES
+                            .iter()
+                            .find(|id| **id == text.as_str())
+                            .ok_or("Unknown language")?
+                    }
+                    "--zcalld" => binary = text.clone(),
+                    "--config" => config = Some(text.clone()),
                     "--smoke-seconds" => {
                         smoke = Some(
-                            value
-                                .parse::<u64>()
+                            text.parse::<u64>()
                                 .map_err(|_| "Invalid smoke-test duration")?
                                 .clamp(1, 60),
                         )
                     }
                     "--page" => {
-                        page = PAGES
+                        page = PAGE_IDS
                             .iter()
-                            .position(|p| p.eq_ignore_ascii_case(value))
+                            .position(|p| p.eq_ignore_ascii_case(text))
                             .ok_or("Unknown page")?
                     }
                     "--update" => {
-                        let result = match value.as_str() {
+                        let result = match text.as_str() {
                             "check" => updater::check(),
                             "apply" => updater::apply(),
                             _ => Err("Use --update check|apply".into()),
@@ -479,34 +654,59 @@ fn run() -> Result<(), String> {
         }
         index += 1;
     }
-    let mut window = Window::new("zcall-gui — Gateway control", 1100, 740)?;
+    preferences.apply();
+    let mut window = Window::new(tr("window.title"), 1080, 740)?;
     let gpu = window.gpu();
     eprintln!("zcall-gui {VERSION}; renderer: {gpu}");
-    let mut app = App::new(Backend { binary, config }, gpu);
+    let mut app = App::new(Backend { binary, config }, preferences);
     app.page = page;
     let started = Instant::now();
     let mut event = None;
     let mut dirty = true;
+    let mut frames = 0u64;
     loop {
         if app.quit
-            || matches!(event, Some(Event::Close | Event::Key { code: 81 | 113, control: true, .. }))
-            || smoke.is_some_and(|seconds| started.elapsed() >= Duration::from_secs(seconds))
+            || matches!(
+                event,
+                Some(
+                    Event::Close
+                        | Event::Key {
+                            code: 81 | 113,
+                            control: true,
+                            ..
+                        }
+                )
+            )
+            || smoke.is_some_and(|n| started.elapsed() >= Duration::from_secs(n))
         {
             break;
         }
         dirty |= app.poll();
         if dirty || event.is_some() {
+            window.set_theme(app.preferences.resolved_theme());
             {
-                let mut canvas = window.begin(BG);
-                app.draw(&mut canvas, event.take());
+                let mut c = window.begin(SURFACE);
+                app.draw(&mut c, event.take());
             }
             window.present();
+            frames += 1;
             if let Some(text) = app.ui.clipboard.take() {
                 window.copy(&text);
             }
-            dirty = false;
+            dirty = std::mem::take(&mut app.repaint);
+            if dirty {
+                continue;
+            }
         }
         event = window.event(if app.busy { 100 } else { 1000 });
+        if let Some(Event::Move(x, y)) = event.as_ref()
+            && !app.ui.pointer_changed(*x, *y)
+        {
+            event = None;
+        }
+    }
+    if smoke.is_some() {
+        eprintln!("Presented frames: {frames}");
     }
     Ok(())
 }

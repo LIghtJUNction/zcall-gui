@@ -1,0 +1,22 @@
+{
+  "binary_sha256": "856efee22989881bdf9d0b173b2f884a13628a458ba6c329431fc748d22db098",
+  "binary_bytes": 690456,
+  "display": ":102",
+  "session": "wayland",
+  "renderer_output": "zcall-gui 0.1.0; renderer: llvmpipe (LLVM 23.1.1, 256 bits)\nPresented frames: 3",
+  "page": "providers",
+  "fixture": "local JSON only; no provider network calls",
+  "idle_seconds": 3.001593737004441,
+  "cpu_ticks": 0,
+  "clock_ticks_per_second": 100,
+  "cpu_percent_one_core": 0.0,
+  "memory_kib": {
+    "Rss": 107408,
+    "Pss": 89879,
+    "Private_Clean": 50176,
+    "Private_Dirty": 28172,
+    "Swap": 0
+  },
+  "drm_fdinfo": [],
+  "limits": "GUI process only; shared-library accounting is included; DRM metrics are driver-specific and are not a complete dedicated-VRAM measurement."
+}

@@ -1,0 +1,159 @@
+nav.overview	概要
+nav.providers	プロバイダー
+nav.agents	AI ツール
+nav.plugins	プラグイン
+nav.privacy	プライバシー
+nav.updates	更新
+action.save_provider	保存
+action.test_provider	接続テスト
+action.detect_agents	ツールを検出
+action.privacy	プライバシー設定
+action.check_gateway	ゲートウェイの更新確認
+action.check_gui	アプリの更新確認
+action.update_gui	アプリを更新
+action.start_gateway	起動
+action.restart_gateway	再起動
+action.stop_gateway	停止
+status.loading	状態を読み込み中…
+status.working	{action}…
+error.connection	接続できません: {error}
+status.refreshed	状態を更新しました
+status.complete	{action} 完了
+error.action	操作に失敗しました: {error}
+status.updating_gui	アプリを更新中…
+status.checking_gui	更新を確認中…
+brand.subtitle	ローカル AI ゲートウェイ
+page.overview	AI の接続をローカルで管理します。
+page.providers	接続先、モデル、認証情報を管理します。
+page.agents	AI ツールをゲートウェイに接続します。
+page.plugins	必要な機能を追加して、有効にします。
+page.privacy	送信前に機密情報を処理します。
+page.updates	ゲートウェイとアプリを最新にします。
+error.section	読み込めません
+error.section_help	設定やバージョンを確認して再読み込みしてください。
+action.refresh	再読み込み
+window.title	zcall-gui — ローカル AI ゲートウェイ
+status.connected	接続済み
+status.disconnected	未接続
+overview.running	ゲートウェイは稼働中
+overview.stopped	ゲートウェイは未接続
+overview.ready_help	このゲートウェイ経由でモデルに接続できます。
+overview.start_help	サービスを起動して AI ツールを接続します。
+overview.install_help	zcalld をインストールして再読み込みしてください。
+action.manage_providers	接続先を管理
+action.recheck	再確認
+action.start_service_confirm	サービスを起動
+action.service_settings	サービス設定
+overview.independent	このウィンドウを閉じてもゲートウェイは稼働します。
+action.add_provider	追加
+providers.empty	接続先がありません
+providers.empty_help	ローカルまたはリモートの接続先を追加します。
+providers.count	設定済みの接続先: {count}
+providers.unnamed	名前のない接続先
+providers.no_address	URL が未設定
+status.configured	設定済み
+status.needs_setup	未設定
+agents.route	既定のルート
+agents.empty	ツールがありません
+agents.empty_help	対応するツールをインストールして検出してください。
+agents.connected	ゲートウェイ接続済み
+agents.available	接続できます
+agents.not_installed	未インストール
+action.change_route	ルート変更
+action.connect	接続
+action.connect_named	{name} を接続
+action.restore	復元
+action.restore_named	{name} の設定を復元
+action.install_plugin	追加
+plugins.empty	必要な機能だけ
+plugins.empty_help	必要なプラグインを追加してから有効にします。
+plugins.native	ネイティブ
+plugins.community	コミュニティ
+plugins.unversioned	バージョンなし
+status.enabled	有効
+status.disabled	無効
+privacy.off	オフ
+privacy.off_help	自動置換せずに元の内容を送信します。
+privacy.secrets	認証情報のみ
+privacy.secrets_help	検出したキー、トークン、認証情報を置換します。
+privacy.personal	認証情報と個人情報
+privacy.personal_help	対応するメールアドレスや電話番号も処理します。
+status.current	現在
+privacy.boundaries	保護には限界があります
+privacy.boundaries_help	送信前に内容が適切か確認してください。
+privacy.model_auto	モデルによる検出が有効です
+updates.gateway	ゲートウェイ
+status.not_found	未検出
+updates.gui	アプリ
+updates.current	現在  {current}
+updates.latest	最新  {latest}
+action.package_update	パッケージ管理
+action.update_now	更新する
+action.check_update	更新を確認
+status.copied_update	更新コマンドをコピーしました。
+action.update_gateway	ゲートウェイを更新
+updates.verify	インストール前にダウンロードを検証します。
+updates.managed_help	パッケージ版は同じパッケージ管理ツールで更新します。
+status.processing	処理中…
+providers.details	接続先の詳細
+providers.edit	接続先を編集
+providers.url	接続先 URL
+providers.protocol	プロトコル
+action.edit	編集
+providers.remove_title	接続先を削除
+providers.remove_help	削除後はこの接続先を使用できません。
+action.remove_provider	接続先を削除
+status.testing	テスト中…
+providers.basics	接続情報
+providers.access	認証とモデル
+providers.step1	ステップ 1 / 2
+providers.step2	ステップ 2 / 2
+field.name	名前
+providers.name_hint	例: my-provider
+providers.key	API キー
+providers.keep_key	空欄なら現在のキーを保持
+providers.optional_key	キーが不要なら空欄
+providers.key_help	ローカルに保存され、一覧には表示されません。
+providers.model	既定のモデル（任意）
+providers.model_hint	例: llama3.2
+action.cancel	キャンセル
+action.back	戻る
+action.next	次へ
+plugins.details	プラグインの詳細
+plugins.path	インストール先
+action.disable_plugin	無効にする
+action.enable_plugin	有効にする
+plugins.version	バージョンまたはコミット
+plugins.version_hint	正確なバージョンまたはコミット
+action.update_plugin	更新
+action.remove_plugin	削除
+plugins.add_feature	機能を追加
+plugins.install_help	インストール後に有効化してください。
+plugins.source	ソース
+plugins.source_hint	パス / Git URL / npm:package@version
+plugins.commit	Git コミット（リモートの場合は必須）
+plugins.commit_hint	完全なコミットハッシュ
+field.optional_name	名前（任意）
+plugins.name_hint	空欄ならプラグイン名を使用
+service.title	ゲートウェイサービス
+service.connected	サービス接続済み
+service.disconnected	サービス未接続
+service.independent	アプリとゲートウェイは別々に動作します。
+action.restart_service	再起動
+action.start_service	起動
+action.restart_service_confirm	サービスを再起動
+action.stop_service	停止
+action.stop_service_confirm	サービスを停止
+confirm.description	ローカル設定を変更します。
+confirm.execute	確認するとすぐに実行します。
+action.confirm	確認
+settings.title	表示設定
+settings.open	設定
+settings.theme	テーマ
+settings.system	システム
+settings.light	ライト
+settings.dark	ダーク
+settings.language	言語
+settings.saved	表示設定を保存しました
+settings.help	ゲートウェイの設定には影響しません。
+updates.use_manager	インストールしたパッケージ管理ツールで更新してください。

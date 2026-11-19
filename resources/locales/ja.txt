@@ -169,3 +169,4 @@ updates.package_ready	パッケージ処理が完了しました。インスト�
 updates.package_restart	パッケージ処理が完了しました：{version}。アプリを開き直してください。
 privacy.saved	保存済み
 privacy.restart_required	保存済み。ゲートウェイの起動・再起動後に適用されます。
+privacy.runtime_unknown	実行状態はまだ確認できていません。

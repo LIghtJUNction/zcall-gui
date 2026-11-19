@@ -1,0 +1,12 @@
+{
+  "scope": "Local Arch Linux archive, not the official Ubuntu-built release",
+  "archive_sha256": "11cbf8ecdc3ba34fbce1b5e27e2d2149a21b514931c8bc3922cd1e870d53e4bb",
+  "version": "zcall-gui 0.1.0",
+  "builder_arch": "x86_64",
+  "binary_mode": "0755",
+  "data_mode": "0644",
+  "files_checked": 8,
+  "existing_gateway_config_preserved": true,
+  "desktop_entry_validated": true,
+  "staging_cleaned_after_test": true
+}

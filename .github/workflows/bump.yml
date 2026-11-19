@@ -1,0 +1,49 @@
+name: Bump version and release
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        options: [patch, minor, major, custom]
+        default: patch
+        required: true
+      version:
+        description: Stable version for a custom bump
+        type: string
+        default: ''
+      dry_run:
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: zcall-gui-bump
+  cancel-in-progress: false
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.bump.outputs.tag }}
+      publish: ${{ steps.bump.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+          fetch-depth: 0
+          submodules: recursive
+      - name: Select Rust
+        run: rustup toolchain install 1.100.0 --profile minimal
+      - name: Commit version and publish tag atomically
+        id: bump
+        env:
+          BUMP_KIND: ${{ inputs.bump }}
+          CUSTOM_VERSION: ${{ inputs.version }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: python3 scripts/bump_workflow.py
+  release:
+    needs: bump
+    if: needs.bump.outputs.publish == 'true'
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.bump.outputs.tag }}
+    secrets: inherit

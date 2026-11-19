@@ -1,0 +1,66 @@
+name: Native release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing immutable tag
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: zcall-gui-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  build:
+    uses: ./.github/workflows/native.yml
+    with:
+      ref: ${{ inputs.tag || github.ref_name }}
+      release_tag: ${{ inputs.tag || github.ref_name }}
+  publish:
+    permissions:
+      contents: write
+    needs: build
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: zcall-gui-*
+          merge-multiple: true
+          path: _release/dist
+      - name: Bundle pinned submodule source
+        run: python3 scripts/package.py --source
+      - name: Publish immutable GitHub assets
+        run: python3 scripts/publish.py "$RELEASE_TAG"
+      - name: Configure AUR identity
+        if: vars.AUR_PUBLISH == 'true'
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          AUR_KNOWN_HOSTS: ${{ secrets.AUR_KNOWN_HOSTS }}
+        run: |
+          test -n "$AUR_SSH_KEY"
+          test -n "$AUR_KNOWN_HOSTS"
+          install -d -m700 ~/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" > ~/.ssh/aur
+          printf '%s\n' "$AUR_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/aur ~/.ssh/known_hosts
+      - name: Publish verified AUR recipes
+        if: vars.AUR_PUBLISH == 'true'
+        env:
+          GIT_SSH_COMMAND: ssh -i /home/runner/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes
+        run: python3 scripts/aur.py --publish

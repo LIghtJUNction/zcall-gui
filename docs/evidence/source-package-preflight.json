@@ -1,0 +1,12 @@
+{
+  "scope": "local Arch source-package preflight using an actual hashed development source archive; no package installation",
+  "runtime_dependency_note": "--nodeps was used because zcalld>=0.2.0 was not installed yet; build and check functions ran with --frozen",
+  "version": "0.1.0-1",
+  "package": "zcall-gui-0.1.0-1-x86_64.pkg.tar.zst",
+  "sha256": "f7b7470acae014795414dd0bedcca46daa8af221c535dd88dafe05d98b5396a5",
+  "native_lto": "disabled by PKGBUILD; Cargo Rust thin LTO remains enabled",
+  "namcap": "zcall-gui W: Dependency included, but may not be needed ('zcalld')\nzcall-gui W: Dependency included, but may not be needed ('curl')\n",
+  "source_gui_commit": "b2c2a6eae5a16e187ba8228a1d8c8b8f7a7e4132",
+  "source_archive_sha256": "195d67280e7192f2c8bde7562e24e2bfe97084e6e232f8f28092e611d1bc627e",
+  "namcap_explanation": "zcalld is the management executable and curl is used by the updater; neither is an ELF linkage dependency."
+}

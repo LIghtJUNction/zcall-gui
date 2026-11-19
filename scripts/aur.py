@@ -3,7 +3,7 @@
 import argparse,hashlib,pathlib,re,shutil,subprocess,urllib.request
 from release import ROOT,current,validate
 BASE="https://github.com/LIghtJUNction/zcall-gui"
-DEPS=["zcalld>=0.2.0","glibc","gcc-libs","libx11","libgl","freetype2","fontconfig","curl"]
+DEPS=["zcalld>=0.2.0","glibc","libgcc","libx11","libgl","freetype2","fontconfig","curl","hicolor-icon-theme"]
 def download_hash(name,version,directory):
     url=f"{BASE}/releases/download/v{version}/{name}"
     path=directory/name;directory.mkdir(parents=True,exist_ok=True)
@@ -21,6 +21,7 @@ def metadata(name,version,hashes):
             filename=f"zcall-gui-v{version}-{arch}-unknown-linux-gnu.tar.gz"
             lines.extend([f"\tsource_{arch} = {filename}::{BASE}/releases/download/v{version}/{filename}",f"\tsha256sums_{arch} = {hashes[arch]}"])
     else:
+        lines.append("\toptions = !lto")
         filename=f"zcall-gui-v{version}-source.tar.gz"
         lines.extend([f"\tsource = {filename}::{BASE}/releases/download/v{version}/{filename}",f"\tsha256sums = {hashes['source']}"])
     return "\n".join(lines)+f"\n\npkgname = {name}\n"

@@ -15,4 +15,5 @@ for line in output.splitlines():
     if "=" in line and not line.startswith("="):
         key,value=line.split("=",1);environment[key.upper()]=value
 subprocess.run([sys.executable,"scripts/check.py"],cwd=root,env=environment,check=True)
-subprocess.run([str(root/"target"/"release"/"zcall-gui.exe"),"--smoke-seconds","2","--zcalld","zcalld-release-fixture-not-installed"],cwd=root,env=environment,check=True)
+smoke=subprocess.run([str(root/"target"/"release"/"zcall-gui.exe"),"--smoke-seconds","2","--zcalld","zcalld-release-fixture-not-installed"],cwd=root,env=environment,capture_output=True,text=True,encoding="utf-8",errors="replace",check=True)
+print(smoke.stdout+smoke.stderr,end="")

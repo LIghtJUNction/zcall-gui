@@ -5,5 +5,5 @@ Comment=Manage the local AI gateway
 Exec=zcall-gui
 Icon=zcall-gui
 Terminal=false
-Categories=Development;Utility;
+Categories=Development;
 StartupWMClass=Zcall-gui

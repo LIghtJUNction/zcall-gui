@@ -53,6 +53,10 @@ The updater downloads only the official stable GitHub release for the current pl
 
 Linux and macOS keep the current process alive until you close it and open the new version. Windows uses a small deferred helper after the current process exits. The current first implementation is unsigned; Windows/macOS may require their normal downloaded-application approval.
 
+## Releases and packages
+
+Published binaries and archives are available through [GitHub Releases](https://github.com/LIghtJUNction/zcall-gui/releases). Arch recipes are zcall-gui (source) and zcall-gui-bin (binary), both requiring zcalld 0.2.0 or newer. [Release and installation instructions](docs/RELEASING.md) cover AUR, portable archives, staged installs and the patch-bump workflow.
+
 ## Development and evidence
 
 Daily checks run locally:

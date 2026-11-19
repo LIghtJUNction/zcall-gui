@@ -1,0 +1,81 @@
+name: Native platform gate
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+      release_tag:
+        default: ''
+        type: string
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.runner }}
+    env:
+      RELEASE_REF: ${{ inputs.ref }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ env.RELEASE_REF }}
+          fetch-depth: 0
+          submodules: recursive
+      - name: Validate exact commit (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if ($env:RELEASE_TAG) { python scripts/release.py verify-tag "$env:RELEASE_TAG" }
+          else { python scripts/release.py verify-candidate "$env:RELEASE_REF" }
+      - name: Validate exact commit (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          if [ -n "$RELEASE_TAG" ]; then
+            python3 scripts/release.py verify-tag "$RELEASE_TAG"
+          else
+            python3 scripts/release.py verify-candidate "$RELEASE_REF"
+          fi
+      - name: Install Linux development packages
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libgl1-mesa-dev libfreetype6-dev libfontconfig1-dev pkg-config xvfb xauth xdotool python3-pil fonts-noto-cjk fonts-dejavu-core
+      - name: Select Rust
+        run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
+      - name: Validate Linux
+        if: runner.os == 'Linux'
+        run: python3 scripts/check.py --ui
+      - name: Validate Windows
+        if: runner.os == 'Windows'
+        run: python scripts/windows_check.py
+      - name: Validate macOS
+        if: runner.os == 'macOS'
+        run: |
+          python3 scripts/check.py
+          target/release/zcall-gui --smoke-seconds 2 --zcalld zcalld-release-fixture-not-installed
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        run: python scripts/package.py --target ${{ matrix.target }}
+      - name: Package Unix
+        if: runner.os != 'Windows'
+        run: python3 scripts/package.py --target ${{ matrix.target }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: zcall-gui-${{ matrix.target }}
+          path: _release/dist/*
+          if-no-files-found: error
+          retention-days: 7

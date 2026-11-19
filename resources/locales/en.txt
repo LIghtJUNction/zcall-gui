@@ -1,0 +1,159 @@
+nav.overview	Overview
+nav.providers	Providers
+nav.agents	AI tools
+nav.plugins	Plugins
+nav.privacy	Privacy
+nav.updates	Updates
+action.save_provider	Save provider
+action.test_provider	Test connection
+action.detect_agents	Detect tools
+action.privacy	Privacy settings
+action.check_gateway	Check gateway update
+action.check_gui	Check app update
+action.update_gui	Update app
+action.start_gateway	Start gateway
+action.restart_gateway	Restart gateway
+action.stop_gateway	Stop gateway
+status.loading	Loading local state…
+status.working	{action}…
+error.connection	Connection unavailable: {error}
+status.refreshed	Local state refreshed
+status.complete	{action} completed
+error.action	Action failed: {error}
+status.updating_gui	Updating app…
+status.checking_gui	Checking app updates…
+brand.subtitle	Local AI gateway
+page.overview	Your AI connections, managed locally.
+page.providers	Manage endpoints, models and credentials.
+page.agents	Connect your AI tools to the local gateway.
+page.plugins	Install what you need. Enable it when ready.
+page.privacy	Handle sensitive content before it leaves this device.
+page.updates	Keep the gateway and app up to date.
+error.section	Unable to load
+error.section_help	Check the gateway settings or version, then refresh.
+action.refresh	Refresh
+window.title	zcall-gui — Local AI gateway
+status.connected	Connected
+status.disconnected	Disconnected
+overview.running	Gateway is running
+overview.stopped	Gateway is not connected
+overview.ready_help	Your AI tools can access models through this gateway.
+overview.start_help	Start the local service to connect your AI tools.
+overview.install_help	Install zcalld, then refresh to check the connection.
+action.manage_providers	Manage providers
+action.recheck	Check again
+action.start_service_confirm	Start gateway service
+action.service_settings	Service settings
+overview.independent	Closing this window keeps the gateway running.
+action.add_provider	Add provider
+providers.empty	No providers yet
+providers.empty_help	Add a local or remote endpoint to get started.
+providers.count	{count} configured endpoints
+providers.unnamed	Unnamed endpoint
+providers.no_address	No endpoint URL
+status.configured	Configured
+status.needs_setup	Needs setup
+agents.route	Default route
+agents.empty	No tools found
+agents.empty_help	Install a supported tool, then select Detect tools.
+agents.connected	Using gateway
+agents.available	Ready to connect
+agents.not_installed	Not installed
+action.change_route	Change route
+action.connect	Connect
+action.connect_named	Connect {name}
+action.restore	Restore
+action.restore_named	Restore {name} settings
+action.install_plugin	Install plugin
+plugins.empty	Keep the core small
+plugins.empty_help	Add only the features you need, then enable them.
+plugins.native	Native plugin
+plugins.community	Community plugin
+plugins.unversioned	Version not set
+status.enabled	Enabled
+status.disabled	Disabled
+privacy.off	Off
+privacy.off_help	Send original content without automatic replacement.
+privacy.secrets	Secrets only
+privacy.secrets_help	Replace recognized keys, tokens and credentials.
+privacy.personal	Secrets and personal data
+privacy.personal_help	Also handle supported email and phone patterns.
+status.current	Current
+privacy.boundaries	Protection has limits
+privacy.boundaries_help	Review content before sending it to a provider.
+privacy.model_auto	Model-assisted detection is enabled
+updates.gateway	Gateway
+status.not_found	Not found
+updates.gui	App
+updates.current	Installed  {current}
+updates.latest	Latest  {latest}
+action.package_update	Package manager
+action.update_now	Update now
+action.check_update	Check updates
+status.copied_update	Update command copied. Run it in a terminal.
+action.update_gateway	Update gateway
+updates.verify	Downloaded files are verified before installation.
+updates.managed_help	For package installs, use the same package manager.
+status.processing	Working…
+providers.details	Provider details
+providers.edit	Edit provider
+providers.url	Endpoint URL
+providers.protocol	Protocol
+action.edit	Edit
+providers.remove_title	Remove endpoint
+providers.remove_help	Requests can no longer use this endpoint.
+action.remove_provider	Remove provider
+status.testing	Testing…
+providers.basics	Connection
+providers.access	Access and model
+providers.step1	Step 1 of 2
+providers.step2	Step 2 of 2
+field.name	Name
+providers.name_hint	For example, my-provider
+providers.key	API key
+providers.keep_key	Leave blank to keep the current key
+providers.optional_key	Optional for local endpoints
+providers.key_help	Stored locally and hidden from the provider list.
+providers.model	Default model (optional)
+providers.model_hint	For example, llama3.2
+action.cancel	Cancel
+action.back	Back
+action.next	Next
+plugins.details	Plugin details
+plugins.path	Installed path
+action.disable_plugin	Disable
+action.enable_plugin	Enable
+plugins.version	Version or commit
+plugins.version_hint	Exact version or Git commit
+action.update_plugin	Update plugin
+action.remove_plugin	Remove plugin
+plugins.add_feature	Add a feature
+plugins.install_help	Installation does not enable the plugin.
+plugins.source	Source
+plugins.source_hint	Path / Git URL / npm:package@version
+plugins.commit	Git commit (required for remote Git)
+plugins.commit_hint	Full commit hash
+field.optional_name	Name (optional)
+plugins.name_hint	Leave blank to use the plugin name
+service.title	Gateway service
+service.connected	Service connected
+service.disconnected	Service disconnected
+service.independent	The app and gateway run independently.
+action.restart_service	Restart service
+action.start_service	Start service
+action.restart_service_confirm	Restart gateway service
+action.stop_service	Stop service
+action.stop_service_confirm	Stop gateway service
+confirm.description	This changes local settings.
+confirm.execute	The action runs when you confirm.
+action.confirm	Confirm
+settings.title	Appearance
+settings.open	Settings
+settings.theme	Theme
+settings.system	System
+settings.light	Light
+settings.dark	Dark
+settings.language	Language
+settings.saved	Appearance saved
+settings.help	These choices affect this app only.
+updates.use_manager	Use the package manager that installed this app.

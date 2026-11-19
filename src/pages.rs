@@ -1,207 +1,322 @@
 use crate::*;
-mod config;
 impl App {
     pub(super) fn overview(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
-        let status = self.state.get("status").clone();
-        let error = status.get("error").text();
-        let healthy = status.get("healthy").boolean()
-            || status.get("health").get("status").text() == "ok"
-            || status.get("status").text() == "ok";
-        let available = error.is_empty() && !matches!(status, Json::Null);
-        card(c, Rect::new(x, 130., width, 186.));
+        let state = self.state.get("status").clone();
+        let healthy = state.get("healthy").boolean();
+        let available = state.get("error").text().is_empty() && !matches!(state, Json::Null);
+        let center = (x + width / 2.).round();
+        let top = ((c.height - 600.) * 0.28 + 68.).round().clamp(68., 220.);
+        let halo = if c.theme == zui::Theme::Dark {
+            0x1d2a40ff
+        } else {
+            0xf3f7ffff
+        };
+        let edge = if c.theme == zui::Theme::Dark {
+            0x283a55ff
+        } else {
+            0xeaf0fcff
+        };
+        c.rect(Rect::new(center - 108., top, 216., 216.), 108., edge);
+        c.rect(Rect::new(center - 107., top + 1., 214., 214.), 107., halo);
+        brand(c, Rect::new(center - 96., top + 12., 192., 192.), halo);
+        let status = if healthy {
+            tr("status.connected")
+        } else {
+            tr("status.disconnected")
+        };
+        let status_width = c.measure(status, 13, false);
         c.rect(
-            Rect::new(x + 24., 154., 9., 9.),
-            4.5,
+            Rect::new(
+                (center - status_width / 2. - 14.).round(),
+                top + 256.,
+                6.,
+                6.,
+            ),
+            3.,
             if healthy { GREEN } else { MUTED },
         );
         c.text(
-            if healthy {
-                "GATEWAY RUNNING"
-            } else if available {
-                "GATEWAY READY"
-            } else {
-                "GATEWAY UNAVAILABLE"
-            },
-            x + 43.,
-            147.,
-            12,
-            true,
+            status,
+            (center - status_width / 2.).round(),
+            top + 249.,
+            13,
+            false,
             if healthy { GREEN } else { MUTED },
         );
+        let heading = if healthy {
+            tr("overview.running")
+        } else {
+            tr("overview.stopped")
+        };
+        let heading_width = c.measure(heading, 28, true);
         c.text(
-            value(&status, "listen", "127.0.0.1:9415"),
-            x + 24.,
-            180.,
+            heading,
+            (center - heading_width / 2.).round(),
+            top + 286.,
             28,
             true,
             TEXT,
         );
+        let address = value(&state, "listen", "127.0.0.1:9415");
+        let address_width = c.measure(address, 16, false);
         c.text(
-            &format!(
-                "zcalld {}  ·  {}",
-                value(&status, "version", "not detected"),
-                if healthy {
-                    "accepting requests"
-                } else {
-                    "service status is shown by the CLI"
-                }
-            ),
-            x + 24.,
-            224.,
+            address,
+            (center - address_width / 2.).round(),
+            top + 333.,
+            16,
+            false,
+            MUTED,
+        );
+        let detail = if healthy {
+            tr("overview.ready_help")
+        } else if available {
+            tr("overview.start_help")
+        } else {
+            tr("overview.install_help")
+        };
+        let detail_width = c.measure(detail, 14, false);
+        c.ellipsis(
+            detail,
+            (center - detail_width.min(width) / 2.).round(),
+            top + 371.,
+            width,
             14,
             false,
             MUTED,
         );
-        let enabled = self.enabled();
-        for (index, (label, command)) in
-            [("Start", "start"), ("Restart", "restart"), ("Stop", "stop")]
-                .iter()
-                .enumerate()
-        {
-            if self.ui.button(
-                c,
-                100 + index as u64,
-                Rect::new(x + 24. + index as f32 * 116., 264., 104., 36.),
-                label,
-                if index == 0 {
-                    Style::Primary
-                } else {
-                    Style::Secondary
-                },
-                enabled && available,
-            ) {
-                self.action(
-                    &format!("{label} gateway"),
-                    words(&["service", command]),
-                    None,
+        let label = if healthy {
+            tr("action.manage_providers")
+        } else if available {
+            tr("action.start_gateway")
+        } else {
+            tr("action.recheck")
+        };
+        if self.ui.button(
+            c,
+            100,
+            Rect::new(center - 78., top + 421., 156., 44.),
+            label,
+            Style::Primary,
+            self.enabled(),
+        ) {
+            if healthy {
+                self.page = 1;
+            } else if available {
+                self.ask(
+                    tr("action.start_service_confirm"),
+                    words(&["service", "start"]),
                 );
+            } else {
+                self.refresh();
             }
         }
-        let gap = 16.;
-        let cw = (width - gap * 2.) / 3.;
-        for (index, (label, number)) in [
-            ("Providers", count(&self.state, "providers")),
-            ("AI tools", count(&self.state, "agents")),
-            ("Plugins", count(&self.state, "plugins")),
-        ]
-        .iter()
-        .enumerate()
+        if available
+            && self.ui.button(
+                c,
+                101,
+                Rect::new(center - 78., top + 479., 156., 36.),
+                tr("action.service_settings"),
+                Style::Quiet,
+                self.enabled(),
+            )
         {
-            let left = x + index as f32 * (cw + gap);
-            card(c, Rect::new(left, 336., cw, 112.));
-            c.text(&number.to_string(), left + 22., 353., 30, true, TEXT);
-            c.text(label, left + 22., 405., 14, false, MUTED);
+            self.service_panel = true;
+        }
+    }
+    pub(super) fn providers(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
+        let enabled = self.enabled();
+        if self.ui.button(
+            c,
+            400,
+            Rect::new(x + width - 142., 35., 142., 42.),
+            tr("action.add_provider"),
+            Style::Primary,
+            enabled,
+        ) {
+            self.clear_key();
+            self.provider = ProviderForm::default();
+            self.provider_edit = false;
+            self.provider_panel = 2;
+        }
+        let items = self
+            .state
+            .get("providers")
+            .get("providers")
+            .array()
+            .to_vec();
+        if items.is_empty() {
+            empty(
+                c,
+                Rect::new(x, 140., width, 172.),
+                tr("providers.empty"),
+                tr("providers.empty_help"),
+            );
+            return;
         }
         c.text(
-            "Runs locally. Opens only when you need it.",
+            &i18n::message("providers.count", &[("count", &items.len().to_string())]),
             x,
-            479.,
-            19,
-            true,
-            TEXT,
-        );
-        c.text(
-            "Closing this window leaves the gateway service running.",
-            x,
-            513.,
-            15,
-            false,
-            MUTED,
-        );
-        c.ellipsis(
-            &format!("GPU: {}", self.gpu),
-            x,
-            547.,
-            width,
+            125.,
             13,
             false,
             MUTED,
         );
-        if !available {
+        let rows = ((c.height - 235.) / 80.).max(1.) as usize;
+        self.scroll = self.scroll.min(items.len().saturating_sub(rows));
+        let visible = items.len().saturating_sub(self.scroll).min(rows);
+        card(c, Rect::new(x, 157., width, visible as f32 * 80.));
+        for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
+            let y = 157. + (index - self.scroll) as f32 * 80.;
+            let r = Rect::new(x + 1., y + 1., width - 2., 78.);
+            if self
+                .ui
+                .button(c, 10000 + index as u64, r, "", Style::Quiet, enabled)
+            {
+                self.clear_key();
+                self.provider = ProviderForm {
+                    name: value(item, "name", "provider").into(),
+                    url: item.get("base_url").text().into(),
+                    model: item.get("model").text().into(),
+                    environment: item.get("api_key_env").text().into(),
+                    key: String::new(),
+                    protocol: protocols()
+                        .iter()
+                        .position(|p| *p == item.get("protocol").text())
+                        .unwrap_or(0),
+                };
+                self.provider_edit = true;
+                self.provider_panel = 1;
+            }
             c.ellipsis(
-                "Install zcalld, then Refresh. Use --zcalld PATH for a custom executable.",
-                x,
-                580.,
-                width,
-                14,
-                false,
-                RED,
+                value(item, "name", tr("providers.unnamed")),
+                x + 22.,
+                y + 16.,
+                width - 220.,
+                17,
+                true,
+                TEXT,
             );
+            c.ellipsis(
+                value(item, "base_url", tr("providers.no_address")),
+                x + 22.,
+                y + 46.,
+                width - 220.,
+                13,
+                false,
+                MUTED,
+            );
+            let protocol = match item.get("protocol").text() {
+                "chat" => "Chat",
+                "responses" => "Responses",
+                "anthropic" => "Claude",
+                "gemini" => "Gemini",
+                "completions" => "Completions",
+                "interactions" => "Interactions",
+                other => other,
+            };
+            let pill = (c.measure(protocol, 12, false) + 20.).round();
+            let px = x + width - pill - 53.;
+            c.rect(Rect::new(px, y + 28., pill, 25.), 6., BG);
+            c.text(protocol, px + 10., y + 33., 12, false, MUTED);
+            c.line(
+                (x + width - 29., y + 35.),
+                (x + width - 25., y + 39.),
+                1.5,
+                MUTED,
+            );
+            c.line(
+                (x + width - 25., y + 39.),
+                (x + width - 29., y + 43.),
+                1.5,
+                MUTED,
+            );
+            if index - self.scroll + 1 < visible {
+                c.rect(Rect::new(x + 22., y + 79., width - 44., 1.), 0., LINE);
+            }
         }
     }
+
     pub(super) fn agents(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();
-        let items = self.state.get("agents").get("agents").array().to_vec();
-        field(
-            &mut self.ui,
-            c,
-            500,
-            x,
-            126.,
-            (width - 156.).max(240.),
-            "Gateway route",
-            &mut self.route,
-            "local",
-            false,
-            enabled,
-        );
         if self.ui.button(
             c,
             501,
-            Rect::new(x + width - 132., 149., 132., 42.),
-            "Detect tools",
+            Rect::new(x + width - 130., 35., 130., 42.),
+            tr("action.detect_agents"),
             Style::Secondary,
             enabled,
         ) {
             self.action("Detect AI tools", words(&["agents", "detect"]), None);
         }
-        let rows = ((c.height - 290.) / 92.).max(1.) as usize;
+        c.text(tr("agents.route"), x, 129., 13, true, TEXT);
+        self.ui.input(
+            c,
+            500,
+            Rect::new(x + 86., 117., 270., 42.),
+            &mut self.route,
+            "local",
+            false,
+            enabled,
+        );
+        let items = self.state.get("agents").get("agents").array().to_vec();
+        let rows = ((c.height - 274.) / 90.).max(1.) as usize;
         self.scroll = self.scroll.min(items.len().saturating_sub(rows));
         if items.is_empty() {
             empty(
                 c,
-                x,
-                240.,
-                width,
-                "No AI tools detected",
-                "Use Detect tools after installing a supported client.",
+                Rect::new(x, 189., width, 170.),
+                tr("agents.empty"),
+                tr("agents.empty_help"),
             );
         }
         for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
-            let y = 222. + (index - self.scroll) as f32 * 92.;
+            let y = 189. + (index - self.scroll) as f32 * 90.;
             let name = value(item, "name", "tool");
-            card(c, Rect::new(x, y, width, 80.));
-            c.text(name, x + 18., y + 12., 18, true, TEXT);
-            c.ellipsis(
-                value(item, "path", "configuration path not detected"),
-                x + 18.,
-                y + 44.,
-                width - 260.,
-                13,
-                false,
-                MUTED,
-            );
+            let configured = item.get("configured").boolean();
+            let installed = item.get("installed").boolean();
+            card(c, Rect::new(x, y, width, 77.));
             c.text(
-                if item.get("configured").boolean() {
-                    "gateway configured"
-                } else if item.get("installed").boolean() {
-                    "installed"
-                } else {
-                    "not installed"
+                match name {
+                    "claude" => "Claude Code",
+                    "codex" => "Codex",
+                    _ => name,
                 },
-                x + width - 396.,
-                y + 16.,
-                12,
+                x + 22.,
+                y + 13.,
+                18,
+                true,
+                TEXT,
+            );
+            c.ellipsis(
+                if configured {
+                    tr("agents.connected")
+                } else if installed {
+                    tr("agents.available")
+                } else {
+                    tr("agents.not_installed")
+                },
+                x + 22.,
+                y + 45.,
+                width - 210.,
+                13,
                 false,
                 MUTED,
             );
             if self.ui.button(
                 c,
                 20000 + index as u64 * 2,
-                Rect::new(x + width - 226., y + 22., 100., 36.),
-                "Apply route",
-                Style::Primary,
-                enabled,
+                Rect::new(x + width - 122., y + 19., 100., 38.),
+                if configured {
+                    tr("action.change_route")
+                } else {
+                    tr("action.connect")
+                },
+                if configured {
+                    Style::Secondary
+                } else {
+                    Style::Primary
+                },
+                enabled && installed,
             ) {
                 let route = if self.route.is_empty() {
                     "local"
@@ -209,23 +324,103 @@ impl App {
                     &self.route
                 };
                 self.ask(
-                    &format!("Configure {name}?"),
+                    &i18n::message("action.connect_named", &[("name", name)]),
                     words(&["agents", "apply", name, "--route", route]),
                 );
             }
-            if self.ui.button(
-                c,
-                20001 + index as u64 * 2,
-                Rect::new(x + width - 116., y + 22., 96., 36.),
-                "Revert",
-                Style::Secondary,
-                enabled && item.get("configured").boolean(),
-            ) {
+            if configured
+                && self.ui.button(
+                    c,
+                    20001 + index as u64 * 2,
+                    Rect::new(x + width - 216., y + 19., 80., 38.),
+                    tr("action.restore"),
+                    Style::Quiet,
+                    enabled,
+                )
+            {
                 self.ask(
-                    &format!("Revert {name}?"),
+                    &i18n::message("action.restore_named", &[("name", name)]),
                     words(&["agents", "revert", name]),
                 );
             }
+        }
+    }
+    pub(super) fn plugins(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
+        let enabled = self.enabled();
+        if self.ui.button(
+            c,
+            750,
+            Rect::new(x + width - 130., 35., 130., 42.),
+            tr("action.install_plugin"),
+            Style::Primary,
+            enabled,
+        ) {
+            self.plugin = PluginForm::default();
+            self.plugin_panel = 2;
+        }
+        let items = self.state.get("plugins").get("plugins").array().to_vec();
+        let rows = ((c.height - 214.) / 90.).max(1.) as usize;
+        self.scroll = self.scroll.min(items.len().saturating_sub(rows));
+        if items.is_empty() {
+            empty(
+                c,
+                Rect::new(x, 140., width, 172.),
+                tr("plugins.empty"),
+                tr("plugins.empty_help"),
+            );
+        }
+        for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
+            let y = 140. + (index - self.scroll) as f32 * 90.;
+            let r = Rect::new(x, y, width, 77.);
+            card(c, r);
+            if self
+                .ui
+                .button(c, 30000 + index as u64, r, "", Style::Quiet, enabled)
+            {
+                self.selected_plugin = item.clone();
+                self.plugin.name = item.get("name").text().into();
+                self.plugin.revision.clear();
+                self.plugin_panel = 1;
+            }
+            c.ellipsis(
+                value(item, "name", "plugin"),
+                x + 22.,
+                y + 13.,
+                width - 170.,
+                18,
+                true,
+                TEXT,
+            );
+            c.text(
+                &format!(
+                    "{} · {}",
+                    if item.get("kind").text() == "native" {
+                        tr("plugins.native")
+                    } else {
+                        tr("plugins.community")
+                    },
+                    value(item, "version", tr("plugins.unversioned"))
+                ),
+                x + 22.,
+                y + 45.,
+                13,
+                false,
+                MUTED,
+            );
+            let on = item.get("enabled").boolean();
+            c.text(
+                if on {
+                    tr("status.enabled")
+                } else {
+                    tr("status.disabled")
+                },
+                x + width - 100.,
+                y + 28.,
+                13,
+                false,
+                if on { GREEN } else { MUTED },
+            );
+            c.text("›", x + width - 31., y + 24., 24, false, MUTED);
         }
     }
     pub(super) fn privacy(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
@@ -240,148 +435,146 @@ impl App {
             },
         );
         let enabled = self.enabled();
-        for (index, (id, title, description)) in [
-            (
-                "off",
-                "Off",
-                "Forward request text without automatic sanitization.",
-            ),
-            (
-                "secrets",
-                "Secrets",
-                "Sanitize detected credentials, tokens and secret values.",
-            ),
+        let modes = [
+            ("off", tr("privacy.off"), tr("privacy.off_help")),
+            ("secrets", tr("privacy.secrets"), tr("privacy.secrets_help")),
             (
                 "personal",
-                "Secrets + personal",
-                "Also sanitize supported personal information patterns.",
+                tr("privacy.personal"),
+                tr("privacy.personal_help"),
             ),
-        ]
-        .iter()
-        .enumerate()
-        {
-            let y = 132. + index as f32 * 117.;
-            card(c, Rect::new(x, y, width, 99.));
-            if mode == *id {
-                c.rect(Rect::new(x, y, 4., 99.), 2., BLUE);
-            }
-            c.text(title, x + 24., y + 18., 20, true, TEXT);
-            c.text(description, x + 24., y + 55., 14, false, MUTED);
-            if self.ui.button(
-                c,
-                800 + index as u64,
-                Rect::new(x + width - 130., y + 27., 106., 38.),
-                if mode == *id { "Selected" } else { "Use mode" },
-                if mode == *id {
-                    Style::Quiet
-                } else {
-                    Style::Secondary
-                },
-                enabled && mode != *id,
-            ) {
+        ];
+        for (index, (id, title, description)) in modes.iter().enumerate() {
+            let y = 139. + index as f32 * 115.;
+            let selected = mode == *id;
+            let r = Rect::new(x, y, width, 99.);
+            c.rect(r, 16., if selected { 0xe8f0feff } else { LINE });
+            c.rect(
+                r.inset(1.),
+                15.,
+                if selected { 0xf5f8ffff } else { SURFACE },
+            );
+            if !selected
+                && self
+                    .ui
+                    .button(c, 800 + index as u64, r, "", Style::Quiet, enabled)
+            {
                 self.action("Set privacy mode", words(&["privacy", "set", id]), None);
             }
+            c.rect(
+                Rect::new(x + 24., y + 27., 20., 20.),
+                10.,
+                if selected { BLUE } else { 0x9aa0a6ff },
+            );
+            c.rect(Rect::new(x + 26., y + 29., 16., 16.), 8., SURFACE);
+            if selected {
+                c.rect(Rect::new(x + 30., y + 33., 8., 8.), 4., BLUE);
+            }
+            c.text(title, x + 62., y + 20., 19, true, TEXT);
+            c.text(description, x + 62., y + 57., 14, false, MUTED);
+            if selected {
+                c.text(
+                    tr("status.current"),
+                    x + width - 56.,
+                    y + 27.,
+                    12,
+                    true,
+                    BLUE,
+                );
+            }
         }
-        c.text("Sanitization has limits.", x, 505., 18, true, TEXT);
+        c.text(tr("privacy.boundaries"), x + 2., 510., 17, true, TEXT);
         c.text(
-            "Review provider settings and avoid sending information you cannot share.",
-            x,
-            539.,
+            tr("privacy.boundaries_help"),
+            x + 2.,
+            544.,
             14,
             false,
             MUTED,
         );
-        c.text(
-            &format!(
-                "Model-assisted detection: {}",
-                if state.get("model_auto").boolean() {
-                    "enabled"
-                } else {
-                    "disabled"
-                }
-            ),
-            x,
-            575.,
-            14,
-            false,
-            MUTED,
-        );
+        if state.get("model_auto").boolean() {
+            c.text(tr("privacy.model_auto"), x + 2., 580., 13, false, MUTED);
+        }
     }
     pub(super) fn updates(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();
-        let versions = [
+        let items = [
             (
-                "Gateway".to_owned(),
-                value(self.state.get("status"), "version", "not detected").to_owned(),
-                value(
-                    &self.gateway_update,
-                    "latest",
-                    value(&self.gateway_update, "latest_version", "not checked"),
-                )
-                .to_owned(),
+                tr("updates.gateway"),
+                value(self.state.get("status"), "version", tr("status.not_found")).to_owned(),
+                self.gateway_update.clone(),
             ),
             (
-                "Control panel".to_owned(),
+                tr("updates.gui"),
                 VERSION.to_owned(),
-                value(&self.gui_update, "latest", "not checked").to_owned(),
+                self.gui_update.clone(),
             ),
         ];
-        for (index, (title, current, latest)) in versions.iter().enumerate() {
-            let y = 132. + index as f32 * 197.;
-            card(c, Rect::new(x, y, width, 177.));
-            c.text(title, x + 24., y + 18., 22, true, TEXT);
+        for (index, (title, current, info)) in items.iter().enumerate() {
+            let y = 140. + index as f32 * 162.;
+            card(c, Rect::new(x, y, width, 140.));
+            c.text(title, x + 24., y + 21., 20, true, TEXT);
             c.text(
-                &format!("Installed {current}  ·  Latest {latest}"),
+                &i18n::message("updates.current", &[("current", current)]),
                 x + 24.,
-                y + 58.,
+                y + 62.,
                 15,
                 false,
                 MUTED,
             );
-            if self.ui.button(
-                c,
-                850 + index as u64 * 2,
-                Rect::new(x + 24., y + 109., 142., 40.),
-                "Check update",
-                Style::Secondary,
-                enabled,
-            ) {
-                if index == 0 {
-                    self.action("Check gateway update", words(&["update", "check"]), None);
-                } else {
-                    self.self_update(false);
-                }
+            let latest = value(info, "latest", value(info, "latest_version", ""));
+            if !latest.is_empty() {
+                c.text(
+                    &i18n::message("updates.latest", &[("latest", latest)]),
+                    x + 24.,
+                    y + 96.,
+                    13,
+                    false,
+                    MUTED,
+                );
             }
+            let update = info.get("available").boolean();
+            let managed = info.get("managed").boolean();
+            let label = if managed {
+                tr("action.package_update")
+            } else if update {
+                tr("action.update_now")
+            } else {
+                tr("action.check_update")
+            };
+            let width_button = if managed { 166. } else { 122. };
             if self.ui.button(
                 c,
-                851 + index as u64 * 2,
-                Rect::new(x + 180., y + 109., 142., 40.),
-                "Update now",
-                Style::Primary,
+                850 + index as u64,
+                Rect::new(x + width - width_button - 24., y + 48., width_button, 42.),
+                label,
+                if update && !managed {
+                    Style::Primary
+                } else {
+                    Style::Secondary
+                },
                 enabled,
             ) {
-                if index == 0 {
-                    self.ask("Update gateway?", words(&["update", "apply"]));
+                if managed {
+                    let command = info.get("command").text();
+                    if !command.is_empty() {
+                        self.ui.clipboard = Some(command.into());
+                        self.notice = tr("status.copied_update").into();
+                    } else {
+                        self.notice = tr("updates.use_manager").into();
+                    }
+                } else if index == 0 {
+                    if update {
+                        self.ask(tr("action.update_gateway"), words(&["update", "apply"]));
+                    } else {
+                        self.action("Check gateway update", words(&["update", "check"]), None);
+                    }
                 } else {
-                    self.self_update(true);
+                    self.self_update(update);
                 }
             }
         }
-        c.text(
-            "System-managed installs follow your package manager.",
-            x,
-            556.,
-            16,
-            true,
-            TEXT,
-        );
-        c.text(
-            "AUR: yay -Syu zcalld-bin zcall-gui-bin",
-            x,
-            590.,
-            14,
-            false,
-            MUTED,
-        );
+        c.text(tr("updates.verify"), x + 2., 505., 14, false, MUTED);
+        c.text(tr("updates.managed_help"), x + 2., 537., 14, false, MUTED);
     }
 }

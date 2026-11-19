@@ -1,0 +1,159 @@
+nav.overview	概覽
+nav.providers	供應商
+nav.agents	AI 工具
+nav.plugins	外掛
+nav.privacy	隱私
+nav.updates	更新
+action.save_provider	儲存供應商
+action.test_provider	測試連線
+action.detect_agents	偵測工具
+action.privacy	更新隱私設定
+action.check_gateway	檢查閘道更新
+action.check_gui	檢查控制台更新
+action.update_gui	更新控制台
+action.start_gateway	啟動閘道
+action.restart_gateway	重新啟動閘道
+action.stop_gateway	停止閘道
+status.loading	正在讀取本機狀態…
+status.working	正在{action}…
+error.connection	連線無法使用：{error}
+status.refreshed	本機狀態已更新
+status.complete	{action}完成
+error.action	操作未完成：{error}
+status.updating_gui	正在更新控制台…
+status.checking_gui	正在檢查控制台更新…
+brand.subtitle	本機 AI 閘道
+page.overview	在本機管理你的 AI 連線。
+page.providers	管理介面位址、模型與存取憑證。
+page.agents	讓常用 AI 工具接入本機閘道。
+page.plugins	按需安裝，個別啟用。
+page.privacy	在請求離開本機前處理敏感內容。
+page.updates	讓閘道與控制台保持更新。
+error.section	暫時無法讀取
+error.section_help	檢查閘道設定或版本後，按重新整理。
+action.refresh	重新整理
+window.title	zcall-gui — 本機 AI 閘道
+status.connected	已連線
+status.disconnected	未連線
+overview.running	閘道正在執行
+overview.stopped	尚未連接閘道
+overview.ready_help	你的 AI 工具可透過本機閘道存取模型。
+overview.start_help	啟動本機服務後，即可接入 AI 工具。
+overview.install_help	安裝 zcalld 後，按重新整理檢查連線。
+action.manage_providers	管理供應商
+action.recheck	重新檢查
+action.start_service_confirm	啟動閘道服務
+action.service_settings	服務設定
+overview.independent	關閉視窗不會停止背景閘道。
+action.add_provider	新增供應商
+providers.empty	尚無供應商
+providers.empty_help	新增本機或遠端介面，即可開始使用。
+providers.count	已設定 {count} 個介面
+providers.unnamed	未命名介面
+providers.no_address	尚未設定位址
+status.configured	已設定
+status.needs_setup	待設定
+agents.route	預設路由
+agents.empty	尚未偵測到工具
+agents.empty_help	安裝支援的工具後，按「偵測工具」。
+agents.connected	已接入閘道
+agents.available	可接入
+agents.not_installed	未偵測到安裝
+action.change_route	更換路由
+action.connect	接入
+action.connect_named	接入 {name}
+action.restore	還原
+action.restore_named	還原 {name} 原設定
+action.install_plugin	安裝外掛
+plugins.empty	核心保持輕量
+plugins.empty_help	只為需要的功能安裝外掛，安裝後再個別啟用。
+plugins.native	原生外掛
+plugins.community	社群外掛
+plugins.unversioned	未標示版本
+status.enabled	已啟用
+status.disabled	未啟用
+privacy.off	關閉
+privacy.off_help	保留原始內容，不作自動替換。
+privacy.secrets	僅保護金鑰
+privacy.secrets_help	替換辨識到的金鑰、權杖與存取憑證。
+privacy.personal	金鑰與個人資訊
+privacy.personal_help	同時處理可辨識的電子郵件、手機號碼等資訊。
+status.current	目前
+privacy.boundaries	保護有界限
+privacy.boundaries_help	仍請確認內容適合傳送給目前供應商。
+privacy.model_auto	模型輔助辨識已開啟
+updates.gateway	閘道
+status.not_found	未偵測到
+updates.gui	控制台
+updates.current	目前版本  {current}
+updates.latest	最新版本  {latest}
+action.package_update	使用套件管理器更新
+action.update_now	立即更新
+action.check_update	檢查更新
+status.copied_update	已複製更新指令，可於終端機執行
+action.update_gateway	更新閘道
+updates.verify	更新前會驗證下載檔案。
+updates.managed_help	透過 AUR 安裝的版本，請繼續使用套件管理器更新。
+status.processing	正在處理…
+providers.details	供應商詳細資訊
+providers.edit	編輯供應商
+providers.url	介面位址
+providers.protocol	介面類型
+action.edit	編輯
+providers.remove_title	刪除介面
+providers.remove_help	移除後將無法再透過此介面轉送。
+action.remove_provider	刪除供應商
+status.testing	正在測試…
+providers.basics	連線資訊
+providers.access	存取與模型
+providers.step1	第 1 步，共 2 步
+providers.step2	第 2 步，共 2 步
+field.name	名稱
+providers.name_hint	例如 my-provider
+providers.key	API 金鑰
+providers.keep_key	留空保留原憑證
+providers.optional_key	沒有金鑰可留空
+providers.key_help	儲存在本機，輸入內容不會顯示於清單中。
+providers.model	預設模型（選填）
+providers.model_hint	例如 llama3.2
+action.cancel	取消
+action.back	上一步
+action.next	下一步
+plugins.details	外掛詳細資訊
+plugins.path	安裝位置
+action.disable_plugin	停用外掛
+action.enable_plugin	啟用外掛
+plugins.version	更新至指定版本或提交
+plugins.version_hint	填入完整版本 / Git 提交
+action.update_plugin	更新外掛
+action.remove_plugin	移除外掛
+plugins.add_feature	新增功能
+plugins.install_help	安裝不會自動啟用外掛。
+plugins.source	來源
+plugins.source_hint	本機路徑 / Git URL / npm:套件@版本
+plugins.commit	Git 提交（遠端 Git 來源必填）
+plugins.commit_hint	完整提交雜湊
+field.optional_name	名稱（選填）
+plugins.name_hint	留空使用外掛名稱
+service.title	閘道服務
+service.connected	服務已連線
+service.disconnected	服務未連線
+service.independent	控制台和閘道為獨立程序。
+action.restart_service	重新啟動服務
+action.start_service	啟動服務
+action.restart_service_confirm	重新啟動閘道服務
+action.stop_service	停止服務
+action.stop_service_confirm	停止閘道服務
+confirm.description	這會修改本機設定。
+confirm.execute	確認後將立即執行。
+action.confirm	確認
+settings.title	介面設定
+settings.open	設定
+settings.theme	主題
+settings.system	跟隨系統
+settings.light	淺色
+settings.dark	深色
+settings.language	語言
+settings.saved	介面設定已儲存
+settings.help	只影響控制台，不修改閘道設定。
+updates.use_manager	請使用安裝此應用程式的套件管理器更新。

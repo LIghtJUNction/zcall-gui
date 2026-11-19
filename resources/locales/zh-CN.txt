@@ -1,0 +1,159 @@
+nav.overview	概览
+nav.providers	供应商
+nav.agents	AI 工具
+nav.plugins	插件
+nav.privacy	隐私
+nav.updates	更新
+action.save_provider	保存供应商
+action.test_provider	测试连接
+action.detect_agents	检测工具
+action.privacy	更新隐私设置
+action.check_gateway	检查网关更新
+action.check_gui	检查控制台更新
+action.update_gui	更新控制台
+action.start_gateway	启动网关
+action.restart_gateway	重启网关
+action.stop_gateway	停止网关
+status.loading	正在读取本地状态…
+status.working	正在{action}…
+error.connection	连接不可用：{error}
+status.refreshed	本地状态已刷新
+status.complete	{action}完成
+error.action	操作未完成：{error}
+status.updating_gui	正在更新控制台…
+status.checking_gui	正在检查控制台更新…
+brand.subtitle	本地 AI 网关
+page.overview	在本机管理你的 AI 连接。
+page.providers	管理接口地址、模型与访问凭据。
+page.agents	让常用 AI 工具接入本地网关。
+page.plugins	按需安装，单独启用。
+page.privacy	在请求离开本机前处理敏感内容。
+page.updates	让网关与控制台保持更新。
+error.section	暂时无法读取
+error.section_help	检查网关配置或版本后，点击刷新。
+action.refresh	刷新
+window.title	zcall-gui — 本地 AI 网关
+status.connected	已连接
+status.disconnected	未连接
+overview.running	网关正在运行
+overview.stopped	尚未连接网关
+overview.ready_help	你的 AI 工具可以通过本机网关访问模型。
+overview.start_help	启动本机服务后，即可接入 AI 工具。
+overview.install_help	安装 zcalld 后，点击刷新检查连接。
+action.manage_providers	管理供应商
+action.recheck	重新检查
+action.start_service_confirm	启动网关服务
+action.service_settings	服务设置
+overview.independent	关闭窗口不会停止后台网关。
+action.add_provider	添加供应商
+providers.empty	还没有供应商
+providers.empty_help	添加一个本地或远程接口，即可开始使用。
+providers.count	已配置 {count} 个接口
+providers.unnamed	未命名接口
+providers.no_address	尚未设置地址
+status.configured	已配置
+status.needs_setup	待配置
+agents.route	默认路由
+agents.empty	尚未发现工具
+agents.empty_help	安装支持的工具后，点击“检测工具”。
+agents.connected	已接入网关
+agents.available	可接入
+agents.not_installed	未检测到安装
+action.change_route	更换路由
+action.connect	接入
+action.connect_named	接入 {name}
+action.restore	恢复
+action.restore_named	恢复 {name} 原配置
+action.install_plugin	安装插件
+plugins.empty	核心保持轻量
+plugins.empty_help	只为需要的功能安装插件，安装后再单独启用。
+plugins.native	原生插件
+plugins.community	社区插件
+plugins.unversioned	未标注版本
+status.enabled	已启用
+status.disabled	未启用
+privacy.off	关闭
+privacy.off_help	保留原始内容，不作自动替换。
+privacy.secrets	仅保护密钥
+privacy.secrets_help	替换识别到的密钥、令牌与访问凭据。
+privacy.personal	密钥与个人信息
+privacy.personal_help	同时处理支持识别的邮箱、手机号等信息。
+status.current	当前
+privacy.boundaries	保护有边界
+privacy.boundaries_help	请仍确认内容适合发送给当前供应商。
+privacy.model_auto	模型辅助识别已开启
+updates.gateway	网关
+status.not_found	未检测到
+updates.gui	控制台
+updates.current	当前版本  {current}
+updates.latest	最新版本  {latest}
+action.package_update	用包管理器更新
+action.update_now	立即更新
+action.check_update	检查更新
+status.copied_update	已复制更新命令，可在终端运行
+action.update_gateway	更新网关
+updates.verify	更新前会校验下载文件。
+updates.managed_help	通过 AUR 安装的版本，继续使用包管理器更新。
+status.processing	正在处理…
+providers.details	供应商详情
+providers.edit	编辑供应商
+providers.url	接口地址
+providers.protocol	接口类型
+action.edit	编辑
+providers.remove_title	删除接口
+providers.remove_help	移除后将无法再通过此接口转发。
+action.remove_provider	删除供应商
+status.testing	正在测试…
+providers.basics	连接信息
+providers.access	访问与模型
+providers.step1	第 1 步，共 2 步
+providers.step2	第 2 步，共 2 步
+field.name	名称
+providers.name_hint	例如 my-provider
+providers.key	API 密钥
+providers.keep_key	留空保留原凭据
+providers.optional_key	没有密钥可留空
+providers.key_help	保存在本机，输入内容不会显示在列表中。
+providers.model	默认模型（可选）
+providers.model_hint	例如 llama3.2
+action.cancel	取消
+action.back	上一步
+action.next	下一步
+plugins.details	插件详情
+plugins.path	安装位置
+action.disable_plugin	停用插件
+action.enable_plugin	启用插件
+plugins.version	更新到指定版本或提交
+plugins.version_hint	填写完整版本 / Git 提交
+action.update_plugin	更新插件
+action.remove_plugin	移除插件
+plugins.add_feature	添加一个功能
+plugins.install_help	安装不会自动启用插件。
+plugins.source	来源
+plugins.source_hint	本地路径 / Git URL / npm:包@版本
+plugins.commit	Git 提交（远程 Git 来源必填）
+plugins.commit_hint	完整提交哈希
+field.optional_name	名称（可选）
+plugins.name_hint	留空使用插件名称
+service.title	网关服务
+service.connected	服务已连接
+service.disconnected	服务未连接
+service.independent	控制台和网关是独立进程。
+action.restart_service	重启服务
+action.start_service	启动服务
+action.restart_service_confirm	重启网关服务
+action.stop_service	停止服务
+action.stop_service_confirm	停止网关服务
+confirm.description	这会修改本机配置。
+confirm.execute	确认后将立即执行。
+action.confirm	确认
+settings.title	界面设置
+settings.open	设置
+settings.theme	主题
+settings.system	跟随系统
+settings.light	亮色
+settings.dark	暗色
+settings.language	语言
+settings.saved	界面设置已保存
+settings.help	只影响控制台，不修改网关设置。
+updates.use_manager	请使用安装此应用的包管理器更新。

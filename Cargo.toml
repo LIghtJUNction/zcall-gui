@@ -7,7 +7,7 @@ description = "A small native control panel for the zcalld local AI gateway"
 license = "MIT"
 repository = "https://github.com/LIghtJUNction/zcall-gui"
 [dependencies]
-zui = { path = "vendor/zui", version = "=0.1.0" }
+zui = { package = "zui-native", path = "vendor/zui", version = "=0.1.0" }
 [workspace]
 exclude = ["vendor/zui"]
 [profile.release]

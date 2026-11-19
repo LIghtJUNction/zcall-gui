@@ -26,10 +26,10 @@ g=sys.argv[1]
 values={'status':{'version':'fixture','listen':'127.0.0.1:9415','healthy':True},'providers':{'providers':[{'name':'local','base_url':'http://127.0.0.1:11434/v1','protocol':'chat','configured':True}]},'agents':{'agents':[]},'plugins':{'plugins':[]},'privacy':{'mode':'secrets','enabled':True},'models':{'models':[]}}
 print(json.dumps(values.get(g,{'ok':True})))
 """);fake.chmod(0o755)
-    proc=subprocess.Popen([str(binary),"--zcalld",str(fake),"--page","providers","--smoke-seconds","9"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    proc=subprocess.Popen([str(binary),"--zcalld",str(fake),"--page","providers","--smoke-seconds","9","--language","zh-CN","--theme","light"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     try:
         time.sleep(2)
-        assert proc.poll() is None,"Native window exited early"
+        assert proc.poll() is None,("Native window exited early",proc.returncode,proc.communicate())
         before,_,_=stats(proc.pid);start=time.monotonic();time.sleep(3);after,memory,drm=stats(proc.pid)
         elapsed=time.monotonic()-start
         stdout,stderr=proc.communicate(timeout=8)

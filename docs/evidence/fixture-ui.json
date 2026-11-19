@@ -1,0 +1,14 @@
+{
+  "backend": "isolated fixture",
+  "display": "private Xvfb",
+  "provider_stdin_verified": true,
+  "actual_provider_state_verified": false,
+  "agent_apply_and_restore": true,
+  "privacy_mode_verified": true,
+  "theme_language_persisted": true,
+  "restart_restores_dark": true,
+  "idle_cpu_ticks_2s": 17,
+  "clock_ticks_per_second": 100,
+  "calls": 48,
+  "host_input": false
+}

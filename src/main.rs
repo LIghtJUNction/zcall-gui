@@ -259,6 +259,18 @@ impl App {
         );
         self.privacy_restart_pending && mode != "off"
     }
+    fn privacy_runtime_notice(&self) -> Option<&'static str> {
+        if self.privacy_needs_restart() {
+            Some(tr("privacy.restart_required"))
+        } else if matches!(
+            self.state.get("privacy").get("runtime_state").text(),
+            "" | "unknown"
+        ) {
+            Some(tr("privacy.runtime_unknown"))
+        } else {
+            None
+        }
+    }
     fn package_update(&mut self, gui: bool) {
         if self.busy {
             return;
@@ -897,6 +909,39 @@ mod privacy_state_tests {
             assert!(!app.privacy_needs_restart());
             assert_eq!(app.notice, tr("status.refreshed"));
         }
+    }
+    #[test]
+    fn reopening_with_unknown_runtime_never_claims_saved_mode_is_running() {
+        let mut original = app();
+        refresh(&mut original);
+        reply(
+            &mut original,
+            "Set privacy mode",
+            r#"{"restart_required":true}"#,
+            false,
+        );
+        assert_eq!(
+            original.privacy_runtime_notice(),
+            Some(tr("privacy.restart_required"))
+        );
+        drop(original);
+        let mut reopened = app();
+        reply(
+            &mut reopened,
+            "refresh",
+            r#"{"status":{"healthy":true},"privacy":{"configured":true,"enabled":true,"mode":"secrets","runtime_state":"unknown","restart_required":null}}"#,
+            false,
+        );
+        assert!(!reopened.privacy_restart_pending);
+        assert_eq!(
+            reopened.privacy_runtime_notice(),
+            Some(tr("privacy.runtime_unknown"))
+        );
+        refresh(&mut reopened);
+        assert_eq!(
+            reopened.privacy_runtime_notice(),
+            Some(tr("privacy.runtime_unknown"))
+        );
     }
     #[test]
     fn failed_restart_keeps_pending_and_error() {

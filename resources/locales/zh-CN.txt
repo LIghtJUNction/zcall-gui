@@ -169,3 +169,4 @@ updates.package_ready	包管理器已完成，已安装 {version}。
 updates.package_restart	包管理器已完成，已安装 {version}。重新打开应用即可使用。
 privacy.saved	已保存
 privacy.restart_required	配置已保存，启动或重启网关后生效。
+privacy.runtime_unknown	运行状态尚未确认。

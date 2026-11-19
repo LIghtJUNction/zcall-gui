@@ -169,3 +169,4 @@ updates.package_ready	套件管理器已完成，已安裝 {version}。
 updates.package_restart	套件管理器已完成，已安裝 {version}。重新開啟應用程式即可使用。
 privacy.saved	已儲存
 privacy.restart_required	設定已儲存，啟動或重新啟動閘道後生效。
+privacy.runtime_unknown	執行狀態尚未確認。

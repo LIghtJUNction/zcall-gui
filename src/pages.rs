@@ -474,11 +474,7 @@ impl App {
             c.text(description, x + 62., y + 57., 14, false, MUTED);
             if selected {
                 c.text(
-                    if self.privacy_needs_restart() {
-                        tr("privacy.saved")
-                    } else {
-                        tr("status.current")
-                    },
+                    tr("privacy.saved"),
                     x + width - 56.,
                     y + 27.,
                     12,
@@ -488,25 +484,28 @@ impl App {
             }
         }
         let pending = self.privacy_needs_restart();
-        let boundary_y = if pending { 570. } else { 510. };
-        if pending {
+        let runtime_notice = self.privacy_runtime_notice();
+        let boundary_y = if runtime_notice.is_some() { 570. } else { 510. };
+        if let Some(notice) = runtime_notice {
             c.ellipsis(
-                tr("privacy.restart_required"),
+                notice,
                 x + 2.,
                 510.,
-                width - 172.,
+                if pending { width - 172. } else { width },
                 14,
                 false,
                 TEXT,
             );
-            if self.ui.button(
-                c,
-                810,
-                Rect::new(x + width - 154., 496., 154., 40.),
-                tr("service.title"),
-                Style::Quiet,
-                enabled,
-            ) {
+            if pending
+                && self.ui.button(
+                    c,
+                    810,
+                    Rect::new(x + width - 154., 496., 154., 40.),
+                    tr("service.title"),
+                    Style::Quiet,
+                    enabled,
+                )
+            {
                 self.service_panel = true;
             }
         }

@@ -32,6 +32,15 @@ pub struct Preferences {
     path: PathBuf,
 }
 impl Preferences {
+    #[cfg(test)]
+    pub fn test_defaults() -> Self {
+        Self {
+            theme: ThemeChoice::Light,
+            language: "en",
+            system_dark: false,
+            path: PathBuf::new(),
+        }
+    }
     pub fn load() -> Self {
         let path = config_dir().join("settings.conf");
         let mut prefs = Self {

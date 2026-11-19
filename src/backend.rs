@@ -15,6 +15,7 @@ pub struct Reply {
     pub label: String,
     pub result: Result<Json, String>,
     pub refresh: bool,
+    pub starts_gateway: bool,
 }
 impl Backend {
     pub fn run(&self, args: &[String], mut secret: Option<Vec<u8>>) -> Result<Json, String> {
@@ -140,12 +141,17 @@ impl Backend {
         secret: Option<Vec<u8>>,
     ) {
         let backend = self.clone();
+        let starts_gateway = args.first().is_some_and(|arg| arg == "service")
+            && args
+                .get(1)
+                .is_some_and(|arg| matches!(arg.as_str(), "start" | "restart"));
         thread::spawn(move || {
             let result = backend.run(&args, secret);
             let _ = sender.send(Reply {
                 label,
                 result,
                 refresh: true,
+                starts_gateway,
             });
         });
     }
@@ -156,6 +162,7 @@ impl Backend {
                 label: "refresh".into(),
                 result: Ok(backend.refresh()),
                 refresh: false,
+                starts_gateway: false,
             });
         });
     }

@@ -81,6 +81,7 @@ struct App {
     settings_panel: bool,
     repaint: bool,
     executable: Option<std::path::PathBuf>,
+    privacy_restart_pending: bool,
 }
 fn words(args: &[&str]) -> Vec<String> {
     args.iter().map(|s| (*s).into()).collect()
@@ -106,8 +107,12 @@ fn human(s: &str) -> &str {
 }
 impl App {
     fn new(backend: Backend, preferences: settings::Preferences) -> Self {
+        let app = Self::unloaded(backend, preferences);
+        app.backend.spawn_refresh(app.sender.clone());
+        app
+    }
+    fn unloaded(backend: Backend, preferences: settings::Preferences) -> Self {
         let (sender, receiver) = mpsc::channel();
-        backend.spawn_refresh(sender.clone());
         Self {
             backend,
             ui: Ui::default(),
@@ -136,6 +141,7 @@ impl App {
             settings_panel: false,
             repaint: false,
             executable: std::env::current_exe().ok(),
+            privacy_restart_pending: false,
         }
     }
     fn modal(&self) -> bool {
@@ -191,6 +197,12 @@ impl App {
                     }
                 }
                 Ok(data) => {
+                    if reply.starts_gateway {
+                        self.privacy_restart_pending = false;
+                    }
+                    if reply.label == "Set privacy mode" && data.get("restart_required").boolean() {
+                        self.privacy_restart_pending = true;
+                    }
                     if reply.label.starts_with("Package update") {
                         self.state = data.get("state").clone();
                         self.gateway_update = Json::Null;
@@ -228,8 +240,24 @@ impl App {
                     self.failed = true;
                 }
             }
+            if !self.failed && self.privacy_needs_restart() {
+                self.notice = tr("privacy.restart_required").into();
+            }
         }
         changed
+    }
+    fn privacy_needs_restart(&self) -> bool {
+        let privacy = self.state.get("privacy");
+        let mode = value(
+            privacy,
+            "mode",
+            if privacy.get("enabled").boolean() {
+                "secrets"
+            } else {
+                "off"
+            },
+        );
+        self.privacy_restart_pending && mode != "off"
     }
     fn package_update(&mut self, gui: bool) {
         if self.busy {
@@ -281,6 +309,7 @@ impl App {
                 .into(),
                 result,
                 refresh: false,
+                starts_gateway: false,
             });
         });
     }
@@ -312,6 +341,7 @@ impl App {
                 .into(),
                 result,
                 refresh: false,
+                starts_gateway: false,
             });
         });
     }
@@ -787,5 +817,108 @@ fn main() {
     {
         eprintln!("zcall-gui: {error}");
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod privacy_state_tests {
+    use super::*;
+    fn app() -> App {
+        let mut app = App::unloaded(
+            Backend {
+                binary: "never-executed-zcalld".into(),
+                config: None,
+            },
+            settings::Preferences::test_defaults(),
+        );
+        app.busy = false;
+        app
+    }
+    fn reply(app: &mut App, label: &str, body: &str, starts_gateway: bool) {
+        app.sender
+            .send(Reply {
+                label: label.into(),
+                result: json::parse(body),
+                refresh: false,
+                starts_gateway,
+            })
+            .unwrap();
+        assert!(app.poll());
+    }
+    fn refresh(app: &mut App) {
+        reply(
+            app,
+            "refresh",
+            r#"{"status":{"healthy":true},"privacy":{"enabled":true,"mode":"secrets","restart_required":null}}"#,
+            false,
+        );
+    }
+    #[test]
+    fn privacy_pending_survives_refresh_without_restart_field() {
+        let mut app = app();
+        refresh(&mut app);
+        reply(
+            &mut app,
+            "Set privacy mode",
+            r#"{"ok":true,"restart_required":true}"#,
+            false,
+        );
+        refresh(&mut app);
+        assert!(app.privacy_needs_restart());
+        assert_eq!(app.notice, tr("privacy.restart_required"));
+        reply(
+            &mut app,
+            "Set privacy mode",
+            r#"{"ok":true,"restart_required":false}"#,
+            false,
+        );
+        refresh(&mut app);
+        assert!(app.privacy_needs_restart());
+    }
+    #[test]
+    fn successful_gateway_start_or_restart_clears_pending_after_refresh() {
+        for label in [
+            "启动网关",
+            "重新啟動閘道",
+            "ゲートウェイ再起動",
+            "Restart gateway",
+        ] {
+            let mut app = app();
+            refresh(&mut app);
+            reply(
+                &mut app,
+                "Set privacy mode",
+                r#"{"restart_required":true}"#,
+                false,
+            );
+            reply(&mut app, label, r#"{"ok":true}"#, true);
+            refresh(&mut app);
+            assert!(!app.privacy_restart_pending);
+            assert!(!app.privacy_needs_restart());
+            assert_eq!(app.notice, tr("status.refreshed"));
+        }
+    }
+    #[test]
+    fn failed_restart_keeps_pending_and_error() {
+        let mut app = app();
+        refresh(&mut app);
+        reply(
+            &mut app,
+            "Set privacy mode",
+            r#"{"restart_required":true}"#,
+            false,
+        );
+        app.sender
+            .send(Reply {
+                label: "Restart gateway".into(),
+                result: Err("service failed".into()),
+                refresh: false,
+                starts_gateway: true,
+            })
+            .unwrap();
+        assert!(app.poll());
+        assert!(app.privacy_needs_restart());
+        assert!(app.failed);
+        assert!(app.notice.contains("service failed"));
     }
 }

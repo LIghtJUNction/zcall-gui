@@ -167,3 +167,5 @@ updates.package_failed	パッケージ管理ツールがコード {code} で終�
 updates.version_failed	パッケージ処理は終了しましたが、インストール後のバージョンを確認できませんでした。
 updates.package_ready	パッケージ処理が完了しました。インストール済み：{version}。
 updates.package_restart	パッケージ処理が完了しました：{version}。アプリを開き直してください。
+privacy.saved	保存済み
+privacy.restart_required	保存済み。ゲートウェイの起動・再起動後に適用されます。

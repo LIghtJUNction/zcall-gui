@@ -474,7 +474,11 @@ impl App {
             c.text(description, x + 62., y + 57., 14, false, MUTED);
             if selected {
                 c.text(
-                    tr("status.current"),
+                    if self.privacy_needs_restart() {
+                        tr("privacy.saved")
+                    } else {
+                        tr("status.current")
+                    },
                     x + width - 56.,
                     y + 27.,
                     12,
@@ -483,17 +487,47 @@ impl App {
                 );
             }
         }
-        c.text(tr("privacy.boundaries"), x + 2., 510., 17, true, TEXT);
+        let pending = self.privacy_needs_restart();
+        let boundary_y = if pending { 570. } else { 510. };
+        if pending {
+            c.ellipsis(
+                tr("privacy.restart_required"),
+                x + 2.,
+                510.,
+                width - 172.,
+                14,
+                false,
+                TEXT,
+            );
+            if self.ui.button(
+                c,
+                810,
+                Rect::new(x + width - 154., 496., 154., 40.),
+                tr("service.title"),
+                Style::Quiet,
+                enabled,
+            ) {
+                self.service_panel = true;
+            }
+        }
+        c.text(tr("privacy.boundaries"), x + 2., boundary_y, 17, true, TEXT);
         c.text(
             tr("privacy.boundaries_help"),
             x + 2.,
-            544.,
+            boundary_y + 34.,
             14,
             false,
             MUTED,
         );
         if state.get("model_auto").boolean() {
-            c.text(tr("privacy.model_auto"), x + 2., 580., 13, false, MUTED);
+            c.text(
+                tr("privacy.model_auto"),
+                x + 2.,
+                boundary_y + 70.,
+                13,
+                false,
+                MUTED,
+            );
         }
     }
     pub(super) fn updates(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {

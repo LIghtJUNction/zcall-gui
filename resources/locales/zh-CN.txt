@@ -167,3 +167,5 @@ updates.package_failed	包管理器返回错误（{code}），请查看终端结
 updates.version_failed	包管理器已结束，但无法读取安装后的版本。
 updates.package_ready	包管理器已完成，已安装 {version}。
 updates.package_restart	包管理器已完成，已安装 {version}。重新打开应用即可使用。
+privacy.saved	已保存
+privacy.restart_required	配置已保存，启动或重启网关后生效。

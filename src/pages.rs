@@ -556,13 +556,7 @@ impl App {
                 enabled,
             ) {
                 if managed {
-                    let command = info.get("command").text();
-                    if !command.is_empty() {
-                        self.ui.clipboard = Some(command.into());
-                        self.notice = tr("status.copied_update").into();
-                    } else {
-                        self.notice = tr("updates.use_manager").into();
-                    }
+                    self.package_update(index == 1);
                 } else if index == 0 {
                     if update {
                         self.ask(tr("action.update_gateway"), words(&["update", "apply"]));

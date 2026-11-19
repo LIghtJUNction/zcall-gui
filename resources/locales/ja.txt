@@ -87,13 +87,12 @@ status.not_found	未検出
 updates.gui	アプリ
 updates.current	現在  {current}
 updates.latest	最新  {latest}
-action.package_update	パッケージ管理
+action.package_update	端末で更新
 action.update_now	更新する
 action.check_update	更新を確認
-status.copied_update	更新コマンドをコピーしました。
 action.update_gateway	ゲートウェイを更新
 updates.verify	インストール前にダウンロードを検証します。
-updates.managed_help	パッケージ版は同じパッケージ管理ツールで更新します。
+updates.managed_help	パッケージ版は端末を開き、通常のシステム更新を確認します。
 status.processing	処理中…
 providers.details	接続先の詳細
 providers.edit	接続先を編集
@@ -156,4 +155,15 @@ settings.dark	ダーク
 settings.language	言語
 settings.saved	表示設定を保存しました
 settings.help	ゲートウェイの設定には影響しません。
-updates.use_manager	インストールしたパッケージ管理ツールで更新してください。
+status.package_wait	端末で更新と認証を完了してください。
+updates.no_pacman	このインストールは元のパッケージ管理ツールで更新してください。
+updates.not_owned	この実行ファイルに対応する Arch パッケージが見つかりません。
+updates.no_helper	アプリから AUR を更新するには paru または yay をインストールしてください。
+updates.no_terminal	端末が見つかりません。xdg-terminal-exec を設定してください。
+updates.start_failed	更新を開始できませんでした：{error}
+updates.terminal_closed	更新端末が閉じられたか起動できず、完了を確認できませんでした。
+updates.package_timeout	更新結果は端末で確認してください。端末の処理は継続できます。
+updates.package_failed	パッケージ管理ツールがコード {code} で終了しました。端末を確認してください。
+updates.version_failed	パッケージ処理は終了しましたが、インストール後のバージョンを確認できませんでした。
+updates.package_ready	パッケージ処理が完了しました。インストール済み：{version}。
+updates.package_restart	パッケージ処理が完了しました：{version}。アプリを開き直してください。

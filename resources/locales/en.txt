@@ -87,13 +87,12 @@ status.not_found	Not found
 updates.gui	App
 updates.current	Installed  {current}
 updates.latest	Latest  {latest}
-action.package_update	Package manager
+action.package_update	Update in terminal
 action.update_now	Update now
 action.check_update	Check updates
-status.copied_update	Update command copied. Run it in a terminal.
 action.update_gateway	Update gateway
 updates.verify	Downloaded files are verified before installation.
-updates.managed_help	For package installs, use the same package manager.
+updates.managed_help	Package installs open a terminal for the normal system upgrade.
 status.processing	Working…
 providers.details	Provider details
 providers.edit	Edit provider
@@ -156,4 +155,15 @@ settings.dark	Dark
 settings.language	Language
 settings.saved	Appearance saved
 settings.help	These choices affect this app only.
-updates.use_manager	Use the package manager that installed this app.
+status.package_wait	Complete the upgrade and authorization in the terminal.
+updates.no_pacman	Update this installation with its original package manager.
+updates.not_owned	This executable is not owned by a supported Arch package.
+updates.no_helper	Install paru or yay to update AUR packages from this app.
+updates.no_terminal	No terminal found. Install or configure xdg-terminal-exec.
+updates.start_failed	Could not start the update: {error}
+updates.terminal_closed	The update terminal closed or did not start; completion was not confirmed.
+updates.package_timeout	Check the upgrade result in the terminal; it remains under your control.
+updates.package_failed	The package manager exited with code {code}. Check its terminal output.
+updates.version_failed	The package manager finished, but the installed version could not be read.
+updates.package_ready	Package manager completed. Installed: {version}.
+updates.package_restart	Package manager completed. Installed: {version}. Reopen the app to use it.

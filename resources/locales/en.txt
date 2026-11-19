@@ -167,3 +167,5 @@ updates.package_failed	The package manager exited with code {code}. Check its te
 updates.version_failed	The package manager finished, but the installed version could not be read.
 updates.package_ready	Package manager completed. Installed: {version}.
 updates.package_restart	Package manager completed. Installed: {version}. Reopen the app to use it.
+privacy.saved	Saved
+privacy.restart_required	Saved. Start or restart the gateway to apply.

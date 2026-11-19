@@ -74,3 +74,5 @@ The Linux GUI has been opened on an Intel UHD GPU. The real-window test uses an 
 The native backend currently uses X11/GLX on Linux, Win32/WGL on Windows and Cocoa/OpenGL on macOS. Apple has [deprecated OpenGL](https://developer.apple.com/documentation/appkit/nsopenglcontext); there is no Metal or native Wayland backend in this version. Native screen-reader accessibility and complex-script shaping are also not implemented.
 
 License: [MIT](LICENSE).
+
+[Dependency propagation](docs/DEPENDENCIES.md) records the frozen shared-library snapshot and downstream ownership.

@@ -241,6 +241,12 @@ trap 'exit 143' TERM
     mod tests {
         use super::*;
 
+        // Unique paths do not isolate the process file-descriptor table. A
+        // concurrent fork can inherit another fixture's writable script before
+        // exec closes O_CLOEXEC descriptors, causing ETXTBSY after its parent
+        // writer is already closed. Serialize only these process fixtures.
+        static PROCESS_FIXTURES: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
         fn script(root: &Path, name: &str, body: &str) -> PathBuf {
             let path = root.join(name);
             fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
@@ -249,6 +255,20 @@ trap 'exit 143' TERM
         }
 
         fn fixture(owner: &str, code: i32, helper: &str) -> (PrivateDir, Plan) {
+            fixture_with_terminal(
+                owner,
+                code,
+                helper,
+                "printf '%s\\n' \"$@\" > \"$0.args\"\n[ \"$1\" = '--' ] && shift\nexec \"$@\"",
+            )
+        }
+
+        fn fixture_with_terminal(
+            owner: &str,
+            code: i32,
+            helper: &str,
+            terminal: &str,
+        ) -> (PrivateDir, Plan) {
             let root = PrivateDir::new().unwrap();
             script(&root.0, "zcall-gui", "printf 'zcall-gui 0.1.0\\n'");
             script(&root.0, "pacman", &format!("printf '{owner}\\n'"));
@@ -257,11 +277,7 @@ trap 'exit 143' TERM
                 helper,
                 &format!("printf '%s\\n' \"$@\" > \"$0.args\"\nexit {code}"),
             );
-            script(
-                &root.0,
-                "xdg-terminal-exec",
-                "printf '%s\\n' \"$@\" > \"$0.args\"\n[ \"$1\" = '--' ] && shift\nexec \"$@\"",
-            );
+            script(&root.0, "xdg-terminal-exec", terminal);
             let plan = Plan::discover(
                 Path::new("zcall-gui"),
                 &["zcall-gui", "zcall-gui-bin"],
@@ -274,6 +290,7 @@ trap 'exit 143' TERM
 
         #[test]
         fn source_and_binary_packages_use_literal_normal_upgrade() {
+            let _fixture = PROCESS_FIXTURES.lock().unwrap();
             for (owner, helper) in [("zcall-gui", "paru"), ("zcall-gui-bin", "yay")] {
                 let (root, plan) = fixture(owner, 0, helper);
                 assert_eq!(plan.run(Duration::from_secs(5)).unwrap(), "zcall-gui 0.1.0");
@@ -289,12 +306,14 @@ trap 'exit 143' TERM
 
         #[test]
         fn helper_failure_is_not_reported_as_success() {
+            let _fixture = PROCESS_FIXTURES.lock().unwrap();
             let (_root, plan) = fixture("zcall-gui-bin", 17, "paru");
             assert!(plan.run(Duration::from_secs(5)).unwrap_err().contains("17"));
         }
 
         #[test]
         fn unrecognized_owner_is_rejected_before_launch() {
+            let _fixture = PROCESS_FIXTURES.lock().unwrap();
             let (root, _) = fixture("zcall-gui", 0, "paru");
             script(&root.0, "pacman", "printf 'unrelated-package\\n'");
             assert!(
@@ -311,13 +330,14 @@ trap 'exit 143' TERM
 
         #[test]
         fn detached_terminal_result_is_observed() {
-            let (root, plan) = fixture("zcall-gui-bin", 0, "paru");
-            script(
-                &root.0,
-                "xdg-terminal-exec",
+            let _fixture = PROCESS_FIXTURES.lock().unwrap();
+            let (_root, plan) = fixture_with_terminal(
+                "zcall-gui-bin",
+                0,
+                "paru",
                 "[ \"$1\" = '--' ] && shift\n\"$@\" &\nexit 0",
             );
-            assert!(plan.run(Duration::from_secs(5)).is_ok());
+            assert_eq!(plan.run(Duration::from_secs(5)).unwrap(), "zcall-gui 0.1.0");
         }
     }
 }

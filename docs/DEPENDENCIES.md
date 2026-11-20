@@ -2,7 +2,7 @@
 
 ## Unified native library
 
-The active GUI dependency is `zgpui =0.1.4`, stored as the
+The active GUI dependency is `zgpui =0.1.5`, stored as the
 `vendor/zgpui` Git submodule. The application enables `native` and imports
 `zgpui::native`. The package name, Rust dependency key and source directory
 use the same name; there is no legacy package alias.
@@ -12,10 +12,9 @@ The outer `zcalld` repository distributes this application through
 Project Z coordinates the library release and aggregate pins. The 0.1.2 consumer checkpoint
 updated the manifest, lock and vendor gitlink in e6ed24b, with local unit,
 Clippy and isolated native CLI-flow checks. The 0.1.3 integration introduced
-window-local palette and font selection for Ink. This GUI freezes the subsequent
-0.1.4 rendering correction at
-`7838c3c94cf018c02bb36e17c941ca651c5c0e24`; the manifest, lockfile and
-submodule agree. The toolkit uses power-of-two alpha textures where required
+window-local palette and font selection for Ink. The previous GUI snapshot
+fixed the 0.1.4 rendering correction at
+`7838c3c94cf018c02bb36e17c941ca651c5c0e24`. The toolkit uses power-of-two alpha textures where required
 by older OpenGL implementations. Its official Windows GDI Generic/OpenGL 1.1
 and macOS image gates verify glyph interiors and rounded corners. These are functional image checks, not a physical-GPU performance
 measurement. The [official toolkit release gate](https://github.com/LIghtJUNction/zgpui/actions/runs/44710634988)
@@ -23,6 +22,22 @@ records that platform coverage. The default toolkit appearance remains unchanged
 for other applications. The
 [unified-library acceptance record](ZGPUI_MIGRATION.md) documents the local
 validation scope.
+
+The current manifest, lockfile and vendor gitlink select the canonical 0.1.5
+source. That source shares the Linux font implementation with a source-only
+headless raster companion and validates packed grayscale and negative-pitch
+glyphs before copying coverage. This GUI continues to use `zgpui::native`;
+it does not depend on the companion or change its window, theme or CLI contract.
+The exact accepted source remains recorded by the gitlink. The earlier
+cross-platform release evidence above describes its original source; current
+dependency propagation has its own local validation record.
+
+The existing `v0.1.3` tag remains fixed at
+`651aee3dc1eb43b561baafa77ce0ed12d9f3b2ff`, which uses zgpui 0.1.4.
+The 0.1.5 dependency change belongs to development source after that tag.
+The native release workflow checks out the requested tag for both build and
+publication, and verifies that checkout against the tag before packaging.
+Advancing `main` does not change this frozen release source or its artifacts.
 
 ## Historical native-library correction
 

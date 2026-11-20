@@ -175,3 +175,19 @@ overview.providers_count	Configured providers
 overview.agents_count	Detected AI tools
 action.connect_tools	Connect AI tools
 overview.add_help	Add a provider, then connect your AI tools.
+agents.selection_help	Choose an AI tool, then select its model or route.
+agents.no_routes	Add a provider before connecting a tool
+agents.routes_unavailable	Available routes could not be read
+agents.no_routes_help	Add a provider and model, then refresh this list.
+agents.read_only	Detection only · configure this tool manually
+agents.current_route	Current route: {route}
+agents.saved_route	Saved route: {route}
+agents.route_unset	Not recorded
+agents.choose_for	Choose a route for {name}
+agents.route_search	Search model name or route ID
+agents.no_matches	No matching routes
+agents.no_matches_help	Try a shorter name or clear the search.
+agents.route_count	{count} available routes
+agents.select_route	Select a route to continue
+agents.apply_route	Use this route
+agents.apply_named	Connect {name} to {route}

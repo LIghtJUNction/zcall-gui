@@ -301,6 +301,7 @@ impl App {
 
     pub(super) fn agents(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();
+        let has_routes = !self.route_choices().is_empty();
         if self.ui.button(
             c,
             501,
@@ -311,18 +312,58 @@ impl App {
         ) {
             self.action("Detect AI tools", words(&["agents", "detect"]), None);
         }
-        c.text(tr("agents.route"), x, 129., 13, true, TEXT);
-        self.ui.input(
-            c,
-            500,
-            Rect::new(x + 86., 117., 270., 42.),
-            &mut self.route,
-            "local",
-            false,
-            enabled,
-        );
+        if has_routes {
+            c.ellipsis(
+                tr("agents.selection_help"),
+                x,
+                132.,
+                width,
+                14,
+                false,
+                MUTED,
+            );
+        } else {
+            let unavailable = !self.state.get("models").get("error").text().is_empty();
+            c.ellipsis(
+                tr(if unavailable {
+                    "agents.routes_unavailable"
+                } else {
+                    "agents.no_routes"
+                }),
+                x,
+                125.,
+                width - 186.,
+                14,
+                true,
+                TEXT,
+            );
+            c.ellipsis(
+                tr("agents.no_routes_help"),
+                x,
+                151.,
+                width - 186.,
+                13,
+                false,
+                MUTED,
+            );
+            if self.ui.button(
+                c,
+                502,
+                Rect::new(x + width - 166., 122., 166., 42.),
+                tr("action.add_provider"),
+                Style::Primary,
+                enabled,
+            ) {
+                self.page = 1;
+                self.scroll = 0;
+                self.provider = ProviderForm::default();
+                self.provider_edit = false;
+                self.provider_panel = 2;
+                return;
+            }
+        }
         let items = self.state.get("agents").get("agents").array().to_vec();
-        let rows = ((c.height - 274.) / 90.).max(1.) as usize;
+        let rows = ((c.height - 256.) / 104.).max(1.) as usize;
         self.scroll = self.scroll.min(items.len().saturating_sub(rows));
         if items.is_empty() {
             empty(
@@ -333,25 +374,29 @@ impl App {
             );
         }
         for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
-            let y = 189. + (index - self.scroll) as f32 * 90.;
+            let y = 189. + (index - self.scroll) as f32 * 104.;
             let name = value(item, "name", "tool");
             let configured = item.get("configured").boolean();
             let installed = item.get("installed").boolean();
-            card(c, Rect::new(x, y, width, 77.));
-            c.text(
+            let writable = item.get("writable").boolean();
+            card(c, Rect::new(x, y, width, 92.));
+            c.ellipsis(
                 match name {
                     "claude" => "Claude Code",
                     "codex" => "Codex",
                     _ => name,
                 },
                 x + 22.,
-                y + 13.,
+                y + 12.,
+                width - 280.,
                 18,
                 true,
                 TEXT,
             );
             c.ellipsis(
-                if configured {
+                if !writable {
+                    tr("agents.read_only")
+                } else if configured {
                     tr("agents.connected")
                 } else if installed {
                     tr("agents.available")
@@ -359,46 +404,55 @@ impl App {
                     tr("agents.not_installed")
                 },
                 x + 22.,
-                y + 45.,
-                width - 210.,
+                y + 39.,
+                width - 280.,
                 13,
+                false,
+                MUTED,
+            );
+            c.ellipsis(
+                &i18n::message(
+                    if configured {
+                        "agents.current_route"
+                    } else {
+                        "agents.saved_route"
+                    },
+                    &[("route", value(item, "route", tr("agents.route_unset")))],
+                ),
+                x + 22.,
+                y + 64.,
+                width - 48.,
+                12,
                 false,
                 MUTED,
             );
             if self.ui.button(
                 c,
                 20000 + index as u64 * 2,
-                Rect::new(x + width - 122., y + 19., 100., 38.),
-                if configured {
-                    tr("action.change_route")
+                Rect::new(x + width - 122., y + 20., 100., 38.),
+                tr(if configured {
+                    "action.change_route"
                 } else {
-                    tr("action.connect")
-                },
+                    "action.connect"
+                }),
                 if configured {
                     Style::Secondary
                 } else {
                     Style::Primary
                 },
-                enabled && installed,
+                enabled && installed && writable && has_routes,
             ) {
-                let route = if self.route.is_empty() {
-                    "local"
-                } else {
-                    &self.route
-                };
-                self.ask(
-                    &i18n::message("action.connect_named", &[("name", name)]),
-                    words(&["agents", "apply", name, "--route", route]),
-                );
+                self.open_route_picker(item);
+                return;
             }
             if configured
                 && self.ui.button(
                     c,
                     20001 + index as u64 * 2,
-                    Rect::new(x + width - 216., y + 19., 80., 38.),
+                    Rect::new(x + width - 216., y + 20., 80., 38.),
                     tr("action.restore"),
                     Style::Quiet,
-                    enabled,
+                    enabled && writable,
                 )
             {
                 self.ask(
@@ -408,6 +462,209 @@ impl App {
             }
         }
     }
+
+    pub(super) fn agent_route_dialog(&mut self, c: &mut Canvas<'_>) {
+        let routes = self.route_choices();
+        let enabled = !self.busy && self.confirm.is_none();
+        let Some(picker) = self.route_picker.as_mut() else {
+            return;
+        };
+        let width = 580_f32.min(c.width - 48.);
+        let height = 600_f32.min(c.height - 48.);
+        let r = Rect::new(
+            ((c.width - width) / 2.).round(),
+            ((c.height - height) / 2.).round(),
+            width,
+            height,
+        );
+        c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x20212455);
+        c.rect(r, 18., SURFACE);
+        let x = r.x + 24.;
+        let inner = r.w - 48.;
+        c.ellipsis(
+            &i18n::message("agents.choose_for", &[("name", &picker.agent)]),
+            x,
+            r.y + 24.,
+            inner - 48.,
+            22,
+            true,
+            TEXT,
+        );
+        c.ellipsis(
+            &i18n::message(
+                "agents.current_route",
+                &[(
+                    "route",
+                    if picker.current.is_empty() {
+                        tr("agents.route_unset")
+                    } else {
+                        &picker.current
+                    },
+                )],
+            ),
+            x,
+            r.y + 63.,
+            inner,
+            13,
+            false,
+            MUTED,
+        );
+        if self.ui.input(
+            c,
+            25000,
+            Rect::new(x, r.y + 96., inner, 42.),
+            &mut picker.query,
+            tr("agents.route_search"),
+            false,
+            enabled,
+        ) {
+            picker.scroll = 0;
+        }
+        let filtered = routes
+            .iter()
+            .enumerate()
+            .filter(|(_, route)| route.matches(&picker.query))
+            .collect::<Vec<_>>();
+        let visible = ((r.h - 294.) / 54.).max(1.) as usize;
+        picker.scroll = picker.scroll.min(filtered.len().saturating_sub(visible));
+        if filtered.is_empty() {
+            c.ellipsis(
+                tr("agents.no_matches"),
+                x,
+                r.y + 175.,
+                inner,
+                16,
+                true,
+                TEXT,
+            );
+            c.ellipsis(
+                tr("agents.no_matches_help"),
+                x,
+                r.y + 204.,
+                inner,
+                13,
+                false,
+                MUTED,
+            );
+        }
+        for (position, (index, route)) in filtered
+            .iter()
+            .skip(picker.scroll)
+            .take(visible)
+            .enumerate()
+        {
+            let row = Rect::new(x, r.y + 154. + position as f32 * 54., inner, 48.);
+            let selected = picker.selected == route.id;
+            if selected {
+                c.rect(row, 10., BLUE_PALE);
+            }
+            if self
+                .ui
+                .button(c, 50000 + *index as u64, row, "", Style::Quiet, enabled)
+            {
+                picker.selected = route.id.clone();
+            }
+            if selected {
+                c.rect(Rect::new(row.x + 3., row.y + 12., 3., 24.), 1.5, BLUE);
+            }
+            c.ellipsis(
+                &route.label,
+                row.x + 16.,
+                row.y + 5.,
+                row.w - 32.,
+                15,
+                selected,
+                TEXT,
+            );
+            c.ellipsis(
+                &route.id,
+                row.x + 16.,
+                row.y + 28.,
+                row.w - 32.,
+                11,
+                false,
+                MUTED,
+            );
+        }
+        c.ellipsis(
+            &i18n::message(
+                "agents.route_count",
+                &[("count", &filtered.len().to_string())],
+            ),
+            x,
+            r.y + r.h - 125.,
+            inner - 160.,
+            12,
+            false,
+            MUTED,
+        );
+        if self.ui.button(
+            c,
+            25002,
+            Rect::new(r.x + r.w - 162., r.y + r.h - 132., 58., 30.),
+            "‹",
+            Style::Quiet,
+            enabled && picker.scroll > 0,
+        ) {
+            picker.scroll = picker.scroll.saturating_sub(visible);
+        }
+        if self.ui.button(
+            c,
+            25003,
+            Rect::new(r.x + r.w - 90., r.y + r.h - 132., 58., 30.),
+            "›",
+            Style::Quiet,
+            enabled && picker.scroll + visible < filtered.len(),
+        ) {
+            picker.scroll += visible;
+        }
+        c.rect(Rect::new(x, r.y + r.h - 94., inner, 1.), 0., LINE);
+        c.ellipsis(
+            if picker.selected.is_empty() {
+                tr("agents.select_route")
+            } else {
+                &picker.selected
+            },
+            x,
+            r.y + r.h - 66.,
+            inner - 164.,
+            13,
+            false,
+            MUTED,
+        );
+        let valid = routes.iter().any(|route| route.id == picker.selected);
+        if self.ui.button(
+            c,
+            25004,
+            Rect::new(r.x + r.w - 170., r.y + r.h - 72., 146., 42.),
+            tr("agents.apply_route"),
+            Style::Primary,
+            enabled && valid,
+        ) {
+            let agent = picker.agent.clone();
+            let route = picker.selected.clone();
+            self.route_picker = None;
+            self.ui = Ui::default();
+            self.ask(
+                &i18n::message("agents.apply_named", &[("name", &agent), ("route", &route)]),
+                words(&["agents", "apply", &agent, "--route", &route]),
+            );
+            return;
+        }
+        // Register the close control last so Tab starts in search and then results.
+        if self.ui.button(
+            c,
+            25001,
+            Rect::new(r.x + r.w - 62., r.y + 14., 40., 40.),
+            "×",
+            Style::Quiet,
+            enabled,
+        ) {
+            self.route_picker = None;
+            self.ui = Ui::default();
+        }
+    }
+
     pub(super) fn plugins(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();
         if self.ui.button(

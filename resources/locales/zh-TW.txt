@@ -175,3 +175,19 @@ overview.providers_count	已設定的供應商
 overview.agents_count	偵測到的 AI 工具
 action.connect_tools	連接 AI 工具
 overview.add_help	先新增供應商，再連接常用 AI 工具。
+agents.selection_help	選擇 AI 工具，再選擇它要使用的模型或路由。
+agents.no_routes	先新增供應商，再連接工具
+agents.routes_unavailable	暫時無法讀取可用路由
+agents.no_routes_help	新增供應商和模型後，重新整理此清單。
+agents.read_only	僅支援偵測，請在工具中手動設定
+agents.current_route	目前路由：{route}
+agents.saved_route	已儲存路由：{route}
+agents.route_unset	未記錄
+agents.choose_for	為 {name} 選擇路由
+agents.route_search	搜尋模型名稱或路由 ID
+agents.no_matches	沒有符合的路由
+agents.no_matches_help	嘗試較短的名稱，或清空搜尋。
+agents.route_count	{count} 條可用路由
+agents.select_route	請選擇要使用的路由
+agents.apply_route	使用此路由
+agents.apply_named	將 {name} 連接到 {route}

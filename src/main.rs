@@ -48,6 +48,24 @@ struct PluginForm {
     name: String,
     sha256: String,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct RouteChoice {
+    id: String,
+    label: String,
+}
+impl RouteChoice {
+    fn matches(&self, query: &str) -> bool {
+        let query = query.trim().to_lowercase();
+        self.id.to_lowercase().contains(&query) || self.label.to_lowercase().contains(&query)
+    }
+}
+struct AgentRoutePicker {
+    agent: String,
+    current: String,
+    selected: String,
+    query: String,
+    scroll: usize,
+}
 struct Action {
     label: String,
     args: Vec<String>,
@@ -66,7 +84,7 @@ struct App {
     receiver: mpsc::Receiver<Reply>,
     provider: ProviderForm,
     plugin: PluginForm,
-    route: String,
+    route_picker: Option<AgentRoutePicker>,
     confirm: Option<Action>,
     gateway_update: Json,
     gui_update: Json,
@@ -126,7 +144,7 @@ impl App {
             receiver,
             provider: ProviderForm::default(),
             plugin: PluginForm::default(),
-            route: String::new(),
+            route_picker: None,
             confirm: None,
             gateway_update: Json::Null,
             gui_update: Json::Null,
@@ -150,9 +168,58 @@ impl App {
             || self.plugin_panel > 0
             || self.service_panel
             || self.settings_panel
+            || self.route_picker.is_some()
     }
     fn enabled(&self) -> bool {
         !self.busy && !self.modal()
+    }
+    fn route_choices(&self) -> Vec<RouteChoice> {
+        // The controller's models command uses the real OpenAI catalog shape.
+        let mut routes = Vec::new();
+        for item in self.state.get("models").get("data").array() {
+            let id = item.get("id").text();
+            if id.is_empty() || routes.iter().any(|route: &RouteChoice| route.id == id) {
+                continue;
+            }
+            routes.push(RouteChoice {
+                id: id.into(),
+                label: value(item, "name", id).into(),
+            });
+        }
+        routes.sort_by(|a, b| {
+            a.label
+                .to_lowercase()
+                .cmp(&b.label.to_lowercase())
+                .then_with(|| a.id.cmp(&b.id))
+        });
+        routes
+    }
+    fn open_route_picker(&mut self, agent: &Json) {
+        let routes = self.route_choices();
+        let name = agent.get("name").text();
+        if self.busy
+            || name.is_empty()
+            || !agent.get("installed").boolean()
+            || !agent.get("writable").boolean()
+            || routes.is_empty()
+        {
+            return;
+        }
+        let current = agent.get("route").text().to_owned();
+        let selected = routes
+            .iter()
+            .find(|route| route.id == current)
+            .map(|route| route.id.clone())
+            .unwrap_or_default();
+        self.route_picker = Some(AgentRoutePicker {
+            agent: name.into(),
+            current,
+            selected,
+            query: String::new(),
+            scroll: 0,
+        });
+        // The first Tab enters the picker, never a background-page control.
+        self.ui = Ui::default();
     }
     fn refresh(&mut self) {
         if !self.busy {
@@ -361,6 +428,9 @@ impl App {
         if matches!(event, Some(Event::Key { code: 27, .. })) {
             if self.protocol_menu {
                 self.protocol_menu = false;
+            } else if self.route_picker.is_some() {
+                self.route_picker = None;
+                self.ui = Ui::default();
             } else {
                 self.confirm = None;
                 self.provider_panel = 0;
@@ -370,14 +440,20 @@ impl App {
                 self.clear_key();
             }
         }
-        if let Some(Event::Scroll(delta)) = &event
-            && !self.modal()
-        {
-            self.scroll = if *delta > 0 {
-                self.scroll.saturating_add(1)
-            } else {
-                self.scroll.saturating_sub(1)
-            };
+        if let Some(Event::Scroll(delta)) = &event {
+            if let Some(picker) = self.route_picker.as_mut() {
+                picker.scroll = if *delta > 0 {
+                    picker.scroll.saturating_add(1)
+                } else {
+                    picker.scroll.saturating_sub(1)
+                };
+            } else if !self.modal() {
+                self.scroll = if *delta > 0 {
+                    self.scroll.saturating_add(1)
+                } else {
+                    self.scroll.saturating_sub(1)
+                };
+            }
         }
         self.ui.begin(event);
         let sidebar = 166.;
@@ -533,6 +609,9 @@ impl App {
         }
         if self.settings_panel {
             self.settings_dialog(c);
+        }
+        if self.route_picker.is_some() {
+            self.agent_route_dialog(c);
         }
         if self.confirm.is_some() {
             self.confirm_dialog(c);
@@ -998,5 +1077,74 @@ mod privacy_state_tests {
         assert!(app.privacy_needs_restart());
         assert!(app.failed);
         assert!(app.notice.contains("service failed"));
+    }
+}
+
+#[cfg(test)]
+mod agent_route_tests {
+    use super::*;
+    fn app(catalog: &str) -> App {
+        let mut app = App::unloaded(
+            Backend {
+                binary: "never-executed-zcalld".into(),
+                config: None,
+            },
+            settings::Preferences::test_defaults(),
+        );
+        app.busy = false;
+        app.state = json::parse(catalog).unwrap();
+        app
+    }
+    fn agent(route: &str) -> Json {
+        Json::object([
+            ("name".into(), Json::String("claude".into())),
+            ("route".into(), Json::String(route.into())),
+            ("installed".into(), Json::Bool(true)),
+            ("writable".into(), Json::Bool(true)),
+        ])
+    }
+    #[test]
+    fn real_catalog_ids_are_used_and_search_matches_labels() {
+        let app = app(
+            r#"{"models":{"object":"list","data":[{"id":"team/writing","name":"Writing model"},{"id":"team/code","name":"Coding"},{"id":"team/code"},{"name":"not-a-route"}]}}"#,
+        );
+        let routes = app.route_choices();
+        assert_eq!(routes.len(), 2);
+        assert_eq!(routes[0].id, "team/code");
+        assert!(routes[1].matches("WRITING"));
+        assert!(routes[1].matches("team/"));
+    }
+    #[test]
+    fn existing_route_is_selected_only_while_it_is_available() {
+        let mut app = app(r#"{"models":{"data":[{"id":"team/writing"}]}}"#);
+        app.open_route_picker(&agent("team/writing"));
+        assert_eq!(app.route_picker.as_ref().unwrap().selected, "team/writing");
+        assert!(app.modal());
+        assert!(!app.enabled());
+        app.route_picker = None;
+        app.open_route_picker(&agent("removed-route"));
+        assert!(app.route_picker.as_ref().unwrap().selected.is_empty());
+        assert_eq!(app.route_picker.as_ref().unwrap().current, "removed-route");
+    }
+    #[test]
+    fn missing_or_failed_catalog_never_invents_a_local_route() {
+        for state in [
+            r#"{"models":{"data":[]}}"#,
+            r#"{"models":{"error":"unavailable"}}"#,
+        ] {
+            let mut app = app(state);
+            app.open_route_picker(&agent("local"));
+            assert!(app.route_choices().is_empty());
+            assert!(app.route_picker.is_none());
+            assert!(app.confirm.is_none());
+        }
+    }
+    #[test]
+    fn detection_only_agents_cannot_open_an_apply_picker() {
+        let mut app = app(r#"{"models":{"data":[{"id":"team/writing"}]}}"#);
+        let readonly =
+            json::parse(r#"{"name":"cursor","installed":true,"writable":false}"#).unwrap();
+        app.open_route_picker(&readonly);
+        assert!(app.route_picker.is_none());
     }
 }

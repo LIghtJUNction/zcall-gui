@@ -175,3 +175,19 @@ overview.providers_count	設定済みプロバイダー
 overview.agents_count	検出した AI ツール
 action.connect_tools	AI ツールを接続
 overview.add_help	プロバイダーを追加して、AI ツールを接続します。
+agents.selection_help	AIツールを選び、使用するモデルまたはルートを選択します。
+agents.no_routes	ツールを接続する前にプロバイダーを追加
+agents.routes_unavailable	利用可能なルートを読み取れません
+agents.no_routes_help	プロバイダーとモデルを追加して、一覧を更新してください。
+agents.read_only	検出のみ対応 · ツール側で設定してください
+agents.current_route	現在のルート: {route}
+agents.saved_route	保存済みルート: {route}
+agents.route_unset	記録なし
+agents.choose_for	{name} のルートを選択
+agents.route_search	モデル名またはルートIDで検索
+agents.no_matches	一致するルートがありません
+agents.no_matches_help	短い名前を試すか、検索を消去してください。
+agents.route_count	利用可能なルート: {count}
+agents.select_route	使用するルートを選択してください
+agents.apply_route	このルートを使用
+agents.apply_named	{name} を {route} に接続

@@ -1,7 +1,7 @@
 #[cfg(not(target_os = "windows"))]
 use std::process::Command;
 use std::{fs, path::PathBuf};
-use zui::Theme;
+use zgpui::native::Theme;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ThemeChoice {
     System,

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use the unified zgpui native package and source submodule without a legacy dependency alias.
+
 - Replace the oversized home emblem with a compact gateway status card and a focused setup action.
 - Open provider setup or AI tools directly, with clickable local counts and fewer repeated controls.
 - Use one new vector mark across the native window and Linux, Windows and macOS app icons.

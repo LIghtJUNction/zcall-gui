@@ -1,5 +1,24 @@
 # Dependency propagation
 
+## Unified native library
+
+The active GUI dependency is `zgpui =0.1.1`, stored as the
+`vendor/zgpui` Git submodule. The application enables `native` and imports
+`zgpui::native`. The package name, Rust dependency key and source directory
+use the same name; there is no legacy package alias.
+
+The outer `zcalld` repository distributes this application through
+`apps/zcall-gui`. Its source pin must follow the accepted GUI commit.
+Project Z coordinates the library release and aggregate pins. The
+[unified-library acceptance record](ZGPUI_MIGRATION.md) documents the local
+validation scope.
+
+## Historical native-library correction
+
+The record below describes the earlier zui snapshot and its original
+acceptance. It is retained as provenance; the active dependency is defined
+above and in the committed manifest, lockfile and gitlink.
+
 The GUI freezes zui at 5e37fcfb791eec9ac523fc19373e95d0a513112f.
 Its runtime correction is 9eac4c9a2232b6cdb82a29bf6adf94f96e9412bb; the final
 commit adds maintenance instructions and does not change runtime sources.
@@ -8,7 +27,7 @@ Cargo resolves zui-native 0.1.0 through vendor/zui and imports it as zui.
 The package version and Cargo.lock entry remain unchanged in this pre-release
 source correction. The Git submodule records the exact implementation.
 
-## Impact and ownership
+### Historical impact and ownership
 
 The observed Project Z impact command returned zcall-gui, ztype and zui.
 The aggregation checkout was at 32e5e82685e107b5b1f85a32d054922a0b8cbfa6

@@ -1,0 +1,109 @@
+{
+  "base_commit": "5dbc423eedd4d529a38b3e8e3adc3e6355a56b2b",
+  "library": {
+    "repository": "https://github.com/LIghtJUNction/zgpui",
+    "commit": "eb8dbbe7d9a44abd9a8683dfa0588200a0595edb",
+    "package": "zgpui",
+    "version": "0.1.1",
+    "feature": "native",
+    "path": "vendor/zgpui"
+  },
+  "command": [
+    "python3",
+    "scripts/check.py",
+    "--ui"
+  ],
+  "exit_code": 0,
+  "results": {
+    "application_rust_tests": 15,
+    "toolkit_rust_tests": 30,
+    "toolkit_doc_tests": 1,
+    "release_transaction_tests": 11,
+    "strict_clippy": "application and toolkit all-targets passed",
+    "release_build": "passed"
+  },
+  "x11_properties": {
+    "scope": "real X11 properties and native window geometry on a private X server",
+    "windows": [
+      {
+        "title": "ztype",
+        "instance": "ztype",
+        "class": "Ztype",
+        "requested": [
+          660,
+          264
+        ],
+        "actual": [
+          660,
+          264
+        ],
+        "xprop": "WM_CLASS(STRING) = \"ztype\", \"Ztype\"\nWM_NORMAL_HINTS(WM_SIZE_HINTS):\n\t\tprogram specified minimum size: 660 by 264\n_NET_WM_NAME(UTF8_STRING) = \"ztype\""
+      },
+      {
+        "title": "zcall-gui · window check",
+        "instance": "zcall-gui",
+        "class": "Zcall-gui",
+        "requested": [
+          1080,
+          740
+        ],
+        "actual": [
+          1080,
+          740
+        ],
+        "xprop": "WM_CLASS(STRING) = \"zcall-gui\", \"Zcall-gui\"\nWM_NORMAL_HINTS(WM_SIZE_HINTS):\n\t\tprogram specified minimum size: 1080 by 740\n_NET_WM_NAME(UTF8_STRING) = \"zcall-gui · window check\""
+      },
+      {
+        "title": "Other.App - identity check",
+        "instance": "other.app",
+        "class": "Other.app",
+        "requested": [
+          512,
+          320
+        ],
+        "actual": [
+          512,
+          320
+        ],
+        "xprop": "WM_CLASS(STRING) = \"other.app\", \"Other.app\"\nWM_NORMAL_HINTS(WM_SIZE_HINTS):\n\t\tprogram specified minimum size: 512 by 320\n_NET_WM_NAME(UTF8_STRING) = \"Other.App - identity check\""
+      }
+    ]
+  },
+  "application_fixture": {
+    "backend": "isolated fixture",
+    "display": "private Xvfb",
+    "provider_stdin_verified": true,
+    "actual_provider_state_verified": false,
+    "agent_apply_and_restore": true,
+    "privacy_mode_verified": true,
+    "theme_language_persisted": true,
+    "restart_restores_dark": true,
+    "idle_cpu_ticks_2s": 0,
+    "clock_ticks_per_second": 100,
+    "calls": 48,
+    "host_input": false
+  },
+  "managed_update_fixture": {
+    "scope": "private native Xvfb window; inert pacman, paru and terminal fixtures",
+    "actual_system_upgrade": false,
+    "helper_arguments": [
+      [
+        "-Syu",
+        "zcalld-bin"
+      ],
+      [
+        "-Syu",
+        "zcalld-bin"
+      ]
+    ],
+    "nonzero_exit_displayed": true,
+    "success_refreshed_state": true,
+    "json_command_not_executed": true,
+    "temporary_result_paths_removed": true
+  },
+  "scope": [
+    "Linux x86_64; private Xvfb display",
+    "No live gateway or system upgrade",
+    "Windows/macOS native gates not rerun for this migration"
+  ]
+}

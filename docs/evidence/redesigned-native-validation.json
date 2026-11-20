@@ -1,0 +1,90 @@
+{
+  "date": "2026-11-20",
+  "ui_parent": "93ab4770b66bbea117fad88a4b5a8c92a3854b3c",
+  "migration_source": "d65685a591c0170146e46cd9ad1bf5afcca1457a",
+  "toolkit": {
+    "repository": "LIghtJUNction/zgpui",
+    "tag": "v0.1.1",
+    "commit": "cb50f2fe554622fdc984ae7fec9bcd844f175d67",
+    "features": [
+      "native"
+    ]
+  },
+  "command": "python3 scripts/check.py --ui",
+  "exit_code": 0,
+  "application_tests": 15,
+  "toolkit_tests": 30,
+  "doc_tests": 1,
+  "release_tests": 11,
+  "x11_windows": [
+    {
+      "title": "ztype",
+      "requested": [
+        660,
+        264
+      ],
+      "actual": [
+        660,
+        264
+      ],
+      "renderer": "llvmpipe (LLVM 23.1.1, 256 bits)"
+    },
+    {
+      "title": "zcall-gui · window check",
+      "requested": [
+        1080,
+        740
+      ],
+      "actual": [
+        1080,
+        740
+      ],
+      "renderer": "llvmpipe (LLVM 23.1.1, 256 bits)"
+    },
+    {
+      "title": "Other.App - identity check",
+      "requested": [
+        512,
+        320
+      ],
+      "actual": [
+        512,
+        320
+      ],
+      "renderer": "llvmpipe (LLVM 23.1.1, 256 bits)"
+    },
+    {
+      "title": "· native fallback",
+      "requested": [
+        320,
+        200
+      ],
+      "actual": [
+        320,
+        200
+      ],
+      "renderer": "llvmpipe (LLVM 23.1.1, 256 bits)"
+    }
+  ],
+  "ui_fixture": {
+    "backend": "isolated fixture",
+    "display": "private Xvfb",
+    "overview_provider_and_agent_navigation": true,
+    "provider_stdin_verified": true,
+    "actual_provider_state_verified": false,
+    "agent_apply_and_restore": true,
+    "privacy_mode_verified": true,
+    "theme_language_persisted": true,
+    "restart_restores_dark": true,
+    "idle_cpu_ticks_2s": 0,
+    "clock_ticks_per_second": 100,
+    "calls": 48,
+    "host_input": false
+  },
+  "managed_package_update_fixture": {
+    "passed": true,
+    "real_system_upgrade": false
+  },
+  "hardware_gpu_benchmark": false,
+  "live_provider_requests": 0
+}

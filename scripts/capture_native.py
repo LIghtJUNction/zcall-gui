@@ -2,7 +2,7 @@
 """Capture only a new owned native window; never move the host pointer."""
 import argparse,json,os,pathlib,subprocess,tempfile,time,sys
 from PIL import ImageGrab
-p=argparse.ArgumentParser();p.add_argument("binary");p.add_argument("--page",default="overview");p.add_argument("--output",required=True);p.add_argument("--zcalld");p.add_argument("--config");p.add_argument("--theme",default="light");p.add_argument("--language",default="zh-CN");a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument("binary");p.add_argument("--page",default="overview");p.add_argument("--output",required=True);p.add_argument("--zcalld");p.add_argument("--config");p.add_argument("--theme",default="light");p.add_argument("--language",default="zh-CN");p.add_argument("--close-after-capture",action="store_true");a=p.parse_args()
 def windows():
     r=subprocess.run(["xdotool","search","--name","^zcall-gui"],capture_output=True,text=True)
     return set(r.stdout.split()) if r.returncode==0 else set()
@@ -49,6 +49,11 @@ print(json.dumps(s.get(g,{'ok':True})))
             subprocess.run(["grim","-g",f"{x},{y} {w}x{h}",str(output)],check=True)
         else:
             ImageGrab.grab(bbox=(x,y,x+w,y+h),xdisplay=os.environ["DISPLAY"]).save(output)
+        if a.close_after_capture:
+            if os.environ.get("DISPLAY") in (":0", ":0.0"):
+                raise AssertionError("Early-close input requires a private display")
+            # The app closes on key-down; X11 may reject the later key-up for that window.
+            subprocess.run(["xdotool","key","--window",wid,"ctrl+q"],check=False,stderr=subprocess.DEVNULL)
         stdout,_=proc.communicate(timeout=25)
         stderr=diagnostic.read_text()
         assert proc.returncode==0,stderr

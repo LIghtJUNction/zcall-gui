@@ -13,13 +13,17 @@ display=os.environ.get("DISPLAY","")
 if not display or display==":0":raise SystemExit("Use xvfb-run -a; host-display input is not allowed")
 with tempfile.TemporaryDirectory(prefix="zcall-gui-ui-") as temp:
     temp=pathlib.Path(temp);fixture=temp/"zcalld";log=temp/"calls.jsonl";home=temp/"home";home.mkdir()
-    env=os.environ.copy();env.update(HOME=str(home),XDG_CONFIG_HOME=str(home/".config"),XDG_DATA_HOME=str(home/".local/share"),XDG_STATE_HOME=str(home/".local/state"))
+    env={key:value for key,value in os.environ.items() if key in ("PATH","DISPLAY","XAUTHORITY","TMPDIR","TMP","TEMP","LANG","LC_ALL","LC_CTYPE","LIBGL_ALWAYS_SOFTWARE","GALLIUM_DRIVER")}
+    runtime=home/"runtime";runtime.mkdir(mode=0o700)
+    env.update(HOME=str(home),XDG_CONFIG_HOME=str(home/".config"),XDG_DATA_HOME=str(home/".local/share"),XDG_STATE_HOME=str(home/".local/state"),XDG_RUNTIME_DIR=str(runtime))
     config=home/".config/zcalld/config.conf"
     if args.real_cli:
         actual=str(pathlib.Path(args.real_cli).resolve())
         tools=temp/"bin";tools.mkdir();claude=tools/"claude";claude.write_text("#!/bin/sh\nexit 0\n");claude.chmod(0o755);env["PATH"]=str(tools)+os.pathsep+env["PATH"]
         subprocess.run([actual,"init","--config",str(config)],env=env,check=True,capture_output=True)
         initial=config.read_text();assert "[route local]" in initial
+        initial=initial.replace("listen = 127.0.0.1:9415", "listen = 127.0.0.1:0")
+        initial=initial.replace("unix_socket = auto", "unix_socket = none")
         initial=initial.replace("[route local]","[route starter-route]")
         initial+="\n[route writing-special]\nprovider = local\nmodel = fixture-model\n"
         for index in range(8):
@@ -159,7 +163,7 @@ print(json.dumps(r))
             assert data["mode"]=="personal"
         click(90,382);shot("updates")
         if not args.real_cli:
-            click(960,210);wait_for(lambda:count(["update","check"])==1,"Update check did not invoke CLI");time.sleep(.2)
+            click(300,283);wait_for(lambda:count(["update","check"])==1,"Update check did not invoke CLI");time.sleep(.2)
         click(90,334);click(80,650);click(984,255);click(846,563)
         settings=home/".config/zcall-gui/settings.conf"
         wait_for(lambda:settings.exists() and "theme=dark" in settings.read_text() and "language=ja" in settings.read_text(),"Appearance not persisted")

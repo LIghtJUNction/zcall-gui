@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- feat(gui): install complete native bundles and guide first use [skip ci]
+- fix: distinguish loading and failed GUI reads with safe retry [skip ci]
+
 ## 0.1.2
 
 - docs: show the verified Ink interface in public previews

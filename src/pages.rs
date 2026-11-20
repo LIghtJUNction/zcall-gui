@@ -5,7 +5,9 @@ impl App {
         let gateway = view_state::gateway_state(&self.state);
         let action = view_state::overview_action(&self.state);
         let healthy = gateway == GatewayState::Healthy;
+        let missing = gateway == GatewayState::Unavailable && self.missing_gateway();
         let available = matches!(gateway, GatewayState::Healthy | GatewayState::Offline);
+        let setup = self.setup_step();
         c.text(tr("nav.overview"), x, 34., 26, true, TEXT);
         c.ellipsis(tr("overview.subtitle"), x, 79., width, 14, false, MUTED);
 
@@ -14,11 +16,17 @@ impl App {
         c.rect(panel, 8., LINE);
         c.rect(panel.inset(1.), 7., SURFACE);
         brand(c, Rect::new(x + 22., top + 22., 40., 40.), SURFACE);
-        let heading = match gateway {
-            GatewayState::Loading => tr("overview.loading"),
-            GatewayState::Unavailable => tr("overview.unavailable"),
-            GatewayState::Offline => tr("overview.stopped"),
-            GatewayState::Healthy => tr("overview.running"),
+        let heading = match setup {
+            Some(core_install_ui::SetupStep::Initialize) => tr("setup.config_needed"),
+            Some(core_install_ui::SetupStep::RegisterService) if !healthy => {
+                tr("setup.service_needed")
+            }
+            _ => match gateway {
+                GatewayState::Loading => tr("overview.loading"),
+                GatewayState::Unavailable => tr("overview.unavailable"),
+                GatewayState::Offline => tr("overview.stopped"),
+                GatewayState::Healthy => tr("overview.running"),
+            },
         };
         c.ellipsis(
             heading,
@@ -59,56 +67,74 @@ impl App {
             false,
             MUTED,
         );
-        let detail = match action {
+        let detail = self.setup_help().unwrap_or_else(|| match action {
             OverviewAction::Wait => tr("status.loading_help"),
             OverviewAction::Retry if healthy => tr("overview.providers_unavailable"),
             OverviewAction::Retry => tr("overview.unavailable_help"),
             OverviewAction::StartGateway => tr("overview.start_help"),
             OverviewAction::AddProvider => tr("overview.add_help"),
             OverviewAction::ConnectTools => tr("overview.ready_help"),
-        };
+        });
         c.ellipsis(detail, x + 24., top + 102., width - 48., 14, false, MUTED);
-        let label = match action {
-            OverviewAction::Wait => tr("status.loading_short"),
-            OverviewAction::Retry => tr("action.retry"),
-            OverviewAction::StartGateway => tr("action.start_gateway"),
-            OverviewAction::AddProvider => tr("action.add_provider"),
-            OverviewAction::ConnectTools => tr("action.connect_tools"),
+        let label = if missing {
+            tr("install.bootstrap")
+        } else if let Some(step) = setup.filter(|_| !healthy) {
+            tr(match step {
+                core_install_ui::SetupStep::Initialize => "setup.initialize",
+                core_install_ui::SetupStep::RegisterService => "setup.install_service",
+                core_install_ui::SetupStep::Ready => "action.start_gateway",
+                core_install_ui::SetupStep::Inspect => "action.retry",
+            })
+        } else {
+            match action {
+                OverviewAction::Wait => tr("status.loading_short"),
+                OverviewAction::Retry => tr("action.retry"),
+                OverviewAction::StartGateway => tr("action.start_gateway"),
+                OverviewAction::AddProvider => tr("action.add_provider"),
+                OverviewAction::ConnectTools => tr("action.connect_tools"),
+            }
         };
+        let button_width = (c.measure(label, 14, false) + 38.).clamp(162., 270.);
         if self.ui.button(
             c,
             100,
-            Rect::new(x + 24., top + 145., 162., 38.),
+            Rect::new(x + 24., top + 145., button_width, 38.),
             label,
             Style::Primary,
             self.enabled() && action != OverviewAction::Wait,
         ) {
-            match action {
-                OverviewAction::ConnectTools => {
-                    self.page = 2;
-                    self.scroll = 0;
+            if missing {
+                self.start_core_install();
+            } else if let Some(step) = setup.filter(|_| !healthy) {
+                self.trigger_setup_step(step);
+            } else {
+                match action {
+                    OverviewAction::ConnectTools => {
+                        self.page = 2;
+                        self.scroll = 0;
+                    }
+                    OverviewAction::AddProvider => {
+                        self.page = 1;
+                        self.scroll = 0;
+                        self.clear_key();
+                        self.provider = ProviderForm::default();
+                        self.provider_edit = false;
+                        self.provider_panel = 2;
+                    }
+                    OverviewAction::StartGateway => self.ask(
+                        tr("action.start_service_confirm"),
+                        words(&["service", "start"]),
+                    ),
+                    OverviewAction::Retry => self.refresh(),
+                    OverviewAction::Wait => {}
                 }
-                OverviewAction::AddProvider => {
-                    self.page = 1;
-                    self.scroll = 0;
-                    self.clear_key();
-                    self.provider = ProviderForm::default();
-                    self.provider_edit = false;
-                    self.provider_panel = 2;
-                }
-                OverviewAction::StartGateway => self.ask(
-                    tr("action.start_service_confirm"),
-                    words(&["service", "start"]),
-                ),
-                OverviewAction::Retry => self.refresh(),
-                OverviewAction::Wait => {}
             }
         }
         if available
             && self.ui.button(
                 c,
                 101,
-                Rect::new(x + 200., top + 145., 156., 38.),
+                Rect::new(x + button_width + 40., top + 145., 156., 38.),
                 tr("action.service_settings"),
                 Style::Quiet,
                 self.enabled(),
@@ -865,7 +891,11 @@ impl App {
             ),
         ];
         for (index, (title, current, info)) in items.iter().enumerate() {
-            let y = 140. + index as f32 * 162.;
+            let y = if index == 0 { 140. } else { 340. };
+            if index == 0 {
+                self.gateway_install_card(c, x, y, width, title, current, info, enabled);
+                continue;
+            }
             card(c, Rect::new(x, y, width, 140.));
             c.text(title, x + 24., y + 21., 20, true, TEXT);
             c.text(
@@ -911,18 +941,12 @@ impl App {
             ) {
                 if managed {
                     self.package_update(index == 1);
-                } else if index == 0 {
-                    if update {
-                        self.ask(tr("action.update_gateway"), words(&["update", "apply"]));
-                    } else {
-                        self.action("Check gateway update", words(&["update", "check"]), None);
-                    }
                 } else {
                     self.self_update(update);
                 }
             }
         }
-        let note_y = (c.height - 100.).min(505.);
+        let note_y = (c.height - 100.).min(511.);
         c.ellipsis(
             tr("updates.verify"),
             x + 2.,

@@ -58,6 +58,7 @@ print(json.dumps(r))
     (temp / "exit-code").write_text("17")
     env = dict(os.environ, PATH=str(tools)+os.pathsep+os.environ["PATH"],
                HOME=str(home), XDG_CONFIG_HOME=str(home/".config"),
+               XDG_DATA_HOME=str(home/".local/share"), XDG_STATE_HOME=str(home/".local/state"),
                TERMINAL=str(tools/"xdg-terminal-exec"))
     proc = subprocess.Popen(
         [str(binary),"--zcalld",str(cli),"--page","updates","--language","en",
@@ -98,8 +99,8 @@ print(json.dumps(r))
         xd("windowfocus","--sync",window)
         until(lambda:len(lines("calls.jsonl"))>=6,"Initial refresh missing")
         time.sleep(.3)
-        def click():xd("mousemove","--window",window,960,210,"click",1);time.sleep(.25)
-        click()
+        def click():xd("mousemove","--window",window,960,192,"click",1);time.sleep(.25)
+        xd("mousemove","--window",window,300,283,"click",1)
         until(lambda:any(a[:2]==["update","check"] for a in lines("calls.jsonl")),"Update check missing")
         time.sleep(.3)
         click()

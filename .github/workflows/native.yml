@@ -184,6 +184,8 @@ jobs:
           key: ${{ steps.linux_cache.outputs.key }}
       - name: Select Rust
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
+      - name: Fetch locked Git dependencies
+        run: cargo fetch --locked
       - name: Validate Linux
         if: runner.os == 'Linux'
         run: python3 scripts/check.py --ui

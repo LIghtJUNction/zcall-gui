@@ -3,7 +3,7 @@
 ## 0.1.5
 
 - Reopen Windows core-installer recovery transactions whose protected directories use owner and SYSTEM inheritance, while retaining strict file ACL validation.
-- Fetch locked Git dependencies before CI version bumps and update only workspace versions offline, preserving dependency commits and transaction rollback.
+- Fetch locked Git dependencies before native CI checks and version bumps and update only workspace versions offline, preserving dependency commits and transaction rollback.
 
 ## 0.1.4
 

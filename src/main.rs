@@ -14,7 +14,7 @@ use std::{
     sync::mpsc,
     time::{Duration, Instant},
 };
-use zui::{ButtonStyle as Style, Canvas, Event, Rect, Ui, Window, colors::*};
+use zgpui::native::{ButtonStyle as Style, Canvas, Event, Rect, Ui, Window, colors::*};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PAGES: [&str; 6] = [
     "nav.overview",
@@ -648,7 +648,7 @@ fn brand(c: &mut Canvas<'_>, r: Rect, background: u32) {
         (9.125, 10.14375),
         (9.53125, 10.03594),
     ];
-    let ink = if c.theme == zui::Theme::Dark {
+    let ink = if c.theme == zgpui::native::Theme::Dark {
         0xd6e4e5ff
     } else {
         0x344b4dff

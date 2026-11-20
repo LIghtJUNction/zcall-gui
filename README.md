@@ -2,7 +2,7 @@
 
 zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
 
-The application uses [zui](https://github.com/LIghtJUNction/zui) as a pinned Git submodule. Cargo resolves only these two first-party packages; the toolkit package is named zui-native and imported as zui. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
+The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.1 as a pinned Git submodule at `vendor/zgpui`. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
 
 ## Build and run
 
@@ -19,7 +19,7 @@ The gateway is a separate installation; management commands require zcalld 0.2.0
 
 ## Controls
 
-- **Overview:** inspect local status and start, stop or restart the gateway service.
+- **Overview:** see the gateway state and one next step: add a provider or connect your AI tools. Click either count to open its list; service controls stay in Service settings.
 - **Providers:** add or update an endpoint, select a protocol, set a default model, test it, or remove it. API keys are masked and sent to the CLI through stdin.
 - **AI tools:** detect supported tools, apply a gateway route, or revert an earlier configuration change.
 - **Plugins:** inspect enabled state, install a local library or pinned remote source, enable/disable, update or remove a plugin. Newly installed native code requires a separate enable action.
@@ -37,6 +37,8 @@ Language strings live in four complete catalogs under resources/locales. Tests c
 ~~~sh
 zcall-gui --theme dark --language ja
 ~~~
+
+The previews use synthetic local configuration in a private native window.
 
 ![Overview in light mode](docs/screenshots/overview-light.png)
 

@@ -1,0 +1,14 @@
+{
+  "renderer": "zcall-gui 0.1.0; renderer: llvmpipe (LLVM 23.1.1, 256 bits)\nSmoke ready: state loaded and presented\nPresented frames: 3",
+  "geometry": [
+    0,
+    0,
+    1080,
+    740
+  ],
+  "page": "overview",
+  "theme": "dark",
+  "language": "zh-CN",
+  "data": "local fixture only",
+  "host_input": false
+}

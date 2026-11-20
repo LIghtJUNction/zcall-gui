@@ -2,7 +2,7 @@
 
 zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
 
-The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.1 as a pinned Git submodule at `vendor/zgpui`. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
+The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.3 as a pinned Git submodule at `vendor/zgpui`. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
 
 ## Build and run
 
@@ -29,6 +29,8 @@ The gateway is a separate installation; management commands require zcalld 0.2.0
 Tab / Shift+Tab move focus, Enter activates buttons, Ctrl+A selects an input, and standard copy/paste shortcuts work. Ctrl+Q closes the GUI. Provider rows open details on demand. Adding an endpoint uses two short steps; removal stays in the detail panel.
 
 ## Appearance and language
+
+The window uses the Ink palette from [oh-my-ztty](https://github.com/LIghtJUNction/oh-my-ztty/tree/6d95c7eaa1a4ef27df2ae246edd7bddde5f3b31b): warm dark surfaces, copper accents and a matching cream light palette. Controls, input focus and status colors use the same application-local palette. The window prefers JetBrains Mono when installed and falls back to the platform monospace family, retaining native glyph fallback. It does not install fonts or change desktop fonts or other applications.
 
 Open Settings at the lower left to select System, Light or Dark, and System, Simplified Chinese, Traditional Chinese, English or Japanese. Choices are stored locally and restored on the next launch. System preferences are read at launch and when opening Settings; there is no background desktop-preference polling.
 

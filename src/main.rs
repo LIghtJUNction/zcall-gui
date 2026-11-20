@@ -2,6 +2,7 @@
 mod backend;
 mod dialogs;
 mod i18n;
+mod ink;
 mod json;
 mod package_update;
 mod pages;
@@ -457,17 +458,25 @@ impl App {
         }
         self.ui.begin(event);
         let sidebar = 166.;
-        c.rect(Rect::new(0., 0., sidebar, c.height), 0., 0xf7f9fcff);
-        c.rect(Rect::new(sidebar - 1., 0., 1., c.height), 0., 0xe8edf3ff);
-        brand(c, Rect::new(18., 26., 38., 38.), 0xf7f9fcff);
+        c.rect(Rect::new(0., 0., sidebar, c.height), 0., SURFACE);
+        c.rect(Rect::new(sidebar - 1., 0., 1., c.height), 0., LINE);
+        brand(c, Rect::new(18., 26., 38., 38.), SURFACE);
         c.text("zcall", 64., 33., 21, true, TEXT);
-        c.text(tr("brand.subtitle"), 22., 76., 12, false, MUTED);
+        c.ellipsis(
+            tr("brand.subtitle"),
+            22.,
+            76.,
+            sidebar - 44.,
+            12,
+            false,
+            MUTED,
+        );
         let modal = self.modal();
         for (index, label) in PAGES.iter().enumerate() {
             let r = Rect::new(11., 121. + index as f32 * 48., 144., 42.);
             let selected = self.page == index;
             if selected {
-                c.rect(r, 12., BLUE_PALE);
+                c.rect(r, 6., BLUE_PALE);
             }
             if self
                 .ui
@@ -485,7 +494,7 @@ impl App {
                 r.x + 16.,
                 r.y + 13.,
                 if selected { BLUE } else { MUTED },
-                if selected { BLUE_PALE } else { 0xf7f9fcff },
+                if selected { BLUE_PALE } else { SURFACE },
             );
             c.text(
                 tr(label),
@@ -537,7 +546,7 @@ impl App {
             tr("page.updates"),
         ];
         if self.page != 0 {
-            c.text(descriptions[self.page], x, 82., 15, false, MUTED);
+            c.ellipsis(descriptions[self.page], x, 82., width, 15, false, MUTED);
         }
         let section = match self.page {
             1 => "providers",
@@ -640,11 +649,11 @@ fn protocol_name(index: usize) -> &'static str {
     ][index]
 }
 fn card(c: &mut Canvas<'_>, r: Rect) {
-    c.rect(r, 16., LINE);
-    c.rect(r.inset(1.), 15., SURFACE);
+    c.rect(r, 8., LINE);
+    c.rect(r.inset(1.), 7., SURFACE);
 }
 fn empty(c: &mut Canvas<'_>, r: Rect, title: &str, detail: &str) {
-    c.rect(r, 18., 0xf7f9fcff);
+    c.rect(r, 8., SURFACE);
     c.text(title, r.x + 28., r.y + 31., 22, true, TEXT);
     c.ellipsis(detail, r.x + 28., r.y + 75., r.w - 56., 15, false, MUTED);
 }
@@ -727,11 +736,7 @@ fn brand(c: &mut Canvas<'_>, r: Rect, background: u32) {
         (9.125, 10.14375),
         (9.53125, 10.03594),
     ];
-    let ink = if c.theme == zgpui::native::Theme::Dark {
-        0xd6e4e5ff
-    } else {
-        0x344b4dff
-    };
+    let ink = TEXT;
     for flipped in [false, true] {
         let point = |(x, y): (f32, f32)| {
             let (x, y) = if flipped { (32. - x, 32. - y) } else { (x, y) };
@@ -866,6 +871,7 @@ fn run() -> Result<(), String> {
     }
     preferences.apply();
     let mut window = Window::new(tr("window.title"), 1080, 740)?;
+    window.set_font_family("JetBrains Mono")?;
     let gpu = window.gpu();
     eprintln!("zcall-gui {VERSION}; renderer: {gpu}");
     let mut app = App::new(Backend { binary, config }, preferences);
@@ -894,9 +900,11 @@ fn run() -> Result<(), String> {
         }
         dirty |= app.poll();
         if dirty || event.is_some() {
-            window.set_theme(app.preferences.resolved_theme());
+            let theme = app.preferences.resolved_theme();
+            window.set_theme(theme);
+            window.set_palette(ink::palette(theme));
             {
-                let mut c = window.begin(SURFACE);
+                let mut c = window.begin(BG);
                 app.draw(&mut c, event.take());
             }
             window.present();

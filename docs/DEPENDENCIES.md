@@ -2,14 +2,18 @@
 
 ## Unified native library
 
-The active GUI dependency is `zgpui =0.1.1`, stored as the
+The active GUI dependency is `zgpui =0.1.3`, stored as the
 `vendor/zgpui` Git submodule. The application enables `native` and imports
 `zgpui::native`. The package name, Rust dependency key and source directory
 use the same name; there is no legacy package alias.
 
 The outer `zcalld` repository distributes this application through
 `apps/zcall-gui`. Its source pin must follow the accepted GUI commit.
-Project Z coordinates the library release and aggregate pins. The
+Project Z coordinates the library release and aggregate pins. The 0.1.2 consumer checkpoint
+updated the manifest, lock and vendor gitlink in e6ed24b, with local unit,
+Clippy and isolated native CLI-flow checks. The following 0.1.3 integration
+adds window-local palette and font selection for Ink; the dependency remains
+an exact pin, and the default toolkit appearance is unchanged for other apps. The
 [unified-library acceptance record](ZGPUI_MIGRATION.md) documents the local
 validation scope.
 

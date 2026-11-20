@@ -16,9 +16,9 @@ impl App {
 
         let top = 126.;
         let panel = Rect::new(x, top, width, 202.);
-        c.rect(panel, 16., 0xe8edf3ff);
-        c.rect(panel.inset(1.), 15., BG);
-        brand(c, Rect::new(x + 22., top + 22., 40., 40.), BG);
+        c.rect(panel, 8., LINE);
+        c.rect(panel.inset(1.), 7., SURFACE);
+        brand(c, Rect::new(x + 22., top + 22., 40., 40.), SURFACE);
         let heading = if healthy {
             tr("overview.running")
         } else {
@@ -152,7 +152,7 @@ impl App {
         {
             let left = x + index as f32 * (tile_width + 16.);
             let tile = Rect::new(left, top + 222., tile_width, 120.);
-            c.rect(tile, 14., 0xf7f9fcff);
+            c.rect(tile, 8., SURFACE);
             if self.ui.button(
                 c,
                 110 + index as u64,
@@ -429,7 +429,7 @@ impl App {
             if self.ui.button(
                 c,
                 20000 + index as u64 * 2,
-                Rect::new(x + width - 122., y + 20., 100., 38.),
+                Rect::new(x + width - 154., y + 20., 132., 38.),
                 tr(if configured {
                     "action.change_route"
                 } else {
@@ -449,7 +449,7 @@ impl App {
                 && self.ui.button(
                     c,
                     20001 + index as u64 * 2,
-                    Rect::new(x + width - 216., y + 20., 80., 38.),
+                    Rect::new(x + width - 248., y + 20., 80., 38.),
                     tr("action.restore"),
                     Style::Quiet,
                     enabled && writable,
@@ -477,8 +477,8 @@ impl App {
             width,
             height,
         );
-        c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x20212455);
-        c.rect(r, 18., SURFACE);
+        c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x00000066);
+        c.rect(r, 10., SURFACE);
         let x = r.x + 24.;
         let inner = r.w - 48.;
         c.ellipsis(
@@ -556,7 +556,7 @@ impl App {
             let row = Rect::new(x, r.y + 154. + position as f32 * 54., inner, 48.);
             let selected = picker.selected == route.id;
             if selected {
-                c.rect(row, 10., BLUE_PALE);
+                c.rect(row, 6., BLUE_PALE);
             }
             if self
                 .ui
@@ -768,12 +768,8 @@ impl App {
             let y = 139. + index as f32 * 115.;
             let selected = mode == *id;
             let r = Rect::new(x, y, width, 99.);
-            c.rect(r, 16., if selected { 0xe8f0feff } else { LINE });
-            c.rect(
-                r.inset(1.),
-                15.,
-                if selected { 0xf5f8ffff } else { SURFACE },
-            );
+            c.rect(r, 8., if selected { BLUE_PALE } else { LINE });
+            c.rect(r.inset(1.), 7., if selected { BLUE_PALE } else { SURFACE });
             if !selected
                 && self
                     .ui
@@ -921,7 +917,24 @@ impl App {
                 }
             }
         }
-        c.text(tr("updates.verify"), x + 2., 505., 14, false, MUTED);
-        c.text(tr("updates.managed_help"), x + 2., 537., 14, false, MUTED);
+        let note_y = (c.height - 100.).min(505.);
+        c.ellipsis(
+            tr("updates.verify"),
+            x + 2.,
+            note_y,
+            width - 4.,
+            14,
+            false,
+            MUTED,
+        );
+        c.ellipsis(
+            tr("updates.managed_help"),
+            x + 2.,
+            note_y + 24.,
+            width - 4.,
+            14,
+            false,
+            MUTED,
+        );
     }
 }

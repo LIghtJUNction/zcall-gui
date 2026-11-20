@@ -195,12 +195,15 @@ fn private_user() -> Result<Vec<usize>, String> {
 /// Read-only privacy validation: owner is this account, and a protected DACL
 /// grants access only to this account and SYSTEM. Unknown/conditional/object
 /// ACEs, inherited access, a missing DACL, and any other SID are rejected.
+/// Core installer directories can explicitly propagate both private ACEs; the
+/// legacy non-inheriting directory layout and regular-file policy stay valid.
 #[allow(dead_code)] // Shared source: write-only credential callers need no inspection API.
 pub fn check_private(file: &std::fs::File) -> Result<(), String> {
     let error = || {
         "private Windows files must be owned by this account and accessible only to it and SYSTEM"
             .to_string()
     };
+    let directory = file.metadata().map_err(|_| error())?.is_dir();
     let user = private_user()?;
     #[repr(C)]
     struct AclSize {
@@ -283,8 +286,9 @@ pub fn check_private(file: &std::fs::File) -> Result<(), String> {
                 return Err(error());
             }
             let length = ptr::read_unaligned(bytes.add(2).cast::<u16>()) as usize;
+            let flags = *bytes.add(1);
             if *bytes != 0
-                || *bytes.add(1) != 0
+                || !(flags == 0 || (directory && flags == 0x03))
                 || length < 16
                 || offset
                     .checked_add(length)
@@ -409,9 +413,13 @@ mod tests {
     }
 
     fn replace_test_dacl(file: &File, foreign: bool, protected: bool) {
+        replace_test_dacl_flags(file, foreign, protected, "");
+    }
+
+    fn replace_test_dacl_flags(file: &File, foreign: bool, protected: bool, flags: &str) {
         let sid = current_sid_text();
         let sddl = format!(
-            "D:{}(A;;FA;;;{sid})(A;;FA;;;SY){}",
+            "D:{}(A;{flags};FA;;;{sid})(A;{flags};FA;;;SY){}",
             if protected { "P" } else { "" },
             if foreign { "(A;;FR;;;WD)" } else { "" }
         )
@@ -540,5 +548,47 @@ mod tests {
             before == security_snapshot(&file),
             "validation must not protect an existing DACL"
         );
+    }
+
+    #[test]
+    fn core_installer_directories_are_read_without_changing_their_private_acl() {
+        let (temporary, file) = Temporary::new();
+        drop(file);
+        let path = temporary.0.join("transactions");
+        fs::create_dir(&path).unwrap();
+        let directory = OpenOptions::new()
+            .access_mode(0x0002_0000 | 0x0004_0000 | 0x0008_0000)
+            .share_mode(0x1 | 0x2)
+            .custom_flags(0x0200_0000 | 0x0020_0000)
+            .open(&path)
+            .unwrap();
+        protect_created(&directory).unwrap();
+        // Match the GUI's existing-directory reader: READ_CONTROL only, no repair.
+        let reader = OpenOptions::new()
+            .access_mode(0x0002_0000)
+            .share_mode(0x1 | 0x2)
+            .custom_flags(0x0200_0000 | 0x0020_0000)
+            .open(&path)
+            .unwrap();
+        for flags in ["", "OICI"] {
+            replace_test_dacl_flags(&directory, false, true, flags);
+            let before = security_snapshot(&reader);
+            check_private(&reader).unwrap();
+            // Session::find_transaction uses this same existing-directory path.
+            super::super::directory(&path).unwrap();
+            assert_eq!(security_snapshot(&reader), before);
+        }
+        for flags in ["OI", "CI", "OICINP", "OICIIO"] {
+            replace_test_dacl_flags(&directory, false, true, flags);
+            let before = security_snapshot(&reader);
+            assert!(check_private(&reader).is_err(), "accepted {flags}");
+            assert!(super::super::directory(&path).is_err());
+            assert_eq!(security_snapshot(&reader), before);
+        }
+        replace_test_dacl_flags(&directory, true, true, "OICI");
+        let before = security_snapshot(&reader);
+        assert!(check_private(&reader).is_err());
+        assert_eq!(security_snapshot(&reader), before);
+        replace_test_dacl_flags(&directory, false, true, "OICI");
     }
 }

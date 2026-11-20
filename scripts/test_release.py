@@ -52,7 +52,7 @@ class VersionTransaction(unittest.TestCase):
     def test_failed_lock_generation_rolls_back_exact_bytes(self):
         before=self.snapshot();original=release.run
         def fail(*args,**kwargs):
-            if args[:2]==("cargo","generate-lockfile"):
+            if args[:2]==("cargo","update"):
                 (self.root/"Cargo.lock").write_text("incomplete\n")
                 raise subprocess.CalledProcessError(1,args)
             return original(*args,**kwargs)

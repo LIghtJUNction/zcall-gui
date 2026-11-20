@@ -36,6 +36,45 @@ fn log(name:&str){let p=fixture().join(name);let mut f=fs::OpenOptions::new().cr
 fn emit(value:Json){println!("{}",value.stringify());}
 fn save(path:&Path,value:&Json){io::atomic(path,value.stringify().as_bytes()).unwrap();}
 fn arg(args:&[String],name:&str)->String{args.windows(2).find(|p|p[0]==name).unwrap()[1].clone()}
+fn installer_directory(path:&Path) {
+ io::directory(path).unwrap();
+ #[cfg(windows)] {
+  use std::{ffi::c_void,os::windows::{fs::OpenOptionsExt,io::AsRawHandle},ptr};
+  #[link(name="advapi32")]
+  unsafe extern "system" {
+   fn GetSecurityInfo(handle:*mut c_void,kind:u32,information:u32,owner:*mut *mut c_void,group:*mut *mut c_void,dacl:*mut *mut c_void,sacl:*mut *mut c_void,descriptor:*mut *mut c_void)->u32;
+   fn GetAclInformation(acl:*const c_void,information:*mut c_void,length:u32,kind:u32)->i32;
+   fn GetAce(acl:*const c_void,index:u32,ace:*mut *mut c_void)->i32;
+   fn SetSecurityInfo(handle:*mut c_void,kind:u32,information:u32,owner:*mut c_void,group:*mut c_void,dacl:*mut c_void,sacl:*mut c_void)->u32;
+  }
+  #[link(name="kernel32")]
+  unsafe extern "system" {fn LocalFree(memory:*mut c_void)->*mut c_void;}
+  struct Descriptor(*mut c_void);
+  impl Drop for Descriptor {fn drop(&mut self){unsafe{LocalFree(self.0);}}}
+  let directory=fs::File::options().access_mode(0x00020000|0x00040000)
+   .share_mode(0x1|0x2).custom_flags(0x02000000|0x00200000).open(path).unwrap();
+  // Match current core installer output, independently of the GUI's legacy
+  // writer. Both exact private ACEs become explicit OI|CI on a directory.
+  for readback in [false,true] {
+   let mut acl=ptr::null_mut();let mut descriptor=ptr::null_mut();
+   unsafe {
+    assert_eq!(GetSecurityInfo(directory.as_raw_handle(),1,4,ptr::null_mut(),ptr::null_mut(),&mut acl,ptr::null_mut(),&mut descriptor),0);
+    assert!(!descriptor.is_null()&&!acl.is_null());let _descriptor=Descriptor(descriptor);
+    let mut size=[0u32;3];
+    assert_ne!(GetAclInformation(acl,size.as_mut_ptr().cast(),std::mem::size_of_val(&size) as u32,2),0);
+    assert_eq!(size[0],2);
+    for index in 0..size[0] {
+     let mut ace=ptr::null_mut();assert_ne!(GetAce(acl,index,&mut ace),0);assert!(!ace.is_null());
+     let bytes=ace.cast::<u8>();assert_eq!(*bytes,0);
+     if readback {assert_eq!(*bytes.add(1),0x03);} else {
+      assert!([0,0x03].contains(&*bytes.add(1)));*bytes.add(1)=0x03;
+     }
+    }
+    if !readback {assert_eq!(SetSecurityInfo(directory.as_raw_handle(),1,0x80000004,ptr::null_mut(),ptr::null_mut(),acl,ptr::null_mut()),0);}
+   }
+  }
+ }
+}
 fn outcome(plan:&Json,tx:&Path,phase:&str)->Json {
  Json::object([("ok".into(),Json::Bool(true)),("phase".into(),text(phase)),("committed".into(),Json::Bool(phase=="committed")),
  ("pending_exit".into(),Json::Bool(phase=="pending_exit")),("transaction".into(),text(tx.to_str().unwrap())),
@@ -44,7 +83,7 @@ fn outcome(plan:&Json,tx:&Path,phase:&str)->Json {
  ("verified_source".into(),text("github-release"))])
 }
 fn activate(plan:&Json,tx:&Path) {
- let prefix=PathBuf::from(plan.get("prefix").text());io::directory(&prefix).unwrap();io::directory(&prefix.join("bin")).unwrap();
+ let prefix=PathBuf::from(plan.get("prefix").text());installer_directory(&prefix);installer_directory(&prefix.join("bin"));
  let binary=prefix.join("bin").join(if cfg!(windows){"zcalld.exe"}else{"zcalld"});
  if !binary.exists(){let bytes=fs::read(std::env::current_exe().unwrap()).unwrap();let mut f=io::create(&binary).unwrap();f.write_all(&bytes).unwrap();}
  #[cfg(unix)] {use std::os::unix::fs::PermissionsExt;fs::set_permissions(&binary,fs::Permissions::from_mode(0o700)).unwrap();}
@@ -131,8 +170,8 @@ fn main() {
  if command=="apply" {
   let plan=read(Path::new(&arg(&args,"--plan")));let prefix=Path::new(plan.get("prefix").text());
   let control=prefix.parent().unwrap().join(format!(".{}.zcalld-installer",prefix.file_name().unwrap().to_str().unwrap()));
-  io::directory(&control).unwrap();io::directory(&control.join("transactions")).unwrap();
-  let tx=control.join("transactions").join("a".repeat(32));io::directory(&tx).unwrap();save(&tx.join("plan.json"),&plan);
+  installer_directory(&control);installer_directory(&control.join("transactions"));
+  let tx=control.join("transactions").join("a".repeat(32));installer_directory(&tx);save(&tx.join("plan.json"),&plan);
   if mode=="activation_error" {
    save(&tx.join("state.json"),&outcome(&plan,&tx,"rolled_back"));
    emit(Json::object([("ok".into(),Json::Bool(false)),("error".into(),text(format!("fixture activation failure; installation journal: {}",tx.display())))]));std::process::exit(1);

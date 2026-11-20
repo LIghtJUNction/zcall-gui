@@ -46,7 +46,7 @@ def bump(kind,custom=None,dry_run=False):
         cargo=paths[0].read_text();needle=f'version = "{old}"'
         if cargo.count(needle)!=1:raise ValueError("Package version is ambiguous")
         paths[0].write_text(cargo.replace(needle,f'version = "{new}"',1))
-        run("cargo","generate-lockfile","--offline")
+        run("cargo","update","--workspace","--offline")
         changelog=paths[2].read_text()
         if "## Unreleased" in changelog:changelog=changelog.replace("## Unreleased",f"## {new}",1)
         else:

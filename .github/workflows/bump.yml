@@ -31,8 +31,10 @@ jobs:
           ref: main
           fetch-depth: 0
           submodules: recursive
-      - name: Select Rust
-        run: rustup toolchain install 1.100.0 --profile minimal
+      - name: Prepare the pinned toolchain and locked dependencies
+        run: |
+          rustup toolchain install 1.100.0 --profile minimal
+          cargo fetch --locked
       - name: Commit version and publish tag atomically
         id: bump
         env:

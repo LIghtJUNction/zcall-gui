@@ -155,15 +155,4 @@ impl Backend {
             });
         });
     }
-    pub fn spawn_refresh(&self, sender: mpsc::Sender<Reply>) {
-        let backend = self.clone();
-        thread::spawn(move || {
-            let _ = sender.send(Reply {
-                label: "refresh".into(),
-                result: Ok(backend.refresh()),
-                refresh: false,
-                starts_gateway: false,
-            });
-        });
-    }
 }

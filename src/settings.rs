@@ -28,6 +28,7 @@ impl ThemeChoice {
 pub struct Preferences {
     pub theme: ThemeChoice,
     pub language: &'static str,
+    pub core_binary: Option<String>,
     system_dark: bool,
     path: PathBuf,
 }
@@ -37,6 +38,7 @@ impl Preferences {
         Self {
             theme: ThemeChoice::Light,
             language: "en",
+            core_binary: None,
             system_dark: false,
             path: PathBuf::new(),
         }
@@ -46,6 +48,7 @@ impl Preferences {
         let mut prefs = Self {
             theme: ThemeChoice::System,
             language: "system",
+            core_binary: None,
             system_dark: false,
             path,
         };
@@ -64,6 +67,9 @@ impl Preferences {
                             {
                                 prefs.language = language;
                             }
+                        }
+                        "core_binary" if valid_binary(value) => {
+                            prefs.core_binary = Some(value.into())
                         }
                         _ => {}
                     }
@@ -91,12 +97,26 @@ impl Preferences {
         if let Some(parent) = self.path.parent() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
+        let binary = self.core_binary.as_deref().unwrap_or("");
+        if !binary.is_empty() && !valid_binary(binary) {
+            return Err("The remembered gateway path is invalid.".into());
+        }
         fs::write(
             &self.path,
-            format!("theme={}\nlanguage={}\n", self.theme.id(), self.language),
+            format!(
+                "theme={}\nlanguage={}\ncore_binary={}\n",
+                self.theme.id(),
+                self.language,
+                binary
+            ),
         )
         .map_err(|e| e.to_string())
     }
+}
+fn valid_binary(value: &str) -> bool {
+    value.len() <= 4096
+        && !value.chars().any(char::is_control)
+        && std::path::Path::new(value).is_absolute()
 }
 fn config_dir() -> PathBuf {
     #[cfg(target_os = "windows")]

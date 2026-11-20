@@ -203,3 +203,44 @@ overview.endpoint_unknown	Endpoint not confirmed
 overview.providers_unavailable	The gateway is connected. Its provider list could not be read.
 agents.routes_loading	Reading available routes
 agents.routes_retry_help	Try again to read the existing model catalog.
+install.bootstrap	Install background service
+install.update	Update
+install.apply	Install this version
+install.finish	Complete update
+install.waiting	Waiting for service exit
+install.waiting_help	Waiting for service exit. Stop it from Overview, then choose Complete update.
+install.in_progress	The installation is still running. Use Check status to read its saved result.
+install.completed	Installation complete
+install.completed_help	The complete gateway is installed. Start the service from Overview when ready.
+install.plan_ready	Version verified. Review the installation before continuing.
+install.rolled_back	The previous installation has been restored.
+install.recovery_help	The update is not complete. Check its status or restore the previous installation.
+install.preparing	Checking the official version and installation location…
+install.checking	Reading installation status…
+install.working	Installing the complete gateway. You can reopen this window to check its status.
+install.restore	Restore previous
+install.details	Details
+install.status	Check status
+install.version	Version
+install.confirm_version	Version {version}
+install.location	Installation location
+install.no_admin	Administrator: not required
+install.phase	Saved state
+install.source	Published source
+install.journal	Recovery record
+install.verification	Verification
+install.error	Last error
+install.close	Close
+install.full_bundle	Updates the gateway, native plugins, and platform helpers together.
+install.path_save_failed	Installation finished, but the selected path could not be remembered: {error}
+setup.initialize	Initialize configuration
+setup.install_service	Install user service
+setup.config_needed	Set up the gateway
+setup.service_needed	Prepare the user service
+setup.initialize_help	Create a starter configuration, then choose when to start the gateway.
+setup.service_help	Verify this private installation before starting its user service.
+setup.confirm_initialize	Create a new starter configuration.
+setup.confirm_service	Verify this installation’s user service.
+setup.config_location	Configuration location
+setup.no_start	The service will remain stopped.
+setup.changed	The installation or configuration changed. Refresh before continuing.

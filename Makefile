@@ -16,4 +16,4 @@ install:
 	install -Dm644 packaging/zcall-gui.desktop "$(DESTDIR)$(PREFIX)/share/applications/zcall-gui.desktop"
 	install -Dm644 packaging/zcall-gui.svg "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/zcall-gui.svg"
 	install -Dm644 LICENSE "$(DESTDIR)$(PREFIX)/share/licenses/zcall-gui/LICENSE"
-	install -Dm644 vendor/zui/LICENSE "$(DESTDIR)$(PREFIX)/share/licenses/zcall-gui/zui-LICENSE"
+	install -Dm644 vendor/zgpui/LICENSE "$(DESTDIR)$(PREFIX)/share/licenses/zcall-gui/zgpui-LICENSE"

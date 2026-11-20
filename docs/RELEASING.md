@@ -1,6 +1,6 @@
 # Releasing zcall-gui
 
-Releases start from a clean, committed tree with the zui submodule at its recorded revision. The app version lives in Cargo.toml and Cargo.lock. The toolkit has its own package version and release history.
+Releases start from a clean, committed tree with the zgpui submodule at its recorded revision. The app version lives in Cargo.toml and Cargo.lock. The toolkit has its own package version and release history.
 
 ## Local gate
 
@@ -62,7 +62,7 @@ Use the version produced by the bump command. Existing tags, non-increasing vers
 
 Each platform has a raw executable and a matching .sha256 file for the built-in updater, plus a native archive. Linux archives contain the executable, desktop entry, SVG icon, licenses, documentation and a staged installer. Windows uses a ZIP with a branded executable; macOS uses a tarball containing an app bundle and ICNS icon.
 
-The source archive includes the exact zui submodule source. The ordinary GitHub-generated source ZIP does not include that Git submodule and is not the input used by the AUR source recipe.
+The source archive includes the exact zgpui submodule source. The ordinary GitHub-generated source ZIP does not include that Git submodule and is not the input used by the AUR source recipe.
 
 Download the matching archive and SHA256SUMS from the [GitHub release](https://github.com/LIghtJUNction/zcall-gui/releases). Official Linux binaries are built on Ubuntu 24.04; older distributions may need a source build. For a Linux user installation:
 

@@ -6,12 +6,12 @@ impl App {
         let available = state.get("error").text().is_empty() && !matches!(state, Json::Null);
         let center = (x + width / 2.).round();
         let top = ((c.height - 600.) * 0.28 + 68.).round().clamp(68., 220.);
-        let halo = if c.theme == zui::Theme::Dark {
+        let halo = if c.theme == zgpui::native::Theme::Dark {
             0x1d2a40ff
         } else {
             0xf3f7ffff
         };
-        let edge = if c.theme == zui::Theme::Dark {
+        let edge = if c.theme == zgpui::native::Theme::Dark {
             0x283a55ff
         } else {
             0xeaf0fcff

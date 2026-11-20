@@ -1,5 +1,7 @@
 # Validation scope
 
+Current native dependency acceptance is recorded in [ZGPUI_MIGRATION.md](ZGPUI_MIGRATION.md). The results below retain their original source revisions and platform scope.
+
 This record distinguishes application behavior, native display evidence and software rendering measurements. All GUI input automation used a private Xvfb display. The user's desktop pointer, existing AI tool configuration and running Magpie service were not changed by these GUI tests.
 
 ## Verified behavior

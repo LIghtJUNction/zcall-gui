@@ -27,7 +27,7 @@ build() {
 check() {
   cd "$srcdir/$pkgname-v$pkgver"
   cargo test --frozen
-  cargo test --manifest-path vendor/zui/Cargo.toml --frozen
+  cargo test --manifest-path vendor/zgpui/Cargo.toml --features native --frozen
 }
 
 package() {
@@ -36,7 +36,7 @@ package() {
   install -Dm644 packaging/zcall-gui.desktop "$pkgdir/usr/share/applications/zcall-gui.desktop"
   install -Dm644 packaging/zcall-gui.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/zcall-gui.svg"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-  install -Dm644 vendor/zui/LICENSE "$pkgdir/usr/share/licenses/$pkgname/zui-LICENSE"
+  install -Dm644 vendor/zgpui/LICENSE "$pkgdir/usr/share/licenses/$pkgname/zgpui-LICENSE"
   install -Dm644 README.md "$pkgdir/usr/share/doc/zcall-gui/README.md"
   cp -R docs "$pkgdir/usr/share/doc/zcall-gui/"
 

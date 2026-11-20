@@ -32,6 +32,13 @@ The exact accepted source remains recorded by the gitlink. The earlier
 cross-platform release evidence above describes its original source; current
 dependency propagation has its own local validation record.
 
+The existing `v0.1.3` tag remains fixed at
+`651aee3dc1eb43b561baafa77ce0ed12d9f3b2ff`, which uses zgpui 0.1.4.
+The 0.1.5 dependency change belongs to development source after that tag.
+The native release workflow checks out the requested tag for both build and
+publication, and verifies that checkout against the tag before packaging.
+Advancing `main` does not change this frozen release source or its artifacts.
+
 ## Historical native-library correction
 
 The record below describes the earlier zui snapshot and its original

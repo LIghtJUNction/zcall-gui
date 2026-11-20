@@ -32,6 +32,10 @@ jobs:
       RELEASE_REF: ${{ inputs.ref }}
       RELEASE_TAG: ${{ inputs.release_tag }}
       MACOSX_DEPLOYMENT_TARGET: '13.0'
+      ZCALL_GUI_APT_PACKAGES: >-
+        libx11-dev libgl1-mesa-dev libfreetype6-dev libfontconfig1-dev
+        pkg-config xvfb xauth xdotool x11-utils python3-pil
+        fonts-noto-cjk fonts-dejavu-core
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -52,9 +56,37 @@ jobs:
           else
             python3 scripts/release.py verify-candidate "$RELEASE_REF"
           fi
+      - name: Prepare Linux archive cache
+        if: runner.os == 'Linux'
+        id: linux_cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r -a packages <<< "$ZCALL_GUI_APT_PACKAGES"
+          dependency_hash="$(printf '%s\n' "${packages[@]}" | sha256sum)"
+          dependency_hash="${dependency_hash%% *}"
+          os_version="$(. /etc/os-release; printf '%s-%s' "$ID" "$VERSION_ID")"
+          prefix="zcall-gui-apt-v1-$os_version-$RUNNER_ARCH-$dependency_hash-"
+          archives="$RUNNER_TEMP/zcall-gui-apt-archives"
+          install -d -m 0755 "$archives"
+          printf 'ZCALL_GUI_APT_ARCHIVES=%s\n' "$archives" >> "$GITHUB_ENV"
+          printf 'path=%s\nprefix=%s\nkey=%s%s\n' "$archives" "$prefix" "$prefix" "$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+      - name: Restore completed Linux archives
+        if: runner.os == 'Linux'
+        id: apt_restore
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        timeout-minutes: 3
+        continue-on-error: true
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: '1'
+        with:
+          path: ${{ steps.linux_cache.outputs.path }}/*.deb
+          key: ${{ steps.linux_cache.outputs.key }}
+          restore-keys: ${{ steps.linux_cache.outputs.prefix }}
       - name: Ensure Linux development capabilities
         if: runner.os == 'Linux'
-        timeout-minutes: 8
+        id: linux_deps
+        timeout-minutes: 12
         shell: bash
         run: |
           set -euo pipefail
@@ -81,6 +113,7 @@ jobs:
               return 1
             }
           }
+          read -r -a packages <<< "$ZCALL_GUI_APT_PACKAGES"
           if linux_ready; then
             echo "Linux development libraries, UI tools and fonts are already available"
           else
@@ -89,14 +122,66 @@ jobs:
               -o Acquire::http::Timeout=30
               -o Acquire::https::Timeout=30
               -o DPkg::Lock::Timeout=30
+              -o APT::Keep-Downloaded-Packages=true
+              -o "Dir::Cache::archives=$ZCALL_GUI_APT_ARCHIVES"
             )
             sudo apt-get "${apt_options[@]}" update
-            sudo apt-get "${apt_options[@]}" install -y --no-install-recommends \
-              libx11-dev libgl1-mesa-dev libfreetype6-dev libfontconfig1-dev \
-              pkg-config xvfb xauth xdotool x11-utils python3-pil \
-              fonts-noto-cjk fonts-dejavu-core
+            python3 - "$ZCALL_GUI_APT_ARCHIVES" <<'PY'
+          import hashlib, pathlib, re, shutil, subprocess, sys, urllib.parse
+
+          directory = pathlib.Path(sys.argv[1])
+          accepted = discarded = 0
+          for archive in directory.glob("*.deb"):
+              valid = False
+              try:
+                  if archive.is_symlink() or not archive.is_file():
+                      raise ValueError("not a regular completed archive")
+                  package, version, architecture = urllib.parse.unquote(archive.stem).rsplit("_", 2)
+                  if not (re.fullmatch(r"[a-z0-9][a-z0-9+.-]*", package)
+                          and re.fullmatch(r"[0-9A-Za-z.+:~\-]+", version)
+                          and re.fullmatch(r"[a-z0-9][a-z0-9-]*", architecture)):
+                      raise ValueError("invalid Debian archive identity")
+                  metadata = subprocess.run(
+                      ["apt-cache", "show", package + "=" + version],
+                      check=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+                  ).stdout
+                  with archive.open("rb") as incoming:
+                      checksum = hashlib.file_digest(incoming, "sha256").hexdigest()
+                  for paragraph in metadata.split("\n\n"):
+                      fields = dict(line.split(": ", 1) for line in paragraph.splitlines()
+                                    if line and not line[0].isspace() and ": " in line)
+                      if (fields.get("Package"), fields.get("Version"), fields.get("Architecture"),
+                              fields.get("SHA256")) == (package, version, architecture, checksum):
+                          valid = True
+                          break
+              except (OSError, ValueError, subprocess.CalledProcessError):
+                  pass
+              if valid:
+                  accepted += 1
+              else:
+                  if archive.is_dir() and not archive.is_symlink():
+                      shutil.rmtree(archive)
+                  else:
+                      archive.unlink(missing_ok=True)
+                  discarded += 1
+          print(f"APT cache verified against current package metadata: {accepted} accepted, {discarded} discarded")
+          PY
+            sudo apt-get "${apt_options[@]}" install -y --no-install-recommends "${packages[@]}"
             linux_ready
           fi
+          shopt -s nullglob
+          archives=("$ZCALL_GUI_APT_ARCHIVES"/*.deb)
+          if ((${#archives[@]})); then
+            echo "has_debs=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Save completed Linux archives
+        if: runner.os == 'Linux' && steps.apt_restore.outputs.cache-hit != 'true' && steps.linux_deps.outputs.has_debs == 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        timeout-minutes: 3
+        continue-on-error: true
+        with:
+          path: ${{ steps.linux_cache.outputs.path }}/*.deb
+          key: ${{ steps.linux_cache.outputs.key }}
       - name: Select Rust
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
       - name: Validate Linux

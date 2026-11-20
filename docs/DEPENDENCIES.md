@@ -2,7 +2,7 @@
 
 ## Unified native library
 
-The active GUI dependency is `zgpui =0.1.3`, stored as the
+The active GUI dependency is `zgpui =0.1.4`, stored as the
 `vendor/zgpui` Git submodule. The application enables `native` and imports
 `zgpui::native`. The package name, Rust dependency key and source directory
 use the same name; there is no legacy package alias.
@@ -11,9 +11,16 @@ The outer `zcalld` repository distributes this application through
 `apps/zcall-gui`. Its source pin must follow the accepted GUI commit.
 Project Z coordinates the library release and aggregate pins. The 0.1.2 consumer checkpoint
 updated the manifest, lock and vendor gitlink in e6ed24b, with local unit,
-Clippy and isolated native CLI-flow checks. The following 0.1.3 integration
-adds window-local palette and font selection for Ink; the dependency remains
-an exact pin, and the default toolkit appearance is unchanged for other apps. The
+Clippy and isolated native CLI-flow checks. The 0.1.3 integration introduced
+window-local palette and font selection for Ink. This GUI freezes the subsequent
+0.1.4 rendering correction at
+`7838c3c94cf018c02bb36e17c941ca651c5c0e24`; the manifest, lockfile and
+submodule agree. The toolkit uses power-of-two alpha textures where required
+by older OpenGL implementations. Its official Windows GDI Generic/OpenGL 1.1
+and macOS image gates verify glyph interiors and rounded corners. These are functional image checks, not a physical-GPU performance
+measurement. The [official toolkit release gate](https://github.com/LIghtJUNction/zgpui/actions/runs/44710634988)
+records that platform coverage. The default toolkit appearance remains unchanged
+for other applications. The
 [unified-library acceptance record](ZGPUI_MIGRATION.md) documents the local
 validation scope.
 

@@ -191,3 +191,15 @@ agents.route_count	{count} 条可用路由
 agents.select_route	请选择要使用的路由
 agents.apply_route	使用此路由
 agents.apply_named	将 {name} 连接到 {route}
+action.retry	重新检查
+status.loading_short	正在读取…
+status.loading_help	正在读取网关与已保存的本机配置。
+status.unknown	待确认
+error.invalid_response	本机命令未返回可用状态。
+overview.loading	正在读取网关状态
+overview.unavailable	暂时无法读取网关状态
+overview.unavailable_help	检查本机命令与配置后，重新读取状态。
+overview.endpoint_unknown	接口地址待确认
+overview.providers_unavailable	网关已连接，但暂时无法读取供应商列表。
+agents.routes_loading	正在读取可用路由
+agents.routes_retry_help	重新读取现有模型目录后，再选择要接入的模型。

@@ -1,16 +1,11 @@
+use crate::view_state::{CatalogState, GatewayState, OverviewAction};
 use crate::*;
 impl App {
     pub(super) fn overview(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
-        let state = self.state.get("status").clone();
-        let healthy = state.get("healthy").boolean();
-        let providers_known = !matches!(self.state.get("providers").get("providers"), Json::Null);
-        let has_providers = !self
-            .state
-            .get("providers")
-            .get("providers")
-            .array()
-            .is_empty();
-        let available = state.get("error").text().is_empty() && !matches!(state, Json::Null);
+        let gateway = view_state::gateway_state(&self.state);
+        let action = view_state::overview_action(&self.state);
+        let healthy = gateway == GatewayState::Healthy;
+        let available = matches!(gateway, GatewayState::Healthy | GatewayState::Offline);
         c.text(tr("nav.overview"), x, 34., 26, true, TEXT);
         c.ellipsis(tr("overview.subtitle"), x, 79., width, 14, false, MUTED);
 
@@ -19,10 +14,11 @@ impl App {
         c.rect(panel, 8., LINE);
         c.rect(panel.inset(1.), 7., SURFACE);
         brand(c, Rect::new(x + 22., top + 22., 40., 40.), SURFACE);
-        let heading = if healthy {
-            tr("overview.running")
-        } else {
-            tr("overview.stopped")
+        let heading = match gateway {
+            GatewayState::Loading => tr("overview.loading"),
+            GatewayState::Unavailable => tr("overview.unavailable"),
+            GatewayState::Offline => tr("overview.stopped"),
+            GatewayState::Healthy => tr("overview.running"),
         };
         c.ellipsis(
             heading,
@@ -33,10 +29,11 @@ impl App {
             true,
             TEXT,
         );
-        let status = if healthy {
-            tr("status.connected")
-        } else {
-            tr("status.disconnected")
+        let status = match gateway {
+            GatewayState::Loading => tr("status.loading_short"),
+            GatewayState::Unavailable => tr("status.unknown"),
+            GatewayState::Offline => tr("status.disconnected"),
+            GatewayState::Healthy => tr("status.connected"),
         };
         let status_width = c.measure(status, 13, false);
         let status_x = x + width - status_width - 24.;
@@ -54,7 +51,7 @@ impl App {
             if healthy { GREEN } else { MUTED },
         );
         c.ellipsis(
-            value(&state, "listen", "127.0.0.1:9415"),
+            view_state::endpoint(&self.state).unwrap_or(tr("overview.endpoint_unknown")),
             x + 77.,
             top + 60.,
             width - 101.,
@@ -62,26 +59,21 @@ impl App {
             false,
             MUTED,
         );
-        let detail = if healthy && providers_known && !has_providers {
-            tr("overview.add_help")
-        } else if healthy {
-            tr("overview.ready_help")
-        } else if available {
-            tr("overview.start_help")
-        } else {
-            tr("overview.install_help")
+        let detail = match action {
+            OverviewAction::Wait => tr("status.loading_help"),
+            OverviewAction::Retry if healthy => tr("overview.providers_unavailable"),
+            OverviewAction::Retry => tr("overview.unavailable_help"),
+            OverviewAction::StartGateway => tr("overview.start_help"),
+            OverviewAction::AddProvider => tr("overview.add_help"),
+            OverviewAction::ConnectTools => tr("overview.ready_help"),
         };
         c.ellipsis(detail, x + 24., top + 102., width - 48., 14, false, MUTED);
-        let label = if healthy && has_providers {
-            tr("action.connect_tools")
-        } else if healthy && providers_known {
-            tr("action.add_provider")
-        } else if healthy {
-            tr("action.manage_providers")
-        } else if available {
-            tr("action.start_gateway")
-        } else {
-            tr("action.recheck")
+        let label = match action {
+            OverviewAction::Wait => tr("status.loading_short"),
+            OverviewAction::Retry => tr("action.retry"),
+            OverviewAction::StartGateway => tr("action.start_gateway"),
+            OverviewAction::AddProvider => tr("action.add_provider"),
+            OverviewAction::ConnectTools => tr("action.connect_tools"),
         };
         if self.ui.button(
             c,
@@ -89,27 +81,27 @@ impl App {
             Rect::new(x + 24., top + 145., 162., 38.),
             label,
             Style::Primary,
-            self.enabled(),
+            self.enabled() && action != OverviewAction::Wait,
         ) {
-            if healthy && has_providers {
-                self.page = 2;
-                self.scroll = 0;
-            } else if healthy {
-                self.page = 1;
-                self.scroll = 0;
-                if providers_known {
+            match action {
+                OverviewAction::ConnectTools => {
+                    self.page = 2;
+                    self.scroll = 0;
+                }
+                OverviewAction::AddProvider => {
+                    self.page = 1;
+                    self.scroll = 0;
                     self.clear_key();
                     self.provider = ProviderForm::default();
                     self.provider_edit = false;
                     self.provider_panel = 2;
                 }
-            } else if available {
-                self.ask(
+                OverviewAction::StartGateway => self.ask(
                     tr("action.start_service_confirm"),
                     words(&["service", "start"]),
-                );
-            } else {
-                self.refresh();
+                ),
+                OverviewAction::Retry => self.refresh(),
+                OverviewAction::Wait => {}
             }
         }
         if available
@@ -127,21 +119,24 @@ impl App {
 
         let providers = self.state.get("providers").get("providers");
         let agents = self.state.get("agents").get("agents");
-        let provider_count = if matches!(providers, Json::Null) {
-            "—".to_owned()
-        } else {
+        let provider_count = if view_state::collection_state(&self.state, "providers", "providers")
+            == LoadState::Ready
+        {
             providers.array().len().to_string()
-        };
-        let agent_count = if matches!(agents, Json::Null) {
-            "—".to_owned()
         } else {
-            agents
-                .array()
-                .iter()
-                .filter(|agent| agent.get("installed").boolean())
-                .count()
-                .to_string()
+            "—".to_owned()
         };
+        let agent_count =
+            if view_state::collection_state(&self.state, "agents", "agents") == LoadState::Ready {
+                agents
+                    .array()
+                    .iter()
+                    .filter(|agent| agent.get("installed").boolean())
+                    .count()
+                    .to_string()
+            } else {
+                "—".to_owned()
+            };
         let tile_width = (width - 16.) / 2.;
         for (index, (label, count, page)) in [
             (tr("overview.providers_count"), provider_count, 1),
@@ -301,7 +296,8 @@ impl App {
 
     pub(super) fn agents(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();
-        let has_routes = !self.route_choices().is_empty();
+        let catalog = view_state::catalog_state(&self.state);
+        let has_routes = catalog == CatalogState::Available;
         if self.ui.button(
             c,
             501,
@@ -323,42 +319,44 @@ impl App {
                 MUTED,
             );
         } else {
-            let unavailable = !self.state.get("models").get("error").text().is_empty();
-            c.ellipsis(
-                tr(if unavailable {
-                    "agents.routes_unavailable"
+            let (heading, help) = match catalog {
+                CatalogState::Loading => ("agents.routes_loading", "status.loading_help"),
+                CatalogState::Unavailable => {
+                    ("agents.routes_unavailable", "agents.routes_retry_help")
+                }
+                CatalogState::Empty => ("agents.no_routes", "agents.no_routes_help"),
+                CatalogState::Available => unreachable!(),
+            };
+            c.ellipsis(tr(heading), x, 125., width - 186., 14, true, TEXT);
+            c.ellipsis(tr(help), x, 151., width - 186., 13, false, MUTED);
+            if catalog != CatalogState::Loading
+                && self.ui.button(
+                    c,
+                    502,
+                    Rect::new(x + width - 166., 122., 166., 42.),
+                    tr(if catalog == CatalogState::Unavailable {
+                        "action.retry"
+                    } else {
+                        "action.add_provider"
+                    }),
+                    if catalog == CatalogState::Unavailable {
+                        Style::Secondary
+                    } else {
+                        Style::Primary
+                    },
+                    enabled,
+                )
+            {
+                if catalog == CatalogState::Unavailable {
+                    self.refresh();
                 } else {
-                    "agents.no_routes"
-                }),
-                x,
-                125.,
-                width - 186.,
-                14,
-                true,
-                TEXT,
-            );
-            c.ellipsis(
-                tr("agents.no_routes_help"),
-                x,
-                151.,
-                width - 186.,
-                13,
-                false,
-                MUTED,
-            );
-            if self.ui.button(
-                c,
-                502,
-                Rect::new(x + width - 166., 122., 166., 42.),
-                tr("action.add_provider"),
-                Style::Primary,
-                enabled,
-            ) {
-                self.page = 1;
-                self.scroll = 0;
-                self.provider = ProviderForm::default();
-                self.provider_edit = false;
-                self.provider_panel = 2;
+                    self.page = 1;
+                    self.scroll = 0;
+                    self.clear_key();
+                    self.provider = ProviderForm::default();
+                    self.provider_edit = false;
+                    self.provider_panel = 2;
+                }
                 return;
             }
         }
@@ -847,10 +845,17 @@ impl App {
     }
     pub(super) fn updates(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();
+        let gateway_version = match view_state::gateway_state(&self.state) {
+            GatewayState::Loading => tr("status.loading_short"),
+            GatewayState::Unavailable => tr("status.unknown"),
+            GatewayState::Healthy | GatewayState::Offline => {
+                value(self.state.get("status"), "version", tr("status.unknown"))
+            }
+        };
         let items = [
             (
                 tr("updates.gateway"),
-                value(self.state.get("status"), "version", tr("status.not_found")).to_owned(),
+                gateway_version.to_owned(),
                 self.gateway_update.clone(),
             ),
             (

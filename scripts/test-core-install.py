@@ -236,12 +236,20 @@ class BootstrapTests(unittest.TestCase):
         (self.fixture / name).write_text(json.dumps(value), encoding="utf-8")
 
     def run_gui(self, command, success=True, binary="missing-fixture-zcalld"):
-        result = subprocess.run([ARGS.binary, "--zcalld", binary, "--core-install", command], env=self.env,
-                                capture_output=True, text=True, timeout=60)
+        started = time.monotonic()
+        try:
+            result = subprocess.run([ARGS.binary, "--zcalld", binary, "--core-install", command], env=self.env,
+                                    capture_output=True, text=True, timeout=60)
+        except subprocess.TimeoutExpired:
+            self.fail(f"Offline {command} exceeded the unchanged 60s fixture deadline; "
+                      f"fake downloads={self.calls('curl.log')}, helper starts={self.calls('helper.log')}")
+        detail = (f"offline {command}, elapsed={time.monotonic() - started:.3f}s, "
+                  f"fake downloads={self.calls('curl.log')}, helper starts={self.calls('helper.log')}: "
+                  + result.stderr)
         if success:
-            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.returncode, 0, detail)
         else:
-            self.assertNotEqual(result.returncode, 0)
+            self.assertNotEqual(result.returncode, 0, detail)
         self.assertNotIn("fixture-must-not-reach-helper", result.stdout + result.stderr)
         return json.loads(result.stdout) if result.stdout.strip() else None
 
@@ -345,4 +353,4 @@ if __name__ == "__main__":
     parser.add_argument("--binary", default=os.environ.get("ZCALL_GUI_TEST_BINARY", str(ROOT / "target/release/zcall-gui")))
     ARGS, remaining = parser.parse_known_args()
     ARGS.binary = str(Path(ARGS.binary).resolve(strict=True))
-    unittest.main(argv=[__file__] + remaining)
+    unittest.main(argv=[__file__] + remaining, verbosity=2)

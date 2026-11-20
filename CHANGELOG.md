@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Replace the oversized home emblem with a compact gateway status card and a focused setup action.
+- Open provider setup or AI tools directly, with clickable local counts and fewer repeated controls.
+- Use one new vector mark across the native window and Linux, Windows and macOS app icons.
+- Capture isolated native previews only after the loaded frame has been presented.
+
 ## 0.1.0
 
 - Add a native zui control panel for the zcalld JSON management interface.

@@ -170,3 +170,8 @@ updates.package_restart	套件管理器已完成，已安裝 {version}。重新�
 privacy.saved	已儲存
 privacy.restart_required	設定已儲存，啟動或重新啟動閘道後生效。
 privacy.runtime_unknown	執行狀態尚未確認。
+overview.subtitle	集中管理本機閘道與 AI 工具。
+overview.providers_count	已設定的供應商
+overview.agents_count	偵測到的 AI 工具
+action.connect_tools	連接 AI 工具
+overview.add_help	先新增供應商，再連接常用 AI 工具。

@@ -170,3 +170,8 @@ updates.package_restart	Package manager completed. Installed: {version}. Reopen 
 privacy.saved	Saved
 privacy.restart_required	Saved. Start or restart the gateway to apply.
 privacy.runtime_unknown	Runtime state has not been confirmed.
+overview.subtitle	Your local gateway and AI tools, in one place.
+overview.providers_count	Configured providers
+overview.agents_count	Detected AI tools
+action.connect_tools	Connect AI tools
+overview.add_help	Add a provider, then connect your AI tools.

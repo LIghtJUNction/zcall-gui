@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- fix(gui): use native Windows security for installer files [skip ci]
+
 ## 0.1.3
 
 - feat(gui): install complete native bundles and guide first use [skip ci]

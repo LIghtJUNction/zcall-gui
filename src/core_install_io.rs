@@ -9,6 +9,10 @@ use std::{
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
+#[cfg(windows)]
+#[path = "core_install_windows.rs"]
+mod windows;
+
 static SERIAL: AtomicU64 = AtomicU64::new(0);
 
 pub fn unique_name(prefix: &str) -> String {
@@ -98,7 +102,8 @@ fn check_private(path: &Path, directory: bool) -> Result<(), String> {
     #[cfg(windows)]
     {
         let _ = metadata;
-        windows_permissions(path, false)?;
+        let file = windows_open(path, directory, false)?;
+        windows::check_private(&file)?;
     }
     Ok(())
 }
@@ -121,7 +126,8 @@ pub fn directory(path: &Path) -> Result<(), String> {
     {
         fs::create_dir(path)
             .map_err(|_| "Cannot exclusively create the private installer directory.")?;
-        windows_permissions(path, true)?;
+        let file = windows_open(path, true, true)?;
+        windows::protect_created(&file)?;
     }
     check_private(path, true)
 }
@@ -135,18 +141,44 @@ pub fn create(path: &Path) -> Result<File, String> {
         use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options
+            .access_mode(0x80000000 | 0x40000000 | 0x00040000 | 0x00080000)
+            .share_mode(0x1 | 0x2)
+            .custom_flags(0x00200000);
+    }
     let file = options
         .open(path)
         .map_err(|_| "Cannot exclusively create the installer file.")?;
     #[cfg(windows)]
-    windows_permissions(path, true)?;
+    {
+        windows_regular(&file, false)?;
+        windows::protect_created(&file)?;
+    }
+    #[cfg(unix)]
     check_private(path, false)?;
     Ok(file)
 }
 
 pub fn read(path: &Path, limit: usize) -> Result<Vec<u8>, String> {
     check_private(path, false)?;
-    let file = File::open(path).map_err(|_| "Cannot read the private installer file.")?;
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.share_mode(0x1 | 0x2).custom_flags(0x00200000);
+    }
+    let file = options
+        .open(path)
+        .map_err(|_| "Cannot read the private installer file.")?;
+    #[cfg(windows)]
+    {
+        windows_regular(&file, false)?;
+        windows::check_private(&file)?;
+    }
     if file
         .metadata()
         .map_err(|_| "Cannot inspect the installer file.")?
@@ -196,9 +228,14 @@ pub fn lock(directory: &Path) -> Result<File, String> {
     let path = directory.join("gui.lock");
     let file = if path.exists() {
         check_private(&path, false)?;
-        OpenOptions::new()
-            .read(true)
-            .write(true)
+        let mut options = OpenOptions::new();
+        options.read(true).write(true);
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            options.share_mode(0x1 | 0x2).custom_flags(0x00200000);
+        }
+        options
             .open(&path)
             .map_err(|_| "Cannot open the GUI installer lock.")?
     } else {
@@ -207,6 +244,13 @@ pub fn lock(directory: &Path) -> Result<File, String> {
     file.try_lock().map_err(
         |_| "Another installation operation is still running. Check its status when it finishes.",
     )?;
+    #[cfg(windows)]
+    {
+        // The handle denies FILE_SHARE_DELETE, so its name cannot be replaced
+        // while this lock is held. Revalidate the exact opened object.
+        windows_regular(&file, false)?;
+        windows::check_private(&file)?;
+    }
     check_private(&path, false)?;
     #[cfg(unix)]
     {
@@ -302,10 +346,11 @@ fn wait(
     command: &mut Command,
     output: Option<(&Path, u64)>,
     timeout: Duration,
+    stage: &'static str,
 ) -> Result<bool, String> {
     let mut child = command
         .spawn()
-        .map_err(|_| "Cannot start the required installer program.")?;
+        .map_err(|_| format!("Cannot start the required installer program ({stage})."))?;
     let deadline = Instant::now() + timeout;
     loop {
         let too_large =
@@ -313,9 +358,13 @@ fn wait(
         if too_large || Instant::now() >= deadline {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(if too_large { "Installer output exceeds its size limit." } else {
-                "The installer operation exceeded its deadline. Review its saved transaction before trying again."
-            }.into());
+            return Err(if too_large {
+                format!("Installer output exceeds its size limit ({stage}).")
+            } else {
+                format!(
+                    "The installer operation exceeded its deadline ({stage}). Review its saved transaction before trying again."
+                )
+            });
         }
         match child.try_wait() {
             Ok(Some(status)) => return Ok(status.success()),
@@ -323,7 +372,7 @@ fn wait(
             Err(_) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Err("Cannot monitor the installer operation.".into());
+                return Err(format!("Cannot monitor the installer operation ({stage})."));
             }
         }
     }
@@ -339,7 +388,17 @@ pub fn capture(
     let file = create(output)?;
     let mut cmd = command(program);
     cmd.args(args).stdout(Stdio::from(file));
-    let success = wait(&mut cmd, Some((output, limit as u64)), timeout)?;
+    let stage = match args.first().map(String::as_str) {
+        Some("--version") => "helper version",
+        Some("defaults") => "helper defaults",
+        Some("plan") => "helper plan",
+        Some("apply") => "helper apply",
+        Some("status") => "helper status",
+        Some("resume") => "helper resume",
+        Some("rollback") => "helper rollback",
+        _ => "helper operation",
+    };
+    let success = wait(&mut cmd, Some((output, limit as u64)), timeout, stage)?;
     drop(cmd);
     Ok((success, read(output, limit)?))
 }
@@ -387,6 +446,7 @@ pub fn download(
         &mut cmd,
         Some((destination, limit as u64)),
         Duration::from_secs(125),
+        "release download",
     )? {
         return Err("Could not download the official installer release.".into());
     }
@@ -395,29 +455,105 @@ pub fn download(
 }
 
 #[cfg(windows)]
-fn windows_permissions(path: &Path, protect: bool) -> Result<(), String> {
-    // Use the installed OS security APIs through PowerShell for this small
-    // bootstrap. The native installer owns all archive/transaction ACL logic.
-    const SCRIPT: &str = r#"$ErrorActionPreference='Stop'; $p=$env:ZCALLD_BOOTSTRAP_PATH; $item=Get-Item -LiteralPath $p -Force; if(($item.Attributes -band [IO.FileAttributes]::ReparsePoint)-ne 0){throw 'reparse'}; $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User; $system=[Security.Principal.SecurityIdentifier]::new('S-1-5-18'); if($env:ZCALLD_BOOTSTRAP_PROTECT -eq '1'){if($item.PSIsContainer){$acl=[Security.AccessControl.DirectorySecurity]::new()}else{$acl=[Security.AccessControl.FileSecurity]::new()}; $acl.SetOwner($sid); $acl.SetAccessRuleProtection($true,$false); foreach($who in @($sid,$system)){$acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new($who,[Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.AccessControlType]::Allow))}; Set-Acl -LiteralPath $p -AclObject $acl}; $acl=Get-Acl -LiteralPath $p; if(-not $acl.AreAccessRulesProtected -or $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $sid.Value){throw 'owner'}; $rules=@($acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])); if($rules.Count -ne 2){throw 'rules'}; $seen=@{}; foreach($rule in $rules){if($rule.IsInherited -or $rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow -or $rule.InheritanceFlags -ne [Security.AccessControl.InheritanceFlags]::None -or $rule.PropagationFlags -ne [Security.AccessControl.PropagationFlags]::None -or $rule.IdentityReference.Value -notin @($sid.Value,$system.Value)){throw 'access'}; $seen[$rule.IdentityReference.Value]=$true}; if(-not $seen.ContainsKey($sid.Value) -or -not $seen.ContainsKey($system.Value)){throw 'missing'}"#;
-    let root = std::env::var_os("SystemRoot")
-        .or_else(|| std::env::var_os("SYSTEMROOT"))
-        .ok_or("Windows system directory is unavailable.")?;
-    let program = PathBuf::from(root).join("System32/WindowsPowerShell/v1.0/powershell.exe");
-    let mut cmd = command(&program);
-    cmd.args([
-        "-NoLogo",
-        "-NoProfile",
-        "-NonInteractive",
-        "-Command",
-        SCRIPT,
-    ])
-    .env("ZCALLD_BOOTSTRAP_PATH", path)
-    .env("ZCALLD_BOOTSTRAP_PROTECT", if protect { "1" } else { "0" })
-    .stdout(Stdio::null());
-    if !wait(&mut cmd, None, Duration::from_secs(20))? {
+fn windows_open(path: &Path, directory: bool, new_object: bool) -> Result<File, String> {
+    use std::os::windows::fs::OpenOptionsExt;
+    let mut options = OpenOptions::new();
+    options
+        .access_mode(
+            0x00020000
+                | if new_object {
+                    0x00040000 | 0x00080000
+                } else {
+                    0
+                },
+        )
+        .share_mode(0x1 | 0x2)
+        .custom_flags(0x00200000 | if directory { 0x02000000 } else { 0 });
+    let file = options
+        .open(path)
+        .map_err(|_| "Cannot inspect native Windows installer permissions.")?;
+    windows_regular(&file, directory)?;
+    Ok(file)
+}
+
+#[cfg(windows)]
+fn windows_regular(file: &File, directory: bool) -> Result<(), String> {
+    use std::{ffi::c_void, os::windows::io::AsRawHandle};
+    #[link(name = "kernel32")]
+    unsafe extern "system" {
+        fn GetFileInformationByHandle(handle: *mut c_void, information: *mut u32) -> i32;
+    }
+    let mut info = [0u32; 13];
+    // SAFETY: BY_HANDLE_FILE_INFORMATION consists of thirteen DWORDs. The
+    // caller owns this live handle throughout the synchronous native query.
+    if unsafe { GetFileInformationByHandle(file.as_raw_handle(), info.as_mut_ptr()) } == 0
+        || info[0] & 0x400 != 0
+        || (info[0] & 0x10 != 0) != directory
+        || (!directory && info[10] != 1)
+    {
         return Err(
-            "Windows private installer permissions could not be established or verified.".into(),
+            "Installer files must have the expected type and no reparse points or extra links."
+                .into(),
         );
     }
     Ok(())
+}
+
+#[cfg(all(test, windows))]
+mod windows_tests {
+    use super::*;
+
+    struct Temporary(PathBuf);
+    impl Temporary {
+        fn new() -> Self {
+            let path = std::env::temp_dir().join(unique_name("zcall-gui-native-acl"));
+            fs::create_dir(&path).unwrap();
+            Self(path)
+        }
+    }
+    impl Drop for Temporary {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn private_handles_cover_files_directories_and_reject_extra_links() {
+        let temporary = Temporary::new();
+        let root = temporary.0.join("private");
+        directory(&root).unwrap();
+        let path = root.join("state.json");
+        let mut file = create(&path).unwrap();
+        file.write_all(b"private fixture").unwrap();
+        drop(file);
+        assert_eq!(read(&path, 64).unwrap(), b"private fixture");
+        assert!(check_private(&path, true).is_err());
+        assert!(check_private(&root, false).is_err());
+        let alias = root.join("alias");
+        fs::hard_link(&path, &alias).unwrap();
+        assert!(
+            read(&path, 64).is_err(),
+            "multiple links must not be accepted"
+        );
+        fs::remove_file(&alias).unwrap();
+        assert_eq!(read(&path, 64).unwrap(), b"private fixture");
+    }
+
+    #[test]
+    fn held_installer_lock_denies_replacement_and_can_be_reopened() {
+        let temporary = Temporary::new();
+        let root = temporary.0.join("private");
+        directory(&root).unwrap();
+        let held = lock(&root).unwrap();
+        assert!(
+            lock(&root).is_err(),
+            "an independent handle must not acquire the lock"
+        );
+        let path = root.join("gui.lock");
+        assert!(fs::rename(&path, root.join("replaced")).is_err());
+        assert!(fs::remove_file(&path).is_err());
+        drop(held);
+        drop(lock(&root).unwrap());
+        fs::remove_file(&path).unwrap();
+    }
 }

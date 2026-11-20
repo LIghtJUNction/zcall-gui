@@ -82,7 +82,7 @@ zcall-gui --core-install resume
 zcall-gui --core-install rollback
 ```
 
-These commands return JSON. `prepare` obtains the official metadata and verified helper; `apply` is the explicit installation action. `status` only reads local installation state. Native bootstrap needs system `curl` and `tar`; Windows also uses its built-in PowerShell to set and verify private cache permissions. The GUI and installer add no third-party Rust dependency or Python runtime requirement. A core release without the complete archive and installer protocol is rejected before installation.
+These commands return JSON. `prepare` obtains the official metadata and verified helper; `apply` is the explicit installation action. `status` only reads local installation state. Native bootstrap needs system `curl` and `tar`; Windows uses native file-handle security APIs to set and verify private cache permissions. The GUI and installer add no third-party Rust dependency or Python runtime requirement. A core release without the complete archive and installer protocol is rejected before installation.
 
 Managed paths remain on their package-manager update route. For AUR packages, the existing native terminal preserves package review, authorization, source-versus-binary package identity, and actual exit status.
 

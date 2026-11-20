@@ -2,14 +2,15 @@
 
 zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
 
-The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.5 as a pinned Git submodule at `vendor/zgpui`. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
+The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.5, with its public Git source pinned in `Cargo.lock` and the same revision recorded by the `vendor/zgpui` submodule. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
 
 ## Build and run
 
 ```sh
 git clone --recurse-submodules https://github.com/LIghtJUNction/zcall-gui.git
 cd zcall-gui
-cargo build --release --offline
+cargo fetch --locked
+cargo build --release --locked --offline
 ./target/release/zcall-gui
 ```
 

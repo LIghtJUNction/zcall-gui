@@ -1,3 +1,4 @@
+use crate::view_state::GatewayState;
 use crate::*;
 fn sheet(c: &mut Canvas<'_>, heading: &str) -> Rect {
     c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x20212438);
@@ -486,7 +487,8 @@ impl App {
     pub(super) fn service_dialog(&mut self, c: &mut Canvas<'_>) {
         let r = sheet(c, tr("service.title"));
         let x = r.x + 32.;
-        let healthy = self.state.get("status").get("healthy").boolean();
+        let gateway = view_state::gateway_state(&self.state);
+        let healthy = gateway == GatewayState::Healthy;
         let enabled = !self.busy && self.confirm.is_none();
         if self.ui.button(
             c,
@@ -498,14 +500,16 @@ impl App {
         ) {
             self.service_panel = false;
         }
-        c.text(
-            if healthy {
-                tr("service.connected")
-            } else {
-                tr("service.disconnected")
+        c.ellipsis(
+            match gateway {
+                GatewayState::Loading => tr("status.loading"),
+                GatewayState::Unavailable => tr("overview.unavailable"),
+                GatewayState::Offline => tr("service.disconnected"),
+                GatewayState::Healthy => tr("service.connected"),
             },
             x,
             100.,
+            r.w - 64.,
             27,
             true,
             TEXT,
@@ -515,22 +519,27 @@ impl App {
             c,
             9301,
             Rect::new(x, 225., 142., 44.),
-            if healthy {
-                tr("action.restart_service")
-            } else {
-                tr("action.start_service")
+            match gateway {
+                GatewayState::Loading => tr("status.loading_short"),
+                GatewayState::Unavailable => tr("action.retry"),
+                GatewayState::Offline => tr("action.start_service"),
+                GatewayState::Healthy => tr("action.restart_service"),
             },
             Style::Primary,
-            enabled,
+            enabled && gateway != GatewayState::Loading,
         ) {
-            self.ask(
-                if healthy {
-                    tr("action.restart_service_confirm")
-                } else {
-                    tr("action.start_service_confirm")
-                },
-                words(&["service", if healthy { "restart" } else { "start" }]),
-            );
+            if gateway == GatewayState::Unavailable {
+                self.refresh();
+            } else {
+                self.ask(
+                    if healthy {
+                        tr("action.restart_service_confirm")
+                    } else {
+                        tr("action.start_service_confirm")
+                    },
+                    words(&["service", if healthy { "restart" } else { "start" }]),
+                );
+            }
         }
         if healthy
             && self.ui.button(

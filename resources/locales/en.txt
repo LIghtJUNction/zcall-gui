@@ -191,3 +191,15 @@ agents.route_count	{count} available routes
 agents.select_route	Select a route to continue
 agents.apply_route	Use this route
 agents.apply_named	Connect {name} to {route}
+action.retry	Try again
+status.loading_short	Reading…
+status.loading_help	Reading the gateway and saved local settings.
+status.unknown	Unknown
+error.invalid_response	The local command returned no usable state.
+overview.loading	Reading gateway state
+overview.unavailable	Gateway state is unavailable
+overview.unavailable_help	Check the local CLI and configuration, then try again.
+overview.endpoint_unknown	Endpoint not confirmed
+overview.providers_unavailable	The gateway is connected. Its provider list could not be read.
+agents.routes_loading	Reading available routes
+agents.routes_retry_help	Try again to read the existing model catalog.

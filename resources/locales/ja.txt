@@ -191,3 +191,15 @@ agents.route_count	利用可能なルート: {count}
 agents.select_route	使用するルートを選択してください
 agents.apply_route	このルートを使用
 agents.apply_named	{name} を {route} に接続
+action.retry	再試行
+status.loading_short	読み込み中…
+status.loading_help	ゲートウェイと保存済みのローカル設定を読み込んでいます。
+status.unknown	未確認
+error.invalid_response	ローカルコマンドから有効な状態を取得できませんでした。
+overview.loading	ゲートウェイの状態を確認中
+overview.unavailable	ゲートウェイの状態を取得できません
+overview.unavailable_help	ローカルコマンドと設定を確認して、再試行してください。
+overview.endpoint_unknown	接続先アドレスは未確認です
+overview.providers_unavailable	ゲートウェイは接続済みですが、プロバイダーを読み込めませんでした。
+agents.routes_loading	利用可能なルートを読み込み中
+agents.routes_retry_help	既存のモデル一覧を再度読み込みます。

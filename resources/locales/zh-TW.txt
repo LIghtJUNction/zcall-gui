@@ -191,3 +191,15 @@ agents.route_count	{count} 條可用路由
 agents.select_route	請選擇要使用的路由
 agents.apply_route	使用此路由
 agents.apply_named	將 {name} 連接到 {route}
+action.retry	重新檢查
+status.loading_short	正在讀取…
+status.loading_help	正在讀取閘道與已儲存的本機設定。
+status.unknown	待確認
+error.invalid_response	本機命令未傳回可用狀態。
+overview.loading	正在讀取閘道狀態
+overview.unavailable	暫時無法讀取閘道狀態
+overview.unavailable_help	檢查本機命令與設定後，重新讀取狀態。
+overview.endpoint_unknown	介面位址待確認
+overview.providers_unavailable	閘道已連線，但暫時無法讀取供應商清單。
+agents.routes_loading	正在讀取可用路由
+agents.routes_retry_help	重新讀取現有模型目錄後，再選擇要接入的模型。

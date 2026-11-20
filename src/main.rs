@@ -8,6 +8,7 @@ mod package_update;
 mod pages;
 mod settings;
 mod updater;
+mod view_state;
 use backend::{Backend, Reply};
 use i18n::tr;
 use json::Json;
@@ -15,6 +16,7 @@ use std::{
     sync::mpsc,
     time::{Duration, Instant},
 };
+use view_state::LoadState;
 use zgpui::native::{ButtonStyle as Style, Canvas, Event, Rect, Ui, Window, colors::*};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PAGES: [&str; 6] = [
@@ -178,8 +180,11 @@ impl App {
         // The controller's models command uses the real OpenAI catalog shape.
         let mut routes = Vec::new();
         for item in self.state.get("models").get("data").array() {
-            let id = item.get("id").text();
-            if id.is_empty() || routes.iter().any(|route: &RouteChoice| route.id == id) {
+            let Json::String(id) = item.get("id") else {
+                continue;
+            };
+            let id = id.as_str();
+            if id.trim().is_empty() || routes.iter().any(|route: &RouteChoice| route.id == id) {
                 continue;
             }
             routes.push(RouteChoice {
@@ -255,8 +260,14 @@ impl App {
             match reply.result {
                 Ok(data) if reply.label == "refresh" => {
                     self.state = data;
-                    let error = self.state.get("status").get("error").text();
-                    if !error.is_empty() {
+                    if view_state::gateway_state(&self.state)
+                        == view_state::GatewayState::Unavailable
+                    {
+                        let error = value(
+                            self.state.get("status"),
+                            "error",
+                            tr("error.invalid_response"),
+                        );
                         self.notice = i18n::message("error.connection", &[("error", error)]);
                         self.failed = true;
                     } else {
@@ -555,12 +566,37 @@ impl App {
             4 => "privacy",
             _ => "",
         };
-        let error = self.state.get(section).get("error").text().to_owned();
-        if !error.is_empty() {
-            card(c, Rect::new(x, 140., width, 164.));
+        let section_state = match self.page {
+            1..=3 => view_state::collection_state(&self.state, section, section),
+            4 => view_state::privacy_state(&self.state),
+            _ => LoadState::Ready,
+        };
+        if section_state == LoadState::Loading {
+            empty(
+                c,
+                Rect::new(x, 140., width, 172.),
+                tr("status.loading"),
+                tr("status.loading_help"),
+            );
+        } else if section_state == LoadState::Unavailable {
+            card(c, Rect::new(x, 140., width, 194.));
             c.text(tr("error.section"), x + 26., 164., 21, true, TEXT);
-            c.ellipsis(&error, x + 26., 207., width - 52., 14, false, RED);
-            c.text(tr("error.section_help"), x + 26., 252., 14, false, MUTED);
+            let error = value(
+                self.state.get(section),
+                "error",
+                tr("error.invalid_response"),
+            );
+            c.ellipsis(error, x + 26., 207., width - 52., 14, false, MUTED);
+            if self.ui.button(
+                c,
+                31,
+                Rect::new(x + 26., 266., 132., 40.),
+                tr("action.retry"),
+                Style::Secondary,
+                self.enabled(),
+            ) {
+                self.refresh();
+            }
         } else {
             match self.page {
                 0 => self.overview(c, x, width),

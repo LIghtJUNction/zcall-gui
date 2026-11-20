@@ -15,7 +15,25 @@ cargo build --release --offline
 
 Rust 1.100 and a native C compiler are required. On Arch Linux, install `base-devel rust pkgconf libx11 libgl freetype2 fontconfig`. On Ubuntu/Debian, install `build-essential pkg-config libx11-dev libgl1-mesa-dev libfreetype6-dev libfontconfig1-dev`. Linux Wayland sessions use XWayland.
 
-The gateway is a separate installation; management commands require zcalld 0.2.0 or newer. Use `zcall-gui --zcalld /absolute/path/to/zcalld --config /path/to/config.conf` to select a custom CLI or configuration. If the CLI is absent or an operation fails, the application displays the error; it does not silently create a second gateway.
+Management commands require zcalld 0.2.0 or newer. Use `zcall-gui --zcalld /absolute/path/to/zcalld --config /path/to/config.conf` to select a custom CLI or configuration. A missing CLI presents **Install background service**. Installation requires an explicit review and confirmation; opening the GUI never downloads or starts a gateway.
+
+## Install the gateway
+
+The GUI obtains a complete native gateway from an official stable core release. It first verifies the small `zcalld-installer` helper against that release's SHA-256 list and checks its version and supported installer protocol. The same helper implements the core CLI's `zcalld install` commands. It validates and stages the full archive, including the gateway, native plugins and platform helpers, before changing an owned installation.
+
+The confirmation page shows the version, installation location and administrator requirement. New installations use a private location and do not request administrator privileges:
+
+| Platform | Default location |
+| --- | --- |
+| Linux | `$XDG_DATA_HOME/zcalld/runtime`, or `~/.local/share/zcalld/runtime` |
+| macOS | `~/Library/Application Support/zcalld/runtime` |
+| Windows | `%LOCALAPPDATA%/zcalld/runtime` |
+
+After a committed transaction, the GUI remembers the actual executable path. It also discovers the default private installation on later launches, so editing `PATH` is not required. An explicit `--zcalld` or `ZCALLD_BIN` still takes precedence. Unknown shared or legacy directories are not adopted; an unmanaged legacy executable can be left in place while a new private installation is prepared.
+
+Installation leaves service control and user configuration separate. For a committed private installation whose selected configuration is explicitly reported missing, the next action is **Initialize configuration**. It invokes the core's existing `init` command after a fresh state check; an existing or unreadable file is never treated as missing. The confirmation identifies the configuration location. No service is started by initialization.
+
+On Linux, **Install user service** then verifies or creates the user unit for that exact executable and configuration. A pre-existing unrelated unit is an error, even if the service manager reports a unit with the same name. Only after this explicit check does the bootstrap flow offer **Start gateway**. On macOS and Windows, the core's existing service-start registration remains a separate explicit action. Opening the GUI, preparing a bundle and completing its installation do not start or stop a service, refresh an account, install a model or rewrite an AI tool's configuration.
 
 ## Controls
 
@@ -24,7 +42,7 @@ The gateway is a separate installation; management commands require zcalld 0.2.0
 - **AI tools:** detect supported tools, apply a gateway route, or revert an earlier configuration change.
 - **Plugins:** inspect enabled state, install a local library or pinned remote source, enable/disable, update or remove a plugin. Newly installed native code requires a separate enable action.
 - **Privacy:** select off, secret sanitization, or secret plus personal information sanitization.
-- **Updates:** check and apply gateway or GUI updates.
+- **Updates:** install a missing gateway, update a complete unmanaged gateway, inspect or recover an installation, or use the package manager for a managed installation. GUI updates remain separate.
 
 Tab / Shift+Tab move focus, Enter activates buttons, Ctrl+A selects an input, and standard copy/paste shortcuts work. Ctrl+Q closes the GUI. Provider rows open details on demand. Adding an endpoint uses two short steps; removal stays in the detail panel.
 
@@ -48,12 +66,34 @@ The previews use synthetic local configuration in a private native window.
 
 ## Updates
 
+### Gateway and native plugins
+
+The gateway update button prepares a fixed official release and displays its confirmation. Its saved plan is bound to the release commit, platform, archive checksum and installation location. The GUI rechecks the downloaded helper and approved plan before invoking them. Verification and recovery paths are available in **Details**.
+
+If an owned gateway is still running, the installation stays at **Waiting for service exit**. Stop it through the existing service controls, then use **Complete update** or **Check status**. A launched helper or pending transaction is never reported as an installed update. Closing the window does not cancel a helper already performing a transaction; reopening reads its local result. The prior installation and recovery journal are retained for **Restore previous**.
+
+The same GUI entry point is available without opening a window:
+
+```sh
+zcall-gui --core-install prepare
+zcall-gui --core-install apply
+zcall-gui --core-install status
+zcall-gui --core-install resume
+zcall-gui --core-install rollback
+```
+
+These commands return JSON. `prepare` obtains the official metadata and verified helper; `apply` is the explicit installation action. `status` only reads local installation state. Native bootstrap needs system `curl` and `tar`; Windows also uses its built-in PowerShell to set and verify private cache permissions. The GUI and installer add no third-party Rust dependency or Python runtime requirement. A core release without the complete archive and installer protocol is rejected before installation.
+
+Managed paths remain on their package-manager update route. For AUR packages, the existing native terminal preserves package review, authorization, source-versus-binary package identity, and actual exit status.
+
+### GUI executable
+
 ```sh
 zcall-gui --update check
 zcall-gui --update apply
 ```
 
-The updater downloads only the official stable GitHub release for the current platform, checks SHA-256 and the staged executable's version, retains one previous binary, then replaces the installed executable. A user-writable installation can update in place. For an AUR installation, the Updates page opens a native terminal with paru or yay, preserves the installed source or binary package, and reports the actual completion result. The terminal retains normal package review and authorization.
+The GUI self-updater downloads only its official stable GitHub release for the current platform, checks SHA-256 and the staged executable's version, retains one previous GUI binary, then replaces that executable. A user-writable GUI can update in place. Managed GUI packages use their package manager.
 
 Linux and macOS keep the current process alive until you close it and open the new version. Windows uses a small deferred helper after the current process exits. The current first implementation is unsigned; Windows/macOS may require their normal downloaded-application approval.
 

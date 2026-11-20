@@ -12,3 +12,4 @@ dependencies = [
 [[package]]
 name = "zgpui"
 version = "0.1.5"
+source = "git+https://github.com/LIghtJUNction/zgpui.git#b4d5493e0cd985d00558c7be0b5726965ab5163a"

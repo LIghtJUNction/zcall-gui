@@ -170,3 +170,8 @@ updates.package_restart	パッケージ処理が完了しました：{version}�
 privacy.saved	保存済み
 privacy.restart_required	保存済み。ゲートウェイの起動・再起動後に適用されます。
 privacy.runtime_unknown	実行状態はまだ確認できていません。
+overview.subtitle	ローカルゲートウェイと AI ツールをまとめて管理。
+overview.providers_count	設定済みプロバイダー
+overview.agents_count	検出した AI ツール
+action.connect_tools	AI ツールを接続
+overview.add_help	プロバイダーを追加して、AI ツールを接続します。

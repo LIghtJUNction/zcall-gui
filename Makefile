@@ -17,3 +17,7 @@ install:
 	install -Dm644 packaging/zcall-gui.svg "$(DESTDIR)$(PREFIX)/share/icons/hicolor/scalable/apps/zcall-gui.svg"
 	install -Dm644 LICENSE "$(DESTDIR)$(PREFIX)/share/licenses/zcall-gui/LICENSE"
 	install -Dm644 vendor/zui/LICENSE "$(DESTDIR)$(PREFIX)/share/licenses/zcall-gui/zui-LICENSE"
+
+.PHONY: icons
+icons:
+	python3 scripts/generate_icons.py

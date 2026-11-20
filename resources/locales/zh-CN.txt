@@ -170,3 +170,8 @@ updates.package_restart	包管理器已完成，已安装 {version}。重新打�
 privacy.saved	已保存
 privacy.restart_required	配置已保存，启动或重启网关后生效。
 privacy.runtime_unknown	运行状态尚未确认。
+overview.subtitle	本地网关与 AI 工具，一处管理。
+overview.providers_count	已配置的供应商
+overview.agents_count	检测到的 AI 工具
+action.connect_tools	接入 AI 工具
+overview.add_help	先添加供应商，再接入常用 AI 工具。

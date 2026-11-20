@@ -3,88 +3,80 @@ impl App {
     pub(super) fn overview(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let state = self.state.get("status").clone();
         let healthy = state.get("healthy").boolean();
+        let providers_known = !matches!(self.state.get("providers").get("providers"), Json::Null);
+        let has_providers = !self
+            .state
+            .get("providers")
+            .get("providers")
+            .array()
+            .is_empty();
         let available = state.get("error").text().is_empty() && !matches!(state, Json::Null);
-        let center = (x + width / 2.).round();
-        let top = ((c.height - 600.) * 0.28 + 68.).round().clamp(68., 220.);
-        let halo = if c.theme == zui::Theme::Dark {
-            0x1d2a40ff
+        c.text(tr("nav.overview"), x, 34., 26, true, TEXT);
+        c.ellipsis(tr("overview.subtitle"), x, 79., width, 14, false, MUTED);
+
+        let top = 126.;
+        let panel = Rect::new(x, top, width, 202.);
+        c.rect(panel, 16., 0xe8edf3ff);
+        c.rect(panel.inset(1.), 15., BG);
+        brand(c, Rect::new(x + 22., top + 22., 40., 40.), BG);
+        let heading = if healthy {
+            tr("overview.running")
         } else {
-            0xf3f7ffff
+            tr("overview.stopped")
         };
-        let edge = if c.theme == zui::Theme::Dark {
-            0x283a55ff
-        } else {
-            0xeaf0fcff
-        };
-        c.rect(Rect::new(center - 108., top, 216., 216.), 108., edge);
-        c.rect(Rect::new(center - 107., top + 1., 214., 214.), 107., halo);
-        brand(c, Rect::new(center - 96., top + 12., 192., 192.), halo);
+        c.ellipsis(
+            heading,
+            x + 77.,
+            top + 22.,
+            (width - 208.).max(150.),
+            23,
+            true,
+            TEXT,
+        );
         let status = if healthy {
             tr("status.connected")
         } else {
             tr("status.disconnected")
         };
         let status_width = c.measure(status, 13, false);
+        let status_x = x + width - status_width - 24.;
         c.rect(
-            Rect::new(
-                (center - status_width / 2. - 14.).round(),
-                top + 256.,
-                6.,
-                6.,
-            ),
-            3.,
+            Rect::new(status_x - 12., top + 32., 5., 5.),
+            2.5,
             if healthy { GREEN } else { MUTED },
         );
         c.text(
             status,
-            (center - status_width / 2.).round(),
-            top + 249.,
+            status_x,
+            top + 26.,
             13,
             false,
             if healthy { GREEN } else { MUTED },
         );
-        let heading = if healthy {
-            tr("overview.running")
-        } else {
-            tr("overview.stopped")
-        };
-        let heading_width = c.measure(heading, 28, true);
-        c.text(
-            heading,
-            (center - heading_width / 2.).round(),
-            top + 286.,
-            28,
-            true,
-            TEXT,
-        );
-        let address = value(&state, "listen", "127.0.0.1:9415");
-        let address_width = c.measure(address, 16, false);
-        c.text(
-            address,
-            (center - address_width / 2.).round(),
-            top + 333.,
-            16,
+        c.ellipsis(
+            value(&state, "listen", "127.0.0.1:9415"),
+            x + 77.,
+            top + 60.,
+            width - 101.,
+            15,
             false,
             MUTED,
         );
-        let detail = if healthy {
+        let detail = if healthy && providers_known && !has_providers {
+            tr("overview.add_help")
+        } else if healthy {
             tr("overview.ready_help")
         } else if available {
             tr("overview.start_help")
         } else {
             tr("overview.install_help")
         };
-        let detail_width = c.measure(detail, 14, false);
-        c.ellipsis(
-            detail,
-            (center - detail_width.min(width) / 2.).round(),
-            top + 371.,
-            width,
-            14,
-            false,
-            MUTED,
-        );
-        let label = if healthy {
+        c.ellipsis(detail, x + 24., top + 102., width - 48., 14, false, MUTED);
+        let label = if healthy && has_providers {
+            tr("action.connect_tools")
+        } else if healthy && providers_known {
+            tr("action.add_provider")
+        } else if healthy {
             tr("action.manage_providers")
         } else if available {
             tr("action.start_gateway")
@@ -94,13 +86,23 @@ impl App {
         if self.ui.button(
             c,
             100,
-            Rect::new(center - 78., top + 421., 156., 44.),
+            Rect::new(x + 24., top + 145., 162., 38.),
             label,
             Style::Primary,
             self.enabled(),
         ) {
-            if healthy {
+            if healthy && has_providers {
+                self.page = 2;
+                self.scroll = 0;
+            } else if healthy {
                 self.page = 1;
+                self.scroll = 0;
+                if providers_known {
+                    self.clear_key();
+                    self.provider = ProviderForm::default();
+                    self.provider_edit = false;
+                    self.provider_panel = 2;
+                }
             } else if available {
                 self.ask(
                     tr("action.start_service_confirm"),
@@ -114,7 +116,7 @@ impl App {
             && self.ui.button(
                 c,
                 101,
-                Rect::new(center - 78., top + 479., 156., 36.),
+                Rect::new(x + 200., top + 145., 156., 38.),
                 tr("action.service_settings"),
                 Style::Quiet,
                 self.enabled(),
@@ -122,6 +124,67 @@ impl App {
         {
             self.service_panel = true;
         }
+
+        let providers = self.state.get("providers").get("providers");
+        let agents = self.state.get("agents").get("agents");
+        let provider_count = if matches!(providers, Json::Null) {
+            "—".to_owned()
+        } else {
+            providers.array().len().to_string()
+        };
+        let agent_count = if matches!(agents, Json::Null) {
+            "—".to_owned()
+        } else {
+            agents
+                .array()
+                .iter()
+                .filter(|agent| agent.get("installed").boolean())
+                .count()
+                .to_string()
+        };
+        let tile_width = (width - 16.) / 2.;
+        for (index, (label, count, page)) in [
+            (tr("overview.providers_count"), provider_count, 1),
+            (tr("overview.agents_count"), agent_count, 2),
+        ]
+        .iter()
+        .enumerate()
+        {
+            let left = x + index as f32 * (tile_width + 16.);
+            let tile = Rect::new(left, top + 222., tile_width, 120.);
+            c.rect(tile, 14., 0xf7f9fcff);
+            if self.ui.button(
+                c,
+                110 + index as u64,
+                tile,
+                "",
+                Style::Quiet,
+                self.enabled(),
+            ) {
+                self.page = *page;
+                self.scroll = 0;
+            }
+            c.text(count, left + 22., top + 242., 30, true, TEXT);
+            c.ellipsis(
+                label,
+                left + 22.,
+                top + 290.,
+                tile_width - 44.,
+                13,
+                false,
+                MUTED,
+            );
+            c.text("›", left + tile_width - 28., top + 262., 24, false, MUTED);
+        }
+        c.ellipsis(
+            tr("overview.independent"),
+            x,
+            top + 374.,
+            width,
+            13,
+            false,
+            MUTED,
+        );
     }
     pub(super) fn providers(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();

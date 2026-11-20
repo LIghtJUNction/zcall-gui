@@ -383,7 +383,7 @@ impl App {
         let sidebar = 166.;
         c.rect(Rect::new(0., 0., sidebar, c.height), 0., 0xf7f9fcff);
         c.rect(Rect::new(sidebar - 1., 0., 1., c.height), 0., 0xe8edf3ff);
-        brand(c, Rect::new(18., 26., 38., 38.), BG);
+        brand(c, Rect::new(18., 26., 38., 38.), 0xf7f9fcff);
         c.text("zcall", 64., 33., 21, true, TEXT);
         c.text(tr("brand.subtitle"), 22., 76., 12, false, MUTED);
         let modal = self.modal();
@@ -598,44 +598,72 @@ fn field(
     );
 }
 fn brand(c: &mut Canvas<'_>, r: Rect, background: u32) {
+    const OUTER: [(f32, f32); 33] = [
+        (9.6, 5.0),
+        (21.0, 5.0),
+        (21.46875, 5.03125),
+        (21.875, 5.125),
+        (22.21875, 5.28125),
+        (22.5, 5.5),
+        (22.71875, 5.78125),
+        (22.875, 6.125),
+        (22.96875, 6.53125),
+        (23.0, 7.0),
+        (23.0, 9.2),
+        (6.4, 20.0),
+        (5.5, 20.0),
+        (5.03125, 19.96875),
+        (4.625, 19.875),
+        (4.28125, 19.71875),
+        (4.0, 19.5),
+        (3.78125, 19.21875),
+        (3.625, 18.875),
+        (3.53125, 18.46875),
+        (3.5, 18.0),
+        (3.5, 11.7),
+        (3.55318, 10.79091),
+        (3.7088, 9.91898),
+        (3.96094, 9.09219),
+        (4.3037, 8.31852),
+        (4.73119, 7.60596),
+        (5.2375, 6.9625),
+        (5.81672, 6.39612),
+        (6.46296, 5.91481),
+        (7.17031, 5.52656),
+        (7.93287, 5.23935),
+        (8.74473, 5.06117),
+    ];
+    const INNER: [(f32, f32); 13] = [
+        (10.0, 10.0),
+        (17.0, 10.0),
+        (17.0, 13.10361),
+        (13.16296, 15.6),
+        (8.0, 15.6),
+        (8.0, 12.3),
+        (8.03125, 11.76094),
+        (8.125, 11.29375),
+        (8.28125, 10.89844),
+        (8.5, 10.575),
+        (8.78125, 10.32344),
+        (9.125, 10.14375),
+        (9.53125, 10.03594),
+    ];
     let ink = if c.theme == zui::Theme::Dark {
-        0x8bb7ffff
+        0xd6e4e5ff
     } else {
-        0x1769f5ff
+        0x344b4dff
     };
-    let point = |(x, y): (f32, f32)| (r.x + x * r.w / 64., r.y + y * r.h / 64.);
-    let radius = 5. * r.w / 64.;
-    let mut points = vec![(13., 17.), (48., 17.)];
-    for i in 1..=8 {
-        let t = i as f32 / 8.;
-        let u = 1. - t;
-        points.push((
-            u * u * u * 48. + 3. * u * u * t * 51.6 + 3. * u * t * t * 53.4 + t * t * t * 50.8,
-            u * u * u * 17. + 3. * u * u * t * 17. + 3. * u * t * t * 21.4 + t * t * t * 24.,
-        ));
-    }
-    points.extend([(23.2, 47.), (51., 47.)]);
-    for pair in points.windows(2) {
-        c.line(point(pair[0]), point(pair[1]), radius * 2., ink);
-    }
-    for p in points {
-        let (x, y) = point(p);
-        c.rect(
-            Rect::new(x - radius, y - radius, radius * 2., radius * 2.),
-            radius,
-            ink,
-        );
-    }
-    for p in [(13., 17.), (51., 47.)] {
-        let (x, y) = point(p);
-        let hole = 3. * r.w / 64.;
-        c.rect(
-            Rect::new(x - hole, y - hole, hole * 2., hole * 2.),
-            hole,
-            background,
-        );
+    for flipped in [false, true] {
+        let point = |(x, y): (f32, f32)| {
+            let (x, y) = if flipped { (32. - x, 32. - y) } else { (x, y) };
+            (r.x + x * r.w / 32., r.y + y * r.h / 32.)
+        };
+        // Both contours are convex; the cutout matches this surface's background.
+        c.polygon(&OUTER.map(point), ink);
+        c.polygon(&INNER.map(point), background);
     }
 }
+
 fn icon(c: &mut Canvas<'_>, index: usize, x: f32, y: f32, ink: u32, bg: u32) {
     let outline = |c: &mut Canvas<'_>, r: Rect, radius: f32| {
         c.rect(r, radius, ink);
@@ -767,6 +795,7 @@ fn run() -> Result<(), String> {
     let mut event = None;
     let mut dirty = true;
     let mut frames = 0u64;
+    let mut smoke_ready = false;
     loop {
         if app.quit
             || matches!(
@@ -793,6 +822,10 @@ fn run() -> Result<(), String> {
             }
             window.present();
             frames += 1;
+            if smoke.is_some() && !app.busy && !smoke_ready {
+                eprintln!("Smoke ready: state loaded and presented");
+                smoke_ready = true;
+            }
             if let Some(text) = app.ui.clipboard.take() {
                 window.copy(&text);
             }

@@ -2,7 +2,7 @@
 
 zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
 
-The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.4 as a pinned Git submodule at `vendor/zgpui`. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
+The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.5 as a pinned Git submodule at `vendor/zgpui`. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
 
 ## Build and run
 
@@ -113,7 +113,7 @@ cargo build --release --offline
 xvfb-run -a -s '-screen 0 1100x740x24 -nolisten tcp' python3 scripts/ui_smoke.py
 ```
 
-The Linux GUI has been opened on an Intel UHD GPU. The real-window test uses an isolated Xvfb display. It exercises provider stdin credentials, agent route changes, plugin activation, privacy selection and update checks against a local fixture. A separate run uses the actual developing zcalld CLI and an isolated home to verify saved providers, agent apply/restore, privacy changes and appearance persistence. Neither run calls a remote model. Screenshots contain isolated test configuration. [Validation evidence](docs/VALIDATION.md) records the scope and current limits.
+The Linux GUI has been opened on an Intel UHD GPU. The real-window test uses an isolated Xvfb display. It exercises provider stdin credentials, agent route changes, plugin activation, privacy selection and update checks against a local fixture. A separate run uses the actual developing zcalld CLI and an isolated home to verify saved providers, agent apply/restore, privacy changes and appearance persistence. Neither run calls a remote model. Screenshots contain isolated test configuration. [Validation evidence](docs/VALIDATION.md) records the scope and current limits. [The 0.1.4 release record](docs/validation-0.1.4.md) identifies the exact source, native jobs and published archives.
 
 The native backend currently uses X11/GLX on Linux, Win32/WGL on Windows and Cocoa/OpenGL on macOS. Apple has [deprecated OpenGL](https://developer.apple.com/documentation/appkit/nsopenglcontext); there is no Metal or native Wayland backend in this version. Native screen-reader accessibility and complex-script shaping are also not implemented.
 

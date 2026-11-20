@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "repository": "LIghtJUNction/zcall-gui",
+  "version": "0.1.4",
+  "tag_commit": "190d9e355f44e3cd0bd785f434ebbd6b244e13be",
+  "candidate_run": 44768446366,
+  "formal_run": 44775346541,
+  "formal_run_url": "https://github.com/LIghtJUNction/zcall-gui/actions/runs/44775346541",
+  "jobs": [
+    {
+      "id": 136423558983,
+      "name": "build / build (ubuntu-24.04-arm, aarch64-unknown-linux-gnu)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136423559427,
+      "name": "build / build (ubuntu-24.04, x86_64-unknown-linux-gnu)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136423559522,
+      "name": "build / build (windows-2025, x86_64-pc-windows-msvc)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136423559683,
+      "name": "build / build (macos-15-intel, x86_64-apple-darwin)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136423559705,
+      "name": "build / build (macos-15, aarch64-apple-darwin)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 136425043993,
+      "name": "publish",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "release": {
+    "id": 452938255,
+    "published_at": "2026-11-20T16:41:01Z",
+    "draft": false,
+    "prerelease": false,
+    "url": "https://github.com/LIghtJUNction/zcall-gui/releases/tag/v0.1.4",
+    "assets": [
+      {
+        "name": "SHA256SUMS",
+        "size": 1762,
+        "digest": "sha256:010b93a0a224661ea3ad3c7f4f76bc0206602d2a7348672afc87ac23e6b4add0",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/SHA256SUMS"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-aarch64-apple-darwin",
+        "size": 815440,
+        "digest": "sha256:550875b00ebf29f02609568a2346f453d192763900973e4d3192f913b467030c",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-aarch64-apple-darwin"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-aarch64-apple-darwin.sha256",
+        "size": 104,
+        "digest": "sha256:2ce3bab22c513dc5ceddfa0f956149e66361588c790d57dbeb9f5c95c64c81ac",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-aarch64-apple-darwin.sha256"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-aarch64-apple-darwin.tar.gz",
+        "size": 634731,
+        "digest": "sha256:fe33a2fa01b27923012b95400778e9fc54b864ef4a254c7782e5ff0bb41e82f4",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-aarch64-apple-darwin.tar.gz"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-aarch64-unknown-linux-gnu",
+        "size": 856920,
+        "digest": "sha256:82103586e4893b8caf601be9a58dac640424352b97f21a1f23006c8e8ea3ab65",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-aarch64-unknown-linux-gnu"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-aarch64-unknown-linux-gnu.sha256",
+        "size": 109,
+        "digest": "sha256:737d1860f7af8fa35981df0c0423ff9ff20632ab7bfdbe86acce7dd1561e214b",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-aarch64-unknown-linux-gnu.sha256"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-aarch64-unknown-linux-gnu.tar.gz",
+        "size": 608388,
+        "digest": "sha256:e98c55aad815eb60a0f86f9e57a36e9c2474f1399776622ca06ba70898cdaed7",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-aarch64-unknown-linux-gnu.tar.gz"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-source.tar.gz",
+        "size": 480777,
+        "digest": "sha256:2d897aaba3f593c8f9fecc43caba90d725b08a85bb4f15a1d026d889a30d2f1c",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-source.tar.gz"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-apple-darwin",
+        "size": 878752,
+        "digest": "sha256:b0da44e0f607d3f2c620664f2555222815d54d16362f7f17226ab19ab463b89f",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-apple-darwin"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-apple-darwin.sha256",
+        "size": 103,
+        "digest": "sha256:bf47c86294befa503932d496e76f39bb67c2b4c3fb6a4ae554cc13617fe3e0c0",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-apple-darwin.sha256"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-apple-darwin.tar.gz",
+        "size": 666267,
+        "digest": "sha256:ad7766c26a55ee9beeab6c6c325cec3b159b739101400252542ade0c9291ba3c",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-apple-darwin.tar.gz"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-pc-windows-msvc.exe",
+        "size": 938496,
+        "digest": "sha256:471bd0d390b444d2e94936be372b687da64fc909a91c66eb10d5139500f130c6",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-pc-windows-msvc.exe"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-pc-windows-msvc.exe.sha256",
+        "size": 111,
+        "digest": "sha256:100e4958db68b006ad2b34175e14a47a1d7a20f0b76c0810c7e1fbad69d20e7d",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-pc-windows-msvc.exe.sha256"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-pc-windows-msvc.zip",
+        "size": 658352,
+        "digest": "sha256:9514db123f2f0bc65e0eb1ad0519c50ada4dcb178b39dc9087e6fd6e7ec8512c",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-pc-windows-msvc.zip"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-unknown-linux-gnu",
+        "size": 946120,
+        "digest": "sha256:840a0aa9a960f6e68ed34312d43f52fcb5ac58f0b05e845848664a199a3f8eab",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-unknown-linux-gnu"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-unknown-linux-gnu.sha256",
+        "size": 108,
+        "digest": "sha256:5fbd4c517f800f710716e683b68651bd138597b39d37464f4c0b1cdaf3c4666e",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-unknown-linux-gnu.sha256"
+      },
+      {
+        "name": "zcall-gui-v0.1.4-x86_64-unknown-linux-gnu.tar.gz",
+        "size": 634336,
+        "digest": "sha256:103e27a0e7398abb0dce39b6f69638b263be4ecb5ceb0ea8a04ed358157ae7ed",
+        "url": "https://github.com/LIghtJUNction/zcall-gui/releases/download/v0.1.4/zcall-gui-v0.1.4-x86_64-unknown-linux-gnu.tar.gz"
+      }
+    ]
+  },
+  "device_installed": false,
+  "benchmark_scope": "Native correctness gates. No claim that the Windows hosted runner used a hardware GPU."
+}

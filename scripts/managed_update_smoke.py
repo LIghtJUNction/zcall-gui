@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Exercise only managed-update UI wiring with private, inert package tools."""
-import json, os, pathlib, subprocess, sys, tempfile, time
+import argparse, json, os, pathlib, subprocess, sys, tempfile, time
 from PIL import ImageGrab
 
 root = pathlib.Path(__file__).resolve().parents[1]
-binary = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else root / "target/release/zcall-gui").resolve()
+parser = argparse.ArgumentParser()
+parser.add_argument("binary", nargs="?", default=str(root / "target/release/zcall-gui"))
+parser.add_argument("--output", default=str(root / "_validation/managed-update"))
+args = parser.parse_args()
+binary = pathlib.Path(args.binary).resolve()
 display = os.environ.get("DISPLAY", "")
 if not display or display == ":0":
     raise SystemExit("Use xvfb-run -a; host-display input is not allowed")
-output = root / "_validation/managed-update"
+output = pathlib.Path(args.output).resolve()
 output.mkdir(parents=True, exist_ok=True)
 with tempfile.TemporaryDirectory(prefix="zcall-managed-ui-") as temp:
     temp = pathlib.Path(temp)
@@ -22,9 +26,13 @@ with tempfile.TemporaryDirectory(prefix="zcall-managed-ui-") as temp:
         path.chmod(0o755)
         return path
     program("pacman", "import sys\nprint('zcalld-bin')\n")
-    program("paru", """import pathlib,sys,json
+    program("paru", """import pathlib,sys,json,time
 p=pathlib.Path(__file__).parent.parent
 with (p/'helper.jsonl').open('a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
+deadline=time.monotonic()+15
+while not (p/'allow-exit').exists():
+ if time.monotonic()>=deadline:raise SystemExit(98)
+ time.sleep(.02)
 raise SystemExit(int((p/'exit-code').read_text()))
 """)
     program("xdg-terminal-exec", """import os,pathlib,sys,json
@@ -68,9 +76,15 @@ print(json.dumps(r))
             time.sleep(.08)
         raise AssertionError(message)
     def pixels():return ImageGrab.grab(bbox=(0,0,1080,740),xdisplay=display)
+    def notice_color():
+        return pixels().getpixel((201,718))[:3]
     def red_notice():
-        r,g,b=pixels().getpixel((201,718))[:3]
-        return r>170 and g<120 and b<120
+        r,g,b=notice_color()
+        # Distinguish a red error from the warm copper busy/accent color.
+        return r>120 and r-g>70 and r-b>70
+    def busy_notice():
+        r,g,b=notice_color()
+        return r>g>b and 35<=r-g<=65 and g-b>25
     try:
         window=""
         def locate():
@@ -90,7 +104,14 @@ print(json.dumps(r))
         time.sleep(.3)
         click()
         until(lambda:len(lines("helper.jsonl"))==1,"Package helper did not start")
+        until(busy_notice,"Running helper was not shown in copper")
+        assert not red_notice(),"Busy indicator was classified as an error"
+        busy_color=notice_color()
+        pixels().save(output/"busy.png")
+        (temp/"allow-exit").touch()
         until(red_notice,"Failed helper was not shown as an error")
+        failed_color=notice_color()
+        assert not busy_notice(),"Failed indicator was classified as busy"
         failed_calls=len(lines("calls.jsonl"))
         pixels().save(output/"failure.png")
         (temp/"exit-code").write_text("0")
@@ -108,6 +129,8 @@ print(json.dumps(r))
             assert result.name=="result" and not result.parent.exists(),args
         report={"scope":"private native Xvfb window; inert pacman, paru and terminal fixtures",
                 "actual_system_upgrade":False,"helper_arguments":helpers,
+                "busy_distinct_from_error":True,"busy_indicator_rgb":busy_color,
+                "failure_indicator_rgb":failed_color,
                 "nonzero_exit_displayed":True,"success_refreshed_state":True,
                 "json_command_not_executed":True,"temporary_result_paths_removed":True}
         (output/"result.json").write_text(json.dumps(report,indent=2)+"\n")

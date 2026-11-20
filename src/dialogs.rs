@@ -549,7 +549,7 @@ impl App {
         }
     }
     pub(super) fn confirm_dialog(&mut self, c: &mut Canvas<'_>) {
-        c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x20212455);
+        c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x00000066);
         let r = Rect::new(
             ((c.width - 452.) / 2.).round(),
             ((c.height - 230.) / 2.).round(),

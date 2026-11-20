@@ -50,3 +50,11 @@ the actual window properties and private-fixture outcomes.
 These results cover Linux x86_64. Windows/macOS native execution has not been
 repeated for this dependency migration; the existing release gate still
 applies before publishing new application binaries.
+
+## Final release source
+
+The final gitlink is [cb50f2fe554622fdc984ae7fec9bcd844f175d67](https://github.com/LIghtJUNction/zgpui/commit/cb50f2fe554622fdc984ae7fec9bcd844f175d67).
+Its `src/`, `native/`, `build.rs` and `Cargo.lock` are byte-identical
+to the runtime tested above. The manifest changes only the package inclusion
+list. [The source comparison](evidence/zgpui-release-source.json) separates
+this final release-source pin from the earlier executed test revision.

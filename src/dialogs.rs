@@ -489,6 +489,7 @@ impl App {
         let x = r.x + 32.;
         let gateway = view_state::gateway_state(&self.state);
         let healthy = gateway == GatewayState::Healthy;
+        let setup = self.setup_step();
         let enabled = !self.busy && self.confirm.is_none();
         if self.ui.button(
             c,
@@ -514,21 +515,36 @@ impl App {
             true,
             TEXT,
         );
-        c.text(tr("service.independent"), x, 154., 14, false, MUTED);
+        c.ellipsis(
+            self.setup_help().unwrap_or(tr("service.independent")),
+            x,
+            154.,
+            r.w - 64.,
+            14,
+            false,
+            MUTED,
+        );
         if self.ui.button(
             c,
             9301,
-            Rect::new(x, 225., 142., 44.),
-            match gateway {
-                GatewayState::Loading => tr("status.loading_short"),
-                GatewayState::Unavailable => tr("action.retry"),
-                GatewayState::Offline => tr("action.start_service"),
-                GatewayState::Healthy => tr("action.restart_service"),
+            Rect::new(x, 225., 220., 44.),
+            match setup {
+                Some(core_install_ui::SetupStep::Initialize) => tr("setup.initialize"),
+                Some(core_install_ui::SetupStep::RegisterService) => tr("setup.install_service"),
+                Some(core_install_ui::SetupStep::Inspect) => tr("action.retry"),
+                _ => match gateway {
+                    GatewayState::Loading => tr("status.loading_short"),
+                    GatewayState::Unavailable => tr("action.retry"),
+                    GatewayState::Offline => tr("action.start_service"),
+                    GatewayState::Healthy => tr("action.restart_service"),
+                },
             },
             Style::Primary,
             enabled && gateway != GatewayState::Loading,
         ) {
-            if gateway == GatewayState::Unavailable {
+            if let Some(step) = setup.filter(|step| *step != core_install_ui::SetupStep::Ready) {
+                self.trigger_setup_step(step);
+            } else if gateway == GatewayState::Unavailable {
                 self.refresh();
             } else {
                 self.ask(
@@ -559,35 +575,119 @@ impl App {
     }
     pub(super) fn confirm_dialog(&mut self, c: &mut Canvas<'_>) {
         c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x00000066);
+        let installer = self.confirm.as_ref().unwrap().install;
+        let setup = self.confirm.as_ref().unwrap().setup;
+        let height = if installer.is_some() || setup.is_some() {
+            278.
+        } else {
+            230.
+        };
         let r = Rect::new(
             ((c.width - 452.) / 2.).round(),
-            ((c.height - 230.) / 2.).round(),
+            ((c.height - height) / 2.).round(),
             452.,
-            230.,
+            height,
         );
         c.rect(r, 20., SURFACE);
         let label = self.confirm.as_ref().unwrap().label.clone();
         c.ellipsis(&label, r.x + 28., r.y + 30., 396., 23, true, TEXT);
-        c.text(
-            tr("confirm.description"),
-            r.x + 28.,
-            r.y + 84.,
-            15,
-            false,
-            MUTED,
-        );
-        c.text(
-            tr("confirm.execute"),
-            r.x + 28.,
-            r.y + 112.,
-            15,
-            false,
-            MUTED,
-        );
+        if installer.is_some() {
+            c.ellipsis(
+                &i18n::message(
+                    "install.confirm_version",
+                    &[("version", self.core_installation.get("version").text())],
+                ),
+                r.x + 28.,
+                r.y + 80.,
+                396.,
+                15,
+                false,
+                TEXT,
+            );
+            c.text(
+                tr("install.location"),
+                r.x + 28.,
+                r.y + 111.,
+                12,
+                true,
+                MUTED,
+            );
+            c.ellipsis(
+                self.core_installation.get("prefix").text(),
+                r.x + 28.,
+                r.y + 131.,
+                396.,
+                14,
+                false,
+                TEXT,
+            );
+            c.text(
+                tr("install.no_admin"),
+                r.x + 28.,
+                r.y + 164.,
+                14,
+                false,
+                MUTED,
+            );
+        } else if let Some(operation) = setup {
+            c.text(
+                tr(match operation {
+                    core_install_ui::SetupOperation::Initialize => "setup.confirm_initialize",
+                    core_install_ui::SetupOperation::RegisterService => "setup.confirm_service",
+                }),
+                r.x + 28.,
+                r.y + 80.,
+                14,
+                false,
+                TEXT,
+            );
+            c.text(
+                tr("setup.config_location"),
+                r.x + 28.,
+                r.y + 111.,
+                12,
+                true,
+                MUTED,
+            );
+            c.ellipsis(
+                self.state.get("status").get("configuration_path").text(),
+                r.x + 28.,
+                r.y + 131.,
+                396.,
+                14,
+                false,
+                TEXT,
+            );
+            c.text(
+                tr("setup.no_start"),
+                r.x + 28.,
+                r.y + 164.,
+                14,
+                false,
+                MUTED,
+            );
+        } else {
+            c.text(
+                tr("confirm.description"),
+                r.x + 28.,
+                r.y + 84.,
+                15,
+                false,
+                MUTED,
+            );
+            c.text(
+                tr("confirm.execute"),
+                r.x + 28.,
+                r.y + 112.,
+                15,
+                false,
+                MUTED,
+            );
+        }
         if self.ui.button(
             c,
             9001,
-            Rect::new(r.x + 192., r.y + 163., 104., 40.),
+            Rect::new(r.x + 192., r.y + height - 67., 104., 40.),
             tr("action.cancel"),
             Style::Quiet,
             true,
@@ -597,7 +697,7 @@ impl App {
         if self.ui.button(
             c,
             9002,
-            Rect::new(r.x + 312., r.y + 163., 112., 40.),
+            Rect::new(r.x + 312., r.y + height - 67., 112., 40.),
             tr("action.confirm"),
             Style::Primary,
             true,
@@ -607,7 +707,13 @@ impl App {
             self.plugin_panel = 0;
             self.service_panel = false;
             self.protocol_menu = false;
-            self.action(&action.label, action.args, action.secret);
+            if let Some(operation) = action.install {
+                self.core_operation(operation);
+            } else if let Some(operation) = action.setup {
+                self.setup_operation(operation);
+            } else {
+                self.action(&action.label, action.args, action.secret);
+            }
         }
     }
     pub(super) fn settings_dialog(&mut self, c: &mut Canvas<'_>) {

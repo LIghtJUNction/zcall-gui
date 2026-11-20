@@ -1,5 +1,8 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 mod backend;
+mod core_install;
+mod core_install_io;
+mod core_install_ui;
 mod dialogs;
 mod i18n;
 mod ink;
@@ -73,6 +76,8 @@ struct Action {
     label: String,
     args: Vec<String>,
     secret: Option<Vec<u8>>,
+    install: Option<core_install_ui::Operation>,
+    setup: Option<core_install_ui::SetupOperation>,
 }
 struct App {
     backend: Backend,
@@ -91,6 +96,9 @@ struct App {
     confirm: Option<Action>,
     gateway_update: Json,
     gui_update: Json,
+    core_installation: Json,
+    install_details: bool,
+    setup_service_verified: Option<core_install_ui::SetupContext>,
     quit: bool,
     provider_panel: u8,
     provider_edit: bool,
@@ -123,13 +131,15 @@ fn human(s: &str) -> &str {
         "Start gateway" => tr("action.start_gateway"),
         "Restart gateway" => tr("action.restart_gateway"),
         "Stop gateway" => tr("action.stop_gateway"),
+        "Bootstrap initialize" => tr("setup.initialize"),
+        "Bootstrap service install" => tr("setup.install_service"),
         _ => s,
     }
 }
 impl App {
     fn new(backend: Backend, preferences: settings::Preferences) -> Self {
         let app = Self::unloaded(backend, preferences);
-        app.backend.spawn_refresh(app.sender.clone());
+        app.spawn_refresh();
         app
     }
     fn unloaded(backend: Backend, preferences: settings::Preferences) -> Self {
@@ -151,6 +161,9 @@ impl App {
             confirm: None,
             gateway_update: Json::Null,
             gui_update: Json::Null,
+            core_installation: Json::Null,
+            install_details: false,
+            setup_service_verified: None,
             quit: false,
             provider_panel: 0,
             provider_edit: false,
@@ -172,6 +185,7 @@ impl App {
             || self.service_panel
             || self.settings_panel
             || self.route_picker.is_some()
+            || self.install_details
     }
     fn enabled(&self) -> bool {
         !self.busy && !self.modal()
@@ -232,7 +246,7 @@ impl App {
             self.busy = true;
             self.notice = tr("status.loading").into();
             self.failed = false;
-            self.backend.spawn_refresh(self.sender.clone());
+            self.spawn_refresh();
         }
     }
     fn action(&mut self, label: &str, args: Vec<String>, secret: Option<Vec<u8>>) {
@@ -250,6 +264,8 @@ impl App {
             label: label.into(),
             args,
             secret: None,
+            install: None,
+            setup: None,
         });
     }
     fn poll(&mut self) -> bool {
@@ -259,8 +275,14 @@ impl App {
             self.busy = false;
             match reply.result {
                 Ok(data) if reply.label == "refresh" => {
+                    if data.get("installation") != &Json::Null {
+                        self.accept_installation(data.get("installation").clone(), false, false);
+                    }
                     self.state = data;
-                    if view_state::gateway_state(&self.state)
+                    if self.setup_step() == Some(core_install_ui::SetupStep::Initialize) {
+                        self.notice = tr("setup.initialize_help").into();
+                        self.failed = false;
+                    } else if view_state::gateway_state(&self.state)
                         == view_state::GatewayState::Unavailable
                     {
                         let error = value(
@@ -275,7 +297,17 @@ impl App {
                         self.failed = false;
                     }
                 }
+                Ok(data) if reply.label.starts_with("Core installer ") => {
+                    let prepare = reply.label == "Core installer prepare";
+                    let completed = core_install_ui::committed(&data);
+                    self.accept_installation(data, prepare, true);
+                    if completed && !self.failed {
+                        self.spawn_refresh();
+                        self.busy = true;
+                    }
+                }
                 Ok(data) => {
+                    self.accept_setup(&reply.label, &data);
                     if reply.starts_gateway {
                         self.privacy_restart_pending = false;
                     }
@@ -310,7 +342,7 @@ impl App {
                         && reply.label != "Check gateway update"
                         && reply.label != "Test provider"
                     {
-                        self.backend.spawn_refresh(self.sender.clone());
+                        self.spawn_refresh();
                         self.busy = true;
                     }
                 }
@@ -319,7 +351,11 @@ impl App {
                     self.failed = true;
                 }
             }
-            if !self.failed && self.privacy_needs_restart() {
+            if !self.failed
+                && let Some(notice) = self.installation_notice()
+            {
+                self.notice = notice.into();
+            } else if !self.failed && self.privacy_needs_restart() {
                 self.notice = tr("privacy.restart_required").into();
             }
         }
@@ -357,7 +393,7 @@ impl App {
         let binary = if gui {
             self.executable.clone()
         } else {
-            Some(std::path::PathBuf::from(&self.backend.binary))
+            core_install::resolve_binary(&self.backend.binary)
         };
         let Some(binary) = binary else {
             self.notice = tr("updates.not_owned").into();
@@ -449,6 +485,7 @@ impl App {
                 self.plugin_panel = 0;
                 self.service_panel = false;
                 self.settings_panel = false;
+                self.install_details = false;
                 self.clear_key();
             }
         }
@@ -658,6 +695,9 @@ impl App {
         if self.route_picker.is_some() {
             self.agent_route_dialog(c);
         }
+        if self.install_details {
+            self.installation_dialog(c);
+        }
         if self.confirm.is_some() {
             self.confirm_dialog(c);
         }
@@ -838,10 +878,20 @@ fn icon(c: &mut Canvas<'_>, index: usize, x: f32, y: f32, ink: u32, bg: u32) {
 
 fn run() -> Result<(), String> {
     let args = std::env::args().skip(1).collect::<Vec<_>>();
-    let mut binary = std::env::var("ZCALLD_BIN").unwrap_or_else(|_| "zcalld".into());
     let mut config = None;
     let mut smoke = None;
     let mut preferences = settings::Preferences::load();
+    let mut binary = std::env::var("ZCALLD_BIN")
+        .ok()
+        .or_else(|| {
+            preferences
+                .core_binary
+                .clone()
+                .filter(|value| core_install::resolve_binary(value).is_some())
+        })
+        .or_else(core_install::discover_default)
+        .unwrap_or_else(|| "zcalld".into());
+    let mut core_operation = None;
     let mut page = 0;
     let mut index = 0;
     while index < args.len() {
@@ -852,18 +902,37 @@ fn run() -> Result<(), String> {
             }
             "--help" | "-h" => {
                 println!(
-                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n\n--theme system|light|dark selects appearance for this session.\n--language system|zh-CN|zh-TW|en|ja selects the interface language.\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
+                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n       zcall-gui --core-install prepare|apply|status|resume|rollback\n\n--core-install returns JSON and uses the same verified full-bundle installer as the UI.\n--theme system|light|dark selects appearance for this session.\n--language system|zh-CN|zh-TW|en|ja selects the interface language.\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
                 );
                 return Ok(());
             }
             "--zcalld" | "--config" | "--smoke-seconds" | "--page" | "--update" | "--theme"
-            | "--language" => {
+            | "--language" | "--core-install" => {
                 let option = args[index].clone();
                 index += 1;
                 let text = args
                     .get(index)
                     .ok_or_else(|| format!("{option} needs a value"))?;
                 match option.as_str() {
+                    "--core-install" => {
+                        if core_operation.is_some() {
+                            return Err("Duplicate --core-install".into());
+                        }
+                        use core_install_ui::Operation;
+                        core_operation = Some(match text.as_str() {
+                            "prepare" => Operation::Prepare,
+                            "apply" => Operation::Apply,
+                            "status" => Operation::Status,
+                            "resume" => Operation::Resume,
+                            "rollback" => Operation::Rollback,
+                            _ => {
+                                return Err(
+                                    "Use --core-install prepare|apply|status|resume|rollback"
+                                        .into(),
+                                );
+                            }
+                        });
+                    }
                     "--theme" => {
                         preferences.theme =
                             settings::ThemeChoice::parse(text).ok_or("Unknown theme")?
@@ -904,6 +973,25 @@ fn run() -> Result<(), String> {
             _ => return Err(format!("Unknown option: {}", args[index])),
         }
         index += 1;
+    }
+    if let Some(operation) = core_operation {
+        let result = operation.perform(&binary)?;
+        if matches!(
+            operation,
+            core_install_ui::Operation::Apply | core_install_ui::Operation::Resume
+        ) && core_install_ui::committed(&result)
+        {
+            preferences.core_binary = Some(result.get("binary_path").text().into());
+            preferences.save()?;
+        }
+        println!("{}", result.stringify());
+        if result != Json::Null && !result.get("ok").boolean() {
+            return Err(
+                "Installation did not complete; its saved transaction is available for review."
+                    .into(),
+            );
+        }
+        return Ok(());
     }
     preferences.apply();
     let mut window = Window::new(tr("window.title"), 1080, 740)?;

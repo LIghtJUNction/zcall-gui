@@ -37,6 +37,46 @@ impl Json {
     pub fn object(values: impl IntoIterator<Item = (String, Json)>) -> Self {
         Self::Object(values.into_iter().collect())
     }
+    pub fn stringify(&self) -> String {
+        match self {
+            Self::Null => "null".into(),
+            Self::Bool(value) => value.to_string(),
+            Self::Number(value) => value.clone(),
+            Self::String(value) => quote(value),
+            Self::Array(values) => format!(
+                "[{}]",
+                values
+                    .iter()
+                    .map(Self::stringify)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+            Self::Object(values) => format!(
+                "{{{}}}",
+                values
+                    .iter()
+                    .map(|(key, value)| format!("{}:{}", quote(key), value.stringify()))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ),
+        }
+    }
+}
+fn quote(value: &str) -> String {
+    let mut out = String::from("\"");
+    for character in value.chars() {
+        match character {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if c < ' ' => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }
 pub fn parse(text: &str) -> Result<Json, String> {
     if text.len() > 2 * 1024 * 1024 {

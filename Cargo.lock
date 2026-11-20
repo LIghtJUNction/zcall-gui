@@ -6,9 +6,9 @@ version = 4
 name = "zcall-gui"
 version = "0.1.0"
 dependencies = [
- "zui-native",
+ "zgpui",
 ]
 
 [[package]]
-name = "zui-native"
-version = "0.1.0"
+name = "zgpui"
+version = "0.1.1"

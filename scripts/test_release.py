@@ -9,9 +9,9 @@ class VersionTransaction(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory(prefix="zcall-gui-release-test-")
         self.root=pathlib.Path(self.temp.name);self.previous=release.ROOT;release.ROOT=self.root
         (self.root/"src").mkdir();(self.root/"src/main.rs").write_text("fn main() {}\n")
-        (self.root/"Cargo.toml").write_text('[package]\nname = "zcall-gui"\nversion = "0.1.0"\nedition = "2024"\n[dependencies]\nzui = { package = "zui-native", path = "vendor/zui", version = "=0.1.0" }\n')
-        vendor=self.root/"vendor/zui";(vendor/"src").mkdir(parents=True)
-        (vendor/"Cargo.toml").write_text('[package]\nname = "zui-native"\nversion = "0.1.0"\nedition = "2024"\n[lib]\nname = "zui"\n')
+        (self.root/"Cargo.toml").write_text('[package]\nname = "zcall-gui"\nversion = "0.1.0"\nedition = "2024"\n[dependencies]\nzgpui = { path = "vendor/zgpui", version = "=0.1.1", features = ["native"] }\n')
+        vendor=self.root/"vendor/zgpui";(vendor/"src").mkdir(parents=True)
+        (vendor/"Cargo.toml").write_text('[package]\nname = "zgpui"\nversion = "0.1.1"\nedition = "2024"\n[features]\ndefault = []\nstd = []\nnative = ["std"]\n')
         (vendor/"src/lib.rs").write_text("pub fn example() {}\n")
         (self.root/"CHANGELOG.md").write_text("# Changelog\n\n## Unreleased\n\n- Native UI changes.\n")
         self.cmd("cargo","generate-lockfile","--offline")
@@ -39,9 +39,9 @@ class VersionTransaction(unittest.TestCase):
         release.bump("patch")
         manifest=tomllib.loads((self.root/"Cargo.toml").read_text())
         self.assertEqual(manifest["package"]["version"],"0.1.1")
-        self.assertEqual(manifest["dependencies"]["zui"]["version"],"=0.1.0")
+        self.assertEqual(manifest["dependencies"]["zgpui"]["version"],"=0.1.1")
         lock=tomllib.loads((self.root/"Cargo.lock").read_text())
-        self.assertEqual({p["name"]:p["version"] for p in lock["package"]},{"zcall-gui":"0.1.1","zui-native":"0.1.0"})
+        self.assertEqual({p["name"]:p["version"] for p in lock["package"]},{"zcall-gui":"0.1.1","zgpui":"0.1.1"})
         self.assertIn("## 0.1.1",(self.root/"CHANGELOG.md").read_text())
 
     def test_existing_tag_is_rejected_before_writes(self):

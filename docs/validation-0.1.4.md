@@ -1,6 +1,8 @@
 # zcall-gui 0.1.4 release validation
 
-This record covers the immutable `v0.1.4` release at [`190d9e355f44e3cd0bd785f434ebbd6b244e13be`](https://github.com/LIghtJUNction/zcall-gui/commit/190d9e355f44e3cd0bd785f434ebbd6b244e13be). The release was published on 2026-11-20 at 16:41:01 UTC. It does not claim that any user's installed application has already been upgraded.
+This record covers the originally published `v0.1.4` release built from [`190d9e355f44e3cd0bd785f434ebbd6b244e13be`](https://github.com/LIghtJUNction/zcall-gui/commit/190d9e355f44e3cd0bd785f434ebbd6b244e13be). The release was published on 2026-11-20 at 16:41:01 UTC. It does not claim that any user's installed application has already been upgraded.
+
+The generated-evidence cleanup maps the original tag source to `6642d4d4715bf2f6f25fe8cf5b382465f85f563f`. All remaining source files are byte-identical; the archived screenshots are listed in the [cleanup record](evidence-archive-20261120.md). The assets and native job receipts below continue to identify the original release source.
 
 ## Source and dependency identity
 
@@ -36,4 +38,4 @@ The [formal release](https://github.com/LIghtJUNction/zcall-gui/releases/tag/v0.
 
 The formal publish job also completed its AUR recipe publication. The observed source-package AUR master was `d4cf10b291d443014618ad05a03e038c14c56b0e`. Recipe publication is distinct from a clean Arch source build and from installing a package on a device.
 
-The [machine-readable release receipt](evidence/zcall-gui-0.1.4.json) retains all asset digests and native job identities. Later documentation changes on `main` do not move the release tag or replace its assets.
+The [machine-readable release receipt](evidence/zcall-gui-0.1.4.json) retains all asset digests and native job identities. The original source and published asset digests remain the identity of this release record.

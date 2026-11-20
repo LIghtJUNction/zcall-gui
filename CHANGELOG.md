@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2
+
+- docs: show the verified Ink interface in public previews
+- Pin Ink GUI to the verified zgpui 0.1.4 rendering release
+- ui: align the native control panel with the Ink palette
+- build: consume the published zgpui 0.1.2 native fixes
+- fix(aur): accept rustup's unversioned rust provider
+
 ## 0.1.1
 
 - Use the unified zgpui native package and source submodule without a legacy dependency alias.

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
 - Use the unified zgpui native package and source submodule without a legacy dependency alias.
 

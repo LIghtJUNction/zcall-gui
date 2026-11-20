@@ -60,9 +60,9 @@ zcall-gui --theme dark --language ja
 
 The previews use synthetic local configuration in a private native window.
 
-![Overview in light mode](docs/screenshots/overview-light.png)
+[Overview in light mode](docs/evidence-archive-20261120.md)
 
-![Providers in dark mode](docs/screenshots/providers-dark.png)
+[Providers in dark mode](docs/evidence-archive-20261120.md)
 
 ## Updates
 

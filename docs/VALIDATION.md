@@ -22,7 +22,7 @@ Earlier builds opened on the development machine's Intel UHD GPU through XWaylan
 
 During the final geometry pass, the development session's DISPLAY=:0 X11 socket was unavailable, so hardware measurements could not be repeated for the final binary. The existing compositor and its sockets were not modified. Earlier Intel measurements must not be presented as measurements of the current build.
 
-The final screenshot pages are [Overview light](screenshots/overview-light.png), [Overview dark](screenshots/overview-dark.png), [Providers light](screenshots/providers-light.png) and [Providers dark](screenshots/providers-dark.png). They show actual CLI state from an isolated test configuration; an inactive gateway is displayed as disconnected.
+The final screenshot pages are [Overview light](evidence-archive-20261120.md), [Overview dark](evidence-archive-20261120.md), [Providers light](evidence-archive-20261120.md) and [Providers dark](evidence-archive-20261120.md). They show actual CLI state from an isolated test configuration; an inactive gateway is displayed as disconnected.
 
 ## Software-renderer measurement
 

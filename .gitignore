@@ -5,3 +5,9 @@
 
 __pycache__/
 *.pyc
+
+# Generated evidence is stored in the external archive.
+/docs/screenshots/overview-dark.png
+/docs/screenshots/overview-light.png
+/docs/screenshots/providers-dark.png
+/docs/screenshots/providers-light.png

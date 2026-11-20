@@ -27,6 +27,7 @@ jobs:
           - runner: macos-15-intel
             target: x86_64-apple-darwin
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
     env:
       RELEASE_REF: ${{ inputs.ref }}
       RELEASE_TAG: ${{ inputs.release_tag }}
@@ -51,9 +52,51 @@ jobs:
           else
             python3 scripts/release.py verify-candidate "$RELEASE_REF"
           fi
-      - name: Install Linux development packages
+      - name: Ensure Linux development capabilities
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libgl1-mesa-dev libfreetype6-dev libfontconfig1-dev pkg-config xvfb xauth xdotool x11-utils python3-pil fonts-noto-cjk fonts-dejavu-core
+        timeout-minutes: 8
+        shell: bash
+        run: |
+          set -euo pipefail
+          linux_ready() {
+            for module in x11 gl freetype2 fontconfig; do
+              pkg-config --exists "$module" || {
+                echo "Missing development capability: $module"
+                return 1
+              }
+            done
+            for tool in Xvfb xvfb-run xauth xdotool xprop fc-match; do
+              command -v "$tool" >/dev/null || {
+                echo "Missing UI test tool: $tool"
+                return 1
+              }
+            done
+            python3 -c 'from PIL import ImageGrab, features; assert features.check_feature("xcb"), "Pillow lacks XCB screenshot support"' || return 1
+            [[ "$(fc-match -f '%{family}\n' 'DejaVu Sans')" == *'DejaVu Sans'* ]] || {
+              echo "Missing DejaVu Sans; a font fallback is not sufficient"
+              return 1
+            }
+            [[ "$(fc-match -f '%{family}\n' 'Noto Sans CJK SC')" == *'Noto Sans CJK'* ]] || {
+              echo "Missing Noto Sans CJK; a font fallback is not sufficient"
+              return 1
+            }
+          }
+          if linux_ready; then
+            echo "Linux development libraries, UI tools and fonts are already available"
+          else
+            apt_options=(
+              -o Acquire::Retries=3
+              -o Acquire::http::Timeout=30
+              -o Acquire::https::Timeout=30
+              -o DPkg::Lock::Timeout=30
+            )
+            sudo apt-get "${apt_options[@]}" update
+            sudo apt-get "${apt_options[@]}" install -y --no-install-recommends \
+              libx11-dev libgl1-mesa-dev libfreetype6-dev libfontconfig1-dev \
+              pkg-config xvfb xauth xdotool x11-utils python3-pil \
+              fonts-noto-cjk fonts-dejavu-core
+            linux_ready
+          fi
       - name: Select Rust
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
       - name: Validate Linux

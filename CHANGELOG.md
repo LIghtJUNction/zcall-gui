@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.6
 
 - Repaint immediately after sidebar and in-page navigation so the selected page and visible content stay in sync without another input event.
 - Keep source AUR builds offline by resolving the bundled toolkit locally, including on an empty Cargo cache.

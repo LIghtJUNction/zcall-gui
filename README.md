@@ -49,7 +49,18 @@ Tab / Shift+Tab move focus, Enter activates buttons, Ctrl+A selects an input, an
 
 ## Appearance and language
 
-The window uses the Ink palette from [oh-my-ztty](https://github.com/LIghtJUNction/oh-my-ztty/tree/6d95c7eaa1a4ef27df2ae246edd7bddde5f3b31b): warm dark surfaces, copper accents and a matching cream light palette. Controls, input focus and status colors use the same application-local palette. The window prefers JetBrains Mono when installed and falls back to the platform monospace family, retaining native glyph fallback. It does not install fonts or change desktop fonts or other applications.
+The window uses neutral light or graphite surfaces, restrained blue accents and
+the platform's native interface font with glyph fallback. Controls, input focus
+and status colors share the application-local palette. It does not install
+fonts or change desktop fonts or other applications.
+
+The AI tools list gives each of the 16 supported tools its own vector mark and
+display name. Connection state and the current or saved route appear separately.
+Detection-only tools have no inactive connect button. Narrow windows move route
+actions below the tool details, and paging controls complement wheel scrolling.
+The route picker repeats the selected tool's mark and name. All icon geometry is
+bundled; displaying this page requires no network request. [Asset sources and
+licenses](assets/agents/README.md) record the original SVGs and native conversion.
 
 Open Settings at the lower left to select System, Light or Dark, and System, Simplified Chinese, Traditional Chinese, English or Japanese. Choices are stored locally and restored on the next launch. System preferences are read at launch and when opening Settings; there is no background desktop-preference polling.
 
@@ -112,6 +123,7 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo build --release --offline
 xvfb-run -a -s '-screen 0 1100x740x24 -nolisten tcp' python3 scripts/ui_smoke.py
+xvfb-run -a -s '-screen 0 1440x1000x24 -nolisten tcp' python3 scripts/agent_identity_smoke.py
 ```
 
 The Linux GUI has been opened on an Intel UHD GPU. The real-window test uses an isolated Xvfb display. It exercises provider stdin credentials, agent route changes, plugin activation, privacy selection and update checks against a local fixture. A separate run uses the actual developing zcalld CLI and an isolated home to verify saved providers, agent apply/restore, privacy changes and appearance persistence. Neither run calls a remote model. Screenshots contain isolated test configuration. [Validation evidence](docs/VALIDATION.md) records the scope and current limits. [The 0.1.4 release record](docs/validation-0.1.4.md) identifies the exact source, native jobs and published archives.

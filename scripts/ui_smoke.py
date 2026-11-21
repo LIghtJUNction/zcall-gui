@@ -196,6 +196,7 @@ print(json.dumps(r))
         assert count(["agents","revert","claude"])==0,"Restore must require confirmation"
         confirm()
         wait_for(lambda:count(["agents","revert","claude"])==1,"Agent restore did not invoke CLI");ready(before)
+        catalog_unavailable=False
         if args.real_cli:
             assert original_agent.read_bytes()==before_gui_bytes,"Restore lost the pre-change user configuration"
             assert json.loads(original_agent.read_text())["theme"]=="preserve-user-value"
@@ -205,6 +206,12 @@ print(json.dumps(r))
                 if line.strip().startswith("["):in_route=line.strip().startswith("[route ")
                 if not in_route:lines.append(line)
             config.write_text("".join(lines))
+            probe=subprocess.run([actual,"models","--json","--config",str(config)],env=env,capture_output=True,text=True)
+            catalog_unavailable=probe.returncode!=0
+            if catalog_unavailable:
+                assert json.loads(probe.stdout).get("error"),"A failed catalog read must report its error"
+            else:
+                assert json.loads(probe.stdout).get("data")==[],"Expected an empty model catalog"
         else:
             state_file=temp/"state.json";saved=state_file.read_text()
             state=json.loads(saved);state["routes"]=[];state_file.write_text(json.dumps(state))
@@ -212,10 +219,17 @@ print(json.dumps(r))
         previous=count(["agents","apply"]);click(976,227);time.sleep(.12)
         assert count(["agents","apply"])==previous,"An empty catalog must disable apply"
         shot("agents-no-routes")
-        navigate(968,143,1,"empty-catalog-add-provider");shot("agents-add-provider-help");click(1035,45)
-        if args.real_cli:config.write_text(saved)
-        else:state_file.write_text(saved)
-        before=count(["models"]);click(1012,713);ready(before)
+        if catalog_unavailable:
+            # Strict core versions reject a configuration with no routes. This
+            # is a failed read, whose CTA must retry rather than start setup.
+            config.write_text(saved)
+            before=count(["models"]);click(968,143);ready(before)
+            shot("agents-catalog-recovered")
+        else:
+            navigate(968,143,1,"empty-catalog-add-provider");shot("agents-add-provider-help");click(1035,45)
+            if args.real_cli:config.write_text(saved)
+            else:state_file.write_text(saved)
+            before=count(["models"]);click(1012,713);ready(before)
         click(90,286);shot("plugins")
         if not args.real_cli:
             click(450,180);before=count(["models"]);click(710,300);confirm()
@@ -243,7 +257,7 @@ print(json.dumps(r))
         window=find_window();xd("windowmove","--sync",window,0,0);time.sleep(.8)
         pixel=ImageGrab.grab(bbox=(200,90,201,91),xdisplay=display).getpixel((0,0))
         assert max(pixel[:3])<64,("Saved dark theme was not restored",pixel)
-        report={"backend":"actual zcalld" if args.real_cli else "isolated fixture","display":"private Xvfb","overview_provider_and_agent_navigation":True,"navigation_without_followup_input":navigation,"provider_stdin_verified":True,"actual_provider_state_verified":bool(args.real_cli),"agent_apply_and_restore":True,"catalog_uses_real_data_id":True,"no_guessed_local_route":True,"route_search_keyboard":True,"route_picker_blocks_background":True,"empty_catalog_disables_apply":True,"agent_pre_change_config_preserved":bool(args.real_cli),"privacy_mode_verified":True,"theme_language_persisted":True,"restart_restores_dark":True,"idle_cpu_ticks_2s":idle,"clock_ticks_per_second":os.sysconf("SC_CLK_TCK"),"calls":len(calls()),"host_input":False}
+        report={"backend":"actual zcalld" if args.real_cli else "isolated fixture","display":"private Xvfb","overview_provider_and_agent_navigation":True,"navigation_without_followup_input":navigation,"provider_stdin_verified":True,"actual_provider_state_verified":bool(args.real_cli),"agent_apply_and_restore":True,"catalog_uses_real_data_id":True,"no_guessed_local_route":True,"route_search_keyboard":True,"route_picker_blocks_background":True,"empty_catalog_disables_apply":not catalog_unavailable,"unavailable_catalog_disables_apply":catalog_unavailable,"failed_catalog_retry":catalog_unavailable,"empty_catalog_add_provider":not catalog_unavailable,"agent_pre_change_config_preserved":bool(args.real_cli),"privacy_mode_verified":True,"theme_language_persisted":True,"restart_restores_dark":True,"idle_cpu_ticks_2s":idle,"clock_ticks_per_second":os.sysconf("SC_CLK_TCK"),"calls":len(calls()),"host_input":False}
         (out/"ui-smoke.json").write_text(json.dumps(report,indent=2)+"\n");print(json.dumps(report,indent=2),flush=True)
     finally:
         if proc.poll()is None:proc.terminate()

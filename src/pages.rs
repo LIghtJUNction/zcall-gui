@@ -391,7 +391,9 @@ impl App {
             }
         }
         let items = self.state.get("agents").get("agents").array().to_vec();
-        let rows = ((c.height - 256.) / 104.).max(1.) as usize;
+        let compact = width < 620.;
+        let stride = if compact { 152. } else { 104. };
+        let rows = ((c.height - 289.) / stride).max(1.) as usize;
         self.scroll = self.scroll.min(items.len().saturating_sub(rows));
         if items.is_empty() {
             empty(
@@ -402,82 +404,97 @@ impl App {
             );
         }
         for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
-            let y = 189. + (index - self.scroll) as f32 * 104.;
+            let y = 189. + (index - self.scroll) as f32 * stride;
             let name = value(item, "name", "tool");
             let configured = item.get("configured").boolean();
             let installed = item.get("installed").boolean();
             let writable = item.get("writable").boolean();
-            card(c, Rect::new(x, y, width, 92.));
+            c.rect(Rect::new(x, y, width, stride - 12.), 10., SURFACE);
+            agent_identity::draw(c, name, Rect::new(x + 20., y + 18., 40., 40.));
+            let label_x = x + 80.;
+            let actions = writable && (installed || configured);
+            let reserved = if compact || !actions {
+                22.
+            } else if configured {
+                264.
+            } else {
+                170.
+            };
+            let label_width = (x + width - reserved - label_x).max(0.);
             c.ellipsis(
-                match name {
-                    "claude" => "Claude Code",
-                    "codex" => "Codex",
-                    _ => name,
-                },
-                x + 22.,
-                y + 12.,
-                width - 280.,
+                agent_identity::display_name(name),
+                label_x,
+                y + 13.,
+                label_width,
                 18,
                 true,
                 TEXT,
             );
+            let status_color = if installed && configured && writable {
+                GREEN
+            } else {
+                MUTED
+            };
+            c.rect(Rect::new(label_x, y + 45., 5., 5.), 2.5, status_color);
             c.ellipsis(
-                if !writable {
+                if !installed {
+                    tr("agents.not_installed")
+                } else if !writable {
                     tr("agents.read_only")
                 } else if configured {
                     tr("agents.connected")
-                } else if installed {
-                    tr("agents.available")
                 } else {
-                    tr("agents.not_installed")
+                    tr("agents.available")
                 },
-                x + 22.,
+                label_x + 13.,
                 y + 39.,
-                width - 280.,
+                (label_width - 13.).max(0.),
                 13,
                 false,
-                MUTED,
+                status_color,
             );
-            c.ellipsis(
-                &i18n::message(
-                    if configured {
-                        "agents.current_route"
+            if configured || !item.get("route").text().is_empty() {
+                c.ellipsis(
+                    &i18n::message(
+                        if configured {
+                            "agents.current_route"
+                        } else {
+                            "agents.saved_route"
+                        },
+                        &[("route", value(item, "route", tr("agents.route_unset")))],
+                    ),
+                    label_x,
+                    y + 64.,
+                    (width - 102.).max(0.),
+                    12,
+                    false,
+                    MUTED,
+                );
+            }
+            let action_y = y + if compact { 96. } else { 20. };
+            if actions
+                && self.ui.button(
+                    c,
+                    20000 + index as u64 * 2,
+                    Rect::new(x + width - 154., action_y, 132., 38.),
+                    tr(if configured {
+                        "action.change_route"
                     } else {
-                        "agents.saved_route"
-                    },
-                    &[("route", value(item, "route", tr("agents.route_unset")))],
-                ),
-                x + 22.,
-                y + 64.,
-                width - 48.,
-                12,
-                false,
-                MUTED,
-            );
-            if self.ui.button(
-                c,
-                20000 + index as u64 * 2,
-                Rect::new(x + width - 154., y + 20., 132., 38.),
-                tr(if configured {
-                    "action.change_route"
-                } else {
-                    "action.connect"
-                }),
-                if configured {
-                    Style::Secondary
-                } else {
-                    Style::Primary
-                },
-                enabled && installed && writable && has_routes,
-            ) {
+                        "action.connect"
+                    }),
+                    Style::Secondary,
+                    enabled && installed && writable && has_routes,
+                )
+            {
                 self.open_route_picker(item);
                 return;
             }
             if configured
+                && writable
                 && self.ui.button(
                     c,
                     20001 + index as u64 * 2,
-                    Rect::new(x + width - 248., y + 20., 80., 38.),
+                    Rect::new(x + width - 248., action_y, 80., 38.),
                     tr("action.restore"),
                     Style::Quiet,
                     enabled && writable,
@@ -487,6 +504,46 @@ impl App {
                     &i18n::message("action.restore_named", &[("name", name)]),
                     words(&["agents", "revert", name]),
                 );
+            }
+        }
+        if !items.is_empty() {
+            c.ellipsis(
+                &i18n::message(
+                    "agents.visible_count",
+                    &[
+                        ("start", &(self.scroll + 1).to_string()),
+                        ("end", &(self.scroll + rows).min(items.len()).to_string()),
+                        ("total", &items.len().to_string()),
+                    ],
+                ),
+                x,
+                c.height - 73.,
+                (width - 150.).max(0.),
+                12,
+                false,
+                MUTED,
+            );
+            if self.ui.button(
+                c,
+                503,
+                Rect::new(x + width - 126., c.height - 82., 54., 30.),
+                "‹",
+                Style::Quiet,
+                enabled && self.scroll > 0,
+            ) {
+                self.scroll = self.scroll.saturating_sub(rows);
+                self.repaint = true;
+            }
+            if self.ui.button(
+                c,
+                504,
+                Rect::new(x + width - 62., c.height - 82., 54., 30.),
+                "›",
+                Style::Quiet,
+                enabled && self.scroll + rows < items.len(),
+            ) {
+                self.scroll += rows;
+                self.repaint = true;
             }
         }
     }
@@ -510,14 +567,18 @@ impl App {
         let x = r.x + 24.;
         let inner = r.w - 48.;
         c.ellipsis(
-            &i18n::message("agents.choose_for", &[("name", &picker.agent)]),
-            x,
+            &i18n::message(
+                "agents.choose_for",
+                &[("name", agent_identity::display_name(&picker.agent))],
+            ),
+            x + 40.,
             r.y + 24.,
-            inner - 48.,
+            inner - 88.,
             22,
             true,
             TEXT,
         );
+        agent_identity::draw(c, &picker.agent, Rect::new(x, r.y + 23., 28., 28.));
         c.ellipsis(
             &i18n::message(
                 "agents.current_route",

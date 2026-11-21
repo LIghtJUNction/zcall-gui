@@ -244,3 +244,4 @@ setup.confirm_service	このインストールのユーザーサービスを確�
 setup.config_location	設定ファイルの場所
 setup.no_start	サービスは停止したままです。
 setup.changed	インストールまたは設定が変わりました。更新してから続行してください。
+agents.visible_count	{total} 個のツール · {start}–{end} 件を表示

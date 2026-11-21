@@ -1,4 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+mod agent_identity;
+mod agent_logos;
 mod backend;
 mod core_install;
 mod core_install_io;
@@ -580,7 +582,7 @@ impl App {
             false,
             MUTED,
         );
-        let available = (c.width - sidebar - 64.).max(480.);
+        let available = (c.width - sidebar - 64.).max(1.);
         let width = available.min(1024.).round();
         let x = (sidebar + 32. + (available - width) / 2.).round();
         if self.page != 0 {
@@ -996,7 +998,6 @@ fn run() -> Result<(), String> {
     }
     preferences.apply();
     let mut window = Window::new(tr("window.title"), 1080, 740)?;
-    window.set_font_family("JetBrains Mono")?;
     let gpu = window.gpu();
     eprintln!("zcall-gui {VERSION}; renderer: {gpu}");
     let mut app = App::new(Backend { binary, config }, preferences);

@@ -1,0 +1,393 @@
+{
+  "schema_version": 1,
+  "retrieved_at_utc": "2026-11-21T06:17:46.141326+00:00",
+  "trademark_note": "These assets identify third-party tools. Icon-library licenses do not transfer ownership of the represented names or marks. No affiliation or endorsement is asserted.",
+  "assets": [
+    {
+      "agent_id": "claude",
+      "file": "claude.svg",
+      "icon_name": "claudecode",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/claudecode.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/claudecode.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 429,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Claude Code",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "d7eb2d876b49e51cc16291a42b681d7cf4906e60e0150776dbfb353ec4ca3746"
+    },
+    {
+      "agent_id": "codex",
+      "file": "codex.svg",
+      "icon_name": "codex",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/codex.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/codex.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 1368,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Codex",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "d08b4e824cd6727e89617f59e4737273ff53e44c1da849d016dd64dfd08b33e1"
+    },
+    {
+      "agent_id": "gemini",
+      "file": "gemini.svg",
+      "icon_name": "geminicli",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/geminicli.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/geminicli.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 605,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Gemini CLI",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "bc9b0199cb4c5deee25d6cf49d6e7d60a891171ccbc5520f657d3047b84e5d2e"
+    },
+    {
+      "agent_id": "opencode",
+      "file": "opencode.svg",
+      "icon_name": "opencode",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/opencode.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/opencode.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 235,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "OpenCode",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "7cfa6e9d6726f7c9fa26c7d9aef0dfec52d20a137380454340f30f12ccbfd302"
+    },
+    {
+      "agent_id": "pi",
+      "display_name": "Pi",
+      "file": "normalized/pi.svg",
+      "upstream_file": "pi.svg",
+      "source_kind": "official-brand-asset",
+      "source_url": "https://pi.dev/favicon.svg",
+      "source_commit": null,
+      "source_page": "https://pi.dev/press-kit",
+      "license": "MIT",
+      "license_file": "LICENSES/Pi-MIT.txt",
+      "license_evidence": "The official press-kit page declares MIT License; the accompanying project license is Copyright (c) 2025 Mario Zechner.",
+      "license_url": "https://raw.githubusercontent.com/badlogic/pi-mono/780bf31fcaeb252fa9b68df3964c735eae75bde3/LICENSE",
+      "reference_commit": "780bf31fcaeb252fa9b68df3964c735eae75bde3",
+      "derivation": "Original three path geometries scaled uniformly from 560 to 24; theme CSS replaced by currentColor.",
+      "sha256": "e063158928ac636dfd89b294ba3c84efd06d5d722aca5e4211e52a48feb318b9",
+      "bytes": 210,
+      "viewBox": "0 0 24 24",
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "upstream_sha256": "d266b2c1d2c7bf169ca30d438963b176fba16fea6263b9ac30c8302f34ad7ce7"
+    },
+    {
+      "agent_id": "qwen",
+      "file": "qwen.svg",
+      "icon_name": "qwen",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/qwen.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/qwen.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 1041,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Qwen Code",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "b2c16efc3bd32b88a941842d41222e1e1e0e40441222218b725afc0aef6d9a36"
+    },
+    {
+      "agent_id": "aider",
+      "display_name": "aider",
+      "file": "aider.svg",
+      "source_kind": "official-repository-asset",
+      "source_repository": "Aider-AI/aider",
+      "source_commit": "5dc9490bb35f9729ef2c95d00a19ccd30c26339c",
+      "source_path": "aider/website/assets/icons/safari-pinned-tab.svg",
+      "license": "Apache-2.0",
+      "license_file": "LICENSES/Aider-Apache-2.0.txt",
+      "notes": "The official pinned-tab mark contains SVG paths, including holes, in a translated/flipped group; no embedded font or raster image.",
+      "source_url": "https://raw.githubusercontent.com/Aider-AI/aider/5dc9490bb35f9729ef2c95d00a19ccd30c26339c/aider/website/assets/icons/safari-pinned-tab.svg",
+      "license_url": "https://raw.githubusercontent.com/Aider-AI/aider/5dc9490bb35f9729ef2c95d00a19ccd30c26339c/LICENSE.txt",
+      "sha256": "145269573c298162e3e032de7563d39e6db234d29fbb7a7312f251e28cc374a6",
+      "bytes": 1841,
+      "viewBox": "0 0 436.000000 436.000000",
+      "elements": [
+        "g",
+        "metadata",
+        "path",
+        "svg"
+      ]
+    },
+    {
+      "agent_id": "goose",
+      "file": "goose.svg",
+      "icon_name": "goose",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/goose.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/goose.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 1807,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "goose",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "8779d9a61c5b0be78a3d36cab6843ba5af86218ba2ff1b18eb918c7a8d25bb99"
+    },
+    {
+      "agent_id": "zed",
+      "display_name": "Zed",
+      "file": "zed.svg",
+      "source_kind": "community-icon",
+      "source_repository": "simple-icons/simple-icons",
+      "source_commit": "32e030086fdc605196391aab28519b14dc4295b4",
+      "source_path": "icons/zedindustries.svg",
+      "license": "CC0-1.0",
+      "license_file": "LICENSES/Simple-Icons-CC0-1.0.txt",
+      "brand_guidelines_url": "https://zed.dev/brand",
+      "notes": "The icon is sourced from Simple Icons, not the GPL-licensed Zed source repository. Zed names and marks remain trademarks of Zed Industries, Inc.",
+      "source_url": "https://raw.githubusercontent.com/simple-icons/simple-icons/32e030086fdc605196391aab28519b14dc4295b4/icons/zedindustries.svg",
+      "license_url": "https://raw.githubusercontent.com/simple-icons/simple-icons/32e030086fdc605196391aab28519b14dc4295b4/LICENSE.md",
+      "sha256": "90848d3e8d74d4fb3efc7137b8a5181139082e212566b025843379a7cb0550a0",
+      "bytes": 599,
+      "viewBox": "0 0 24 24",
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ]
+    },
+    {
+      "agent_id": "vscode",
+      "display_name": "Visual Studio Code",
+      "file": "normalized/vscode.svg",
+      "upstream_file": "vscode.svg",
+      "color_variant_file": "vscode-color.svg",
+      "source_kind": "official-brand-asset",
+      "source_url": "https://code.visualstudio.com/assets/branding/visual-studio-code-icons.zip",
+      "source_archive_member": "visual-studio-code-icons/vscode-alt.svg",
+      "source_commit": null,
+      "source_page": "https://code.visualstudio.com/brand",
+      "license": "LicenseRef-Microsoft-Visual-Studio-Code-Brand-Guidelines",
+      "license_url": "https://code.visualstudio.com/brand",
+      "copyright": "Microsoft Corporation",
+      "derivation": "Exact alpha-mask silhouette from the official white alternate SVG, scaled uniformly from 100 to 24. White fill retained; internal gradients, filter shadows, and overlays omitted. This is a documented monochrome derivative, not an unmodified official file.",
+      "notes": "Brand guidelines reserve trademark rights and describe use of the white alternate when contrast requires it. No MIT or CC0 license is asserted for this brand asset.",
+      "sha256": "929350e094a196f4f700abd00dfed8558ea7c7a35e8df153d2340a53f3a9d556",
+      "bytes": 1017,
+      "viewBox": "0 0 24 24",
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "upstream_sha256": "4ef4077d35718ae78184902b3b763281c97b0ff46f2b5a36c10c5c5189ed027f"
+    },
+    {
+      "agent_id": "cursor",
+      "file": "cursor.svg",
+      "icon_name": "cursor",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/cursor.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/cursor.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 547,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Cursor",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "0cb51bddf264ae108926fd554c063ef40fc1aac3c5c921ddb39ad184e4e5d0ef"
+    },
+    {
+      "agent_id": "amp",
+      "file": "amp.svg",
+      "icon_name": "amp",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/amp.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/amp.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 515,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Amp",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "aa6d3fd2fed46e5bd3fdf0e80adab9ed22cbe48e8aa9cd6ea5f7a3ffffc606b1"
+    },
+    {
+      "agent_id": "continue",
+      "display_name": "Continue",
+      "file": "normalized/continue.svg",
+      "upstream_file": "continue.svg",
+      "source_kind": "official-repository-asset",
+      "source_repository": "continuedev/continue",
+      "source_commit": "5522c6f44ca0ac3528b37244818fbfa39b5af470",
+      "source_path": "extensions/intellij/src/main/resources/icons/continue.svg",
+      "license": "Apache-2.0",
+      "license_file": "LICENSES/Continue-Apache-2.0.txt",
+      "derivation": "Original path geometry scaled uniformly from 13 to 24; monochrome color mapped to currentColor.",
+      "source_url": "https://raw.githubusercontent.com/continuedev/continue/5522c6f44ca0ac3528b37244818fbfa39b5af470/extensions/intellij/src/main/resources/icons/continue.svg",
+      "license_url": "https://raw.githubusercontent.com/continuedev/continue/5522c6f44ca0ac3528b37244818fbfa39b5af470/LICENSE",
+      "sha256": "6ef91d76f7cf7612566284bf0ee56dfcdc764e0402368e14d235613007da0a46",
+      "bytes": 2081,
+      "viewBox": "0 0 24 24",
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "upstream_sha256": "f81d0ca0355295cbc8de14cb32a95cb7abe91efa43bd4d5e16e6d1e3d7d3f362"
+    },
+    {
+      "agent_id": "cline",
+      "file": "cline.svg",
+      "icon_name": "cline",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/cline.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/cline.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 750,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Cline",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "9003d2cdce82b016147b732abb4def60af55c348ba2cea2ba0b69a3c7d159b19"
+    },
+    {
+      "agent_id": "roo",
+      "file": "roo.svg",
+      "icon_name": "roocode",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/roocode.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/roocode.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 763,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Roo Code",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "34904d40bfd976b5c1c7495d2fdfdca1c137cb416bff2000184e0ee27bfb5161"
+    },
+    {
+      "agent_id": "kilo",
+      "file": "kilo.svg",
+      "icon_name": "kilocode",
+      "source_repository": "lobehub/lobe-icons",
+      "source_commit": "9752d967494e48d8f83f2808feb2b0207bf70997",
+      "source_path": "packages/static-svg/icons/kilocode.svg",
+      "source_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/packages/static-svg/icons/kilocode.svg",
+      "license": "MIT",
+      "license_file": "LICENSES/LobeHub-MIT.txt",
+      "viewBox": "0 0 24 24",
+      "bytes": 652,
+      "elements": [
+        "path",
+        "svg",
+        "title"
+      ],
+      "source_kind": "community-icon",
+      "display_name": "Kilo Code",
+      "license_url": "https://raw.githubusercontent.com/lobehub/lobe-icons/9752d967494e48d8f83f2808feb2b0207bf70997/LICENSE",
+      "sha256": "a2aef0e0bb992ebe768bfb8c3a3ab6ff2c2638448b09dd88db27877de1c07a22"
+    }
+  ],
+  "licenses": [
+    {
+      "file": "LICENSES/Aider-Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "file": "LICENSES/Continue-Apache-2.0.txt",
+      "sha256": "b14a17598cb08c4c7c82c070731126304e0a75d001ed59fb9ea3955a0b561802"
+    },
+    {
+      "file": "LICENSES/LobeHub-MIT.txt",
+      "sha256": "add9d7531d1b21646317a8958e38fc727506fa39d24bdecb44154d943c82753a"
+    },
+    {
+      "file": "LICENSES/Pi-MIT.txt",
+      "sha256": "0457f5bcec3b3b211605dfb5d1a49042fd638f3686a410fe099c24a25af13c48"
+    },
+    {
+      "file": "LICENSES/Simple-Icons-CC0-1.0.txt",
+      "sha256": "9046848b63a5c92bff14e4accca80bd987e0623b74adf9226ce5198d312b79d5"
+    }
+  ],
+  "missing": []
+}

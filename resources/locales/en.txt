@@ -244,3 +244,4 @@ setup.confirm_service	Verify this installation’s user service.
 setup.config_location	Configuration location
 setup.no_start	The service will remain stopped.
 setup.changed	The installation or configuration changed. Refresh before continuing.
+agents.visible_count	{start}–{end} of {total} tools

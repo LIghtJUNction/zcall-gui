@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Add bundled vector identities and display names for all 16 supported AI tools, with a neutral fallback for unknown tools and the same identity in the route picker.
+- Use neutral light/dark surfaces and native interface typography; separate tool names, connection state, routes and actions.
+- Add list paging and a compact layout for narrow windows, show missing tools as not installed, and remove inactive connect controls from detection-only rows.
+
 ## 0.1.6
 
 - Repaint immediately after sidebar and in-page navigation so the selected page and visible content stay in sync without another input event.

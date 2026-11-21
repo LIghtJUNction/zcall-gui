@@ -244,3 +244,4 @@ setup.confirm_service	核对或创建本次安装的用户服务。
 setup.config_location	配置位置
 setup.no_start	服务将保持停止。
 setup.changed	安装或配置状态已变化，请刷新后继续。
+agents.visible_count	第 {start}–{end} 项，共 {total} 个工具

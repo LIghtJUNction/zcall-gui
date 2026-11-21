@@ -184,6 +184,16 @@ jobs:
           key: ${{ steps.linux_cache.outputs.key }}
       - name: Select Rust
         run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
+      - name: Verify source AUR with an empty Cargo cache
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: |
+          set -euo pipefail
+          python3 scripts/package.py --source
+          gui_version="$(python3 -c 'import sys; sys.path.insert(0, "scripts"); import release; print(release.current())')"
+          source_directory="$(mktemp -d "$RUNNER_TEMP/zcall-gui-aur-source.XXXXXX")"
+          source_archive="zcall-gui-v$gui_version-source.tar.gz"
+          mv -- "_release/dist/$source_archive" "$source_directory/$source_archive"
+          python3 scripts/test_aur_source.py --archive "$source_directory/$source_archive"
       - name: Fetch locked Git dependencies
         run: cargo fetch --locked
       - name: Validate Linux

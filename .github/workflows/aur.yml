@@ -1,0 +1,82 @@
+name: Source AUR package revision (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing stable GitHub release version, without v
+        required: true
+        type: string
+      source_pkgrel:
+        description: Positive source package revision; binary package is unchanged
+        default: '1'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: zcall-gui-aur
+  cancel-in-progress: false
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      AUR_VERSION: ${{ inputs.version }}
+      AUR_SOURCE_PKGREL: ${{ inputs.source_pkgrel }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify existing stable release and source revision
+        env:
+          AUR_PUBLISH: ${{ vars.AUR_PUBLISH }}
+        run: |
+          set -euo pipefail
+          test "$AUR_PUBLISH" = true
+          [[ "$AUR_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$AUR_SOURCE_PKGREL" =~ ^[1-9][0-9]*$ ]]
+          gh api "repos/LIghtJUNction/zcall-gui/releases/tags/v$AUR_VERSION" > "$RUNNER_TEMP/aur-release.json"
+          python3 - "$RUNNER_TEMP/aur-release.json" <<'PY'
+          import json, os, pathlib, sys
+          release = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          version = os.environ["AUR_VERSION"]
+          if release["tag_name"] != "v" + version or release["draft"] or release["prerelease"]:
+              raise SystemExit("AUR revision requires an existing stable release")
+          name = "zcall-gui-v" + version + "-source.tar.gz"
+          assets = [a for a in release["assets"] if a["name"] == name and a["state"] == "uploaded"]
+          if len(assets) != 1:
+              raise SystemExit("The stable release must contain exactly one source archive")
+          PY
+      - name: Select existing supported Rust toolchain
+        run: rustup toolchain install 1.100.0 --profile minimal
+      - name: Render only the source AUR recipe
+        run: python3 scripts/aur.py --version "$AUR_VERSION" --source-pkgrel "$AUR_SOURCE_PKGREL" --source-only
+      - name: Verify downloaded source with an empty Cargo cache
+        run: |
+          python3 scripts/test_aur_source.py --version "$AUR_VERSION" \
+            --source-pkgrel "$AUR_SOURCE_PKGREL" \
+            --archive "_release/aur-inputs/zcall-gui-v$AUR_VERSION-source.tar.gz" \
+            --pkgbuild _release/aur-generated/zcall-gui/PKGBUILD
+      - name: Configure AUR identity
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          AUR_KNOWN_HOSTS: ${{ secrets.AUR_KNOWN_HOSTS }}
+        run: |
+          test -n "$AUR_SSH_KEY"
+          test -n "$AUR_KNOWN_HOSTS"
+          install -d -m700 ~/.ssh
+          printf '%s\n' "$AUR_SSH_KEY" > ~/.ssh/aur
+          printf '%s\n' "$AUR_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/aur ~/.ssh/known_hosts
+      - name: Publish the exact verified source recipe
+        env:
+          GIT_SSH_COMMAND: ssh -i /home/runner/.ssh/aur -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, "scripts")
+          import aur
+          aur.publish(aur.ROOT / "_release/aur-generated", source_only=True)
+          PY

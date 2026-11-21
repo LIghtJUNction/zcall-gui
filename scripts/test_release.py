@@ -99,6 +99,14 @@ class AurMetadata(unittest.TestCase):
         for architecture,digest in [("x86_64","b"*64),("aarch64","c"*64)]:
             self.assertIn(f"\tsha256sums_{architecture} = {digest}\n",binary)
         self.assertNotIn("SKIP",binary)
+        self.assertIn("\tpkgrel = 2\n",aur.metadata("zcall-gui","0.1.0",hashes,2))
+        self.assertIn("\tpkgrel = 1\n",aur.metadata("zcall-gui-bin","0.1.0",hashes,2))
+        self.assertEqual(aur.package_names(True),["zcall-gui"])
+        self.assertIn("\npkgrel=2\n",aur.render_recipe("zcall-gui","0.1.0",hashes,2))
+        self.assertIn("\npkgrel=1\n",aur.render_recipe("zcall-gui-bin","0.1.0",hashes,2))
+        for invalid in [0,-1,True,"0","01","1.5","2\n"]:
+            with self.subTest(revision=invalid):
+                with self.assertRaises(ValueError):aur.positive_revision(invalid)
 
     @unittest.skipUnless(shutil.which("makepkg"),"makepkg is available on the Arch validation host")
     def test_srcinfo_matches_makepkg(self):

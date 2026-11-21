@@ -245,3 +245,38 @@ setup.config_location	配置位置
 setup.no_start	服务将保持停止。
 setup.changed	安装或配置状态已变化，请刷新后继续。
 agents.visible_count	第 {start}–{end} 项，共 {total} 个工具
+nav.usage	用量
+page.usage	本地历史中的上游尝试与 Token 用量，包含重试。
+usage.loading	正在读取用量…
+usage.loading_help	正在汇总本地记录，不会请求模型服务商。
+usage.refreshed	用量已刷新
+usage.all_history	全部已记录用量
+usage.requests	上游尝试
+usage.succeeded	成功尝试
+usage.failed	失败尝试
+usage.tokens	Token 分布
+usage.input	输入 Token
+usage.output	输出 Token
+usage.success_rate	尝试成功率
+usage.empty	从第一条请求开始
+usage.empty_help	用量记录已配置。如果网关仍在使用旧设置，请先重新启动服务。
+usage.recorded_help	统计范围为本地用量历史中保留的上游尝试。
+usage.refresh_help	点击“刷新”读取最新统计。
+usage.cache_read	缓存读取
+usage.cache_write	缓存写入
+usage.reasoning	推理 Token
+usage.details_help	缓存与推理为明细计数，不会额外累加到 Token 总量。
+providers.search	搜索服务商、模型或地址…
+providers.no_matches	没有匹配的服务商
+providers.no_matches_help	试试其他名称、模型、协议或地址。
+usage.enable	启用用量记录
+usage.disable	关闭用量记录
+usage.saving	正在保存记录设置…
+usage.saved	记录设置已保存
+usage.restart_required	需要重启网关，记录设置才会生效。
+usage.recording_configured	已配置用量记录
+usage.recording_off	尚未配置用量记录
+usage.recording_off_help	启用本地请求与 Token 记录后，重启网关即可应用设置。
+usage.recording_unknown	记录设置状态未知
+usage.recording_unknown_help	当前网关版本不提供记录设置状态，更新后可在这里管理。
+usage.open_updates	前往更新

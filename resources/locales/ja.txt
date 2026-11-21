@@ -245,3 +245,38 @@ setup.config_location	設定ファイルの場所
 setup.no_start	サービスは停止したままです。
 setup.changed	インストールまたは設定が変わりました。更新してから続行してください。
 agents.visible_count	{total} 個のツール · {start}–{end} 件を表示
+nav.usage	使用量
+page.usage	再試行を含む、上流への送信試行とトークンのローカル記録。
+usage.loading	使用量を読み込み中…
+usage.loading_help	ローカルの記録を集計しています。プロバイダーへの通信は行いません。
+usage.refreshed	使用量を更新しました
+usage.all_history	記録済みの全使用量
+usage.requests	上流への試行
+usage.succeeded	成功した試行
+usage.failed	失敗した試行
+usage.tokens	トークンの内訳
+usage.input	入力トークン
+usage.output	出力トークン
+usage.success_rate	試行成功率
+usage.empty	最初のリクエストから
+usage.empty_help	記録が設定されています。以前の設定で動いている場合は再起動してください。
+usage.recorded_help	ローカルの使用履歴に残っている上流への試行を集計します。
+usage.refresh_help	「更新」で最新の集計を取得します。
+usage.cache_read	キャッシュ読み取り
+usage.cache_write	キャッシュ書き込み
+usage.reasoning	推論トークン
+usage.details_help	キャッシュと推論は内訳のカウンターで、合計に重複加算されません。
+providers.search	プロバイダー・モデル・URL を検索…
+providers.no_matches	該当するプロバイダーがありません
+providers.no_matches_help	別の名前、モデル、プロトコル、URL で検索してください。
+usage.enable	記録を有効にする
+usage.disable	記録を無効にする
+usage.saving	記録設定を保存中…
+usage.saved	記録設定を保存しました
+usage.restart_required	記録設定を反映するにはゲートウェイを再起動してください。
+usage.recording_configured	記録が設定済み
+usage.recording_off	使用量の記録が未設定です
+usage.recording_off_help	ローカルの使用量記録を有効にして、ゲートウェイを再起動してください。
+usage.recording_unknown	記録設定の状態は不明です
+usage.recording_unknown_help	このバージョンでは記録設定を取得できません。更新すると管理できます。
+usage.open_updates	更新を開く

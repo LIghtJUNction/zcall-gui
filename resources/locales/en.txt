@@ -245,3 +245,38 @@ setup.config_location	Configuration location
 setup.no_start	The service will remain stopped.
 setup.changed	The installation or configuration changed. Refresh before continuing.
 agents.visible_count	{start}–{end} of {total} tools
+nav.usage	Usage
+page.usage	Upstream attempts and tokens from local history, including retries.
+usage.loading	Reading usage…
+usage.loading_help	Reading local totals. Your provider is not contacted.
+usage.refreshed	Usage refreshed
+usage.all_history	All recorded usage
+usage.requests	Upstream attempts
+usage.succeeded	Successful
+usage.failed	Failed
+usage.tokens	Token distribution
+usage.input	Input tokens
+usage.output	Output tokens
+usage.success_rate	Attempt success rate
+usage.empty	Your usage starts here
+usage.empty_help	Recording is configured. Restart the gateway if it is still using earlier settings.
+usage.recorded_help	Totals include upstream attempts retained in local usage history.
+usage.refresh_help	Refresh reads the latest totals.
+usage.cache_read	Cache read
+usage.cache_write	Cache write
+usage.reasoning	Reasoning
+usage.details_help	Cache and reasoning are detail counters, not extra tokens added to the totals.
+providers.search	Search providers, models or endpoints…
+providers.no_matches	No matching providers
+providers.no_matches_help	Try another name, model, protocol or endpoint.
+usage.enable	Enable recording
+usage.disable	Disable recording
+usage.saving	Saving recording settings…
+usage.saved	Recording settings saved
+usage.restart_required	Restart the gateway to apply recording changes.
+usage.recording_configured	Recording configured
+usage.recording_off	Usage recording is not configured
+usage.recording_off_help	Enable local request and token records, then restart the gateway to apply.
+usage.recording_unknown	Recording configuration unavailable
+usage.recording_unknown_help	This gateway does not report recording settings. Update it to manage recording here.
+usage.open_updates	Open updates

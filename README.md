@@ -1,6 +1,6 @@
 # zcall-gui
 
-zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
+zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, usage, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
 
 The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.5, with its public Git source pinned in `Cargo.lock` and the same revision recorded by the `vendor/zgpui` submodule. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
 
@@ -39,10 +39,11 @@ On Linux, **Install user service** then verifies or creates the user unit for th
 ## Controls
 
 - **Overview:** see the gateway state and one next step: add a provider or connect your AI tools. Click either count to open its list; service controls stay in Service settings.
-- **Providers:** add or update an endpoint, select a protocol, set a default model, test it, or remove it. API keys are masked and sent to the CLI through stdin.
+- **Providers:** search by name, model, protocol or endpoint; add or update an endpoint, select a protocol, set a default model, test it, or remove it. API keys are masked and sent to the CLI through stdin.
 - **AI tools:** detect supported tools, apply a gateway route, or revert an earlier configuration change.
 - **Plugins:** inspect enabled state, install a local library or pinned remote source, enable/disable, update or remove a plugin. Newly installed native code requires a separate enable action.
 - **Privacy:** select off, secret sanitization, or secret plus personal information sanitization.
+- **Usage:** inspect recorded upstream attempts, including retries, successful and failed attempts, input/output tokens, cache and reasoning details, and attempt success rate. The page reads local accounting on first open or when you select Refresh; other pages do not scan usage history. Enable or disable local recording from this page, then explicitly restart the service to apply the saved setting. Disabling recording preserves existing history. Older gateways without detail counters still show their supported totals; a missing recording-status field is shown as unknown.
 - **Updates:** install a missing gateway, update a complete unmanaged gateway, inspect or recover an installation, or use the package manager for a managed installation. GUI updates remain separate.
 
 Tab / Shift+Tab move focus, Enter activates buttons, Ctrl+A selects an input, and standard copy/paste shortcuts work. Ctrl+Q closes the GUI. Provider rows open details on demand. Adding an endpoint uses two short steps; removal stays in the detail panel.
@@ -123,10 +124,13 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo build --release --offline
 xvfb-run -a -s '-screen 0 1100x740x24 -nolisten tcp' python3 scripts/ui_smoke.py
+xvfb-run -a -s '-screen 0 1100x740x24 -nolisten tcp' python3 scripts/usage_recording_smoke.py
 xvfb-run -a -s '-screen 0 1440x1000x24 -nolisten tcp' python3 scripts/agent_identity_smoke.py
 ```
 
 The Linux GUI has been opened on an Intel UHD GPU. The real-window test uses an isolated Xvfb display. It exercises provider stdin credentials, agent route changes, plugin activation, privacy selection and update checks against a local fixture. A separate run uses the actual developing zcalld CLI and an isolated home to verify saved providers, agent apply/restore, privacy changes and appearance persistence. Neither run calls a remote model. Screenshots contain isolated test configuration. [Validation evidence](docs/VALIDATION.md) records the scope and current limits. [The 0.1.4 release record](docs/validation-0.1.4.md) identifies the exact source, native jobs and published archives.
+
+The recording smoke uses a stateful synthetic CLI and a 45-second native window. It checks that enabling recording only saves configuration, restarting requires confirmation, successful restart clears the pending state, and disabling preserves the displayed history before and after another confirmed restart. It saves seven screenshots and a JSON result under `_validation/usage-recording`; it does not operate a real service.
 
 The native backend currently uses X11/GLX on Linux, Win32/WGL on Windows and Cocoa/OpenGL on macOS. Apple has [deprecated OpenGL](https://developer.apple.com/documentation/appkit/nsopenglcontext); there is no Metal or native Wayland backend in this version. Native screen-reader accessibility and complex-script shaping are also not implemented.
 

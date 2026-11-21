@@ -98,6 +98,7 @@ elif a[:2]==['agents','list'] or a[:2]==['agents','detect']:r={'agents':[{'name'
 elif a[:2]==['plugins','list']:r={'plugins':[{'name':'privacy','path':'/usr/lib/zcalld/plugins/privacy.so','kind':'native','enabled':s['plugin_enabled'],'version':'0.1.0'}]}
 elif a[:2]==['privacy','show']:r={'mode':s['mode'],'enabled':s['mode']!='off','model_auto':False}
 elif a[:1]==['models']:r={'object':'list','data':s['routes']}
+elif a[:2]==['usage','summary']:r={'requests':1250,'failed':5,'input_tokens':480000,'output_tokens':96000,'cache_read_tokens':160000,'cache_write_tokens':24000,'reasoning_tokens':18000,'recording_configured':True}
 elif a[:2]==['update','check']:r={'latest':'0.2.0','available':False}
 else:
     if a[:2]==['providers','add']:s['providers'].append({'name':a[2],'base_url':option('--base-url'),'protocol':option('--protocol'),'configured':True})
@@ -143,7 +144,7 @@ print(json.dumps(r))
             click_without_motion(display,window,x,y)
             def selected():
                 frame=ImageGrab.grab(bbox=(0,0,1080,740),xdisplay=display)
-                markers=[frame.getpixel((13,142+row*48)) for row in range(6)]
+                markers=[frame.getpixel((13,142+row*48)) for row in range(7)]
                 others=[color for row,color in enumerate(markers) if row!=page]
                 return len(set(others))==1 and markers[page]!=others[0]
             try:
@@ -155,10 +156,23 @@ print(json.dumps(r))
             frame=ImageGrab.grab(bbox=(0,0,1080,740),xdisplay=display)
             navigation.append({"case":label,"selected_page":page,"header_sha256":hashlib.sha256(frame.crop((198,26,520,70)).tobytes()).hexdigest()})
         reads_before_navigation=len(calls())
-        for page in [1,2,3,4,5,0]:
+        for page in [1,2,3,4,6,0]:
             navigate(80,142+page*48,page,"sidebar-"+str(page))
         assert len({item["header_sha256"] for item in navigation})==6,"Page content did not change with navigation"
         assert len(calls())==reads_before_navigation,"Navigation unexpectedly invoked the CLI"
+        navigate(80,382,5,"sidebar-usage")
+        wait_for(lambda:count(["usage","summary"])==1,"Usage page did not request local accounting")
+        time.sleep(.2);shot("usage")
+        navigate(80,142,0,"usage-return-overview")
+        navigate(80,382,5,"usage-cached-reopen")
+        time.sleep(.2)
+        assert count(["usage","summary"])==1,"Reopening usage unexpectedly rescanned history"
+        before_usage_reads=count(["models"])
+        click(1012,713)
+        wait_for(lambda:count(["usage","summary"])==2,"Usage refresh did not read accounting")
+        time.sleep(.2)
+        assert count(["models"])==before_usage_reads,"Usage refresh unexpectedly refreshed all gateway state"
+        navigate(80,142,0,"usage-return-after-refresh")
         shot("overview")
         navigate(410,400,1,"overview-providers");click(977,56)
         fill(820,248,"fixture-provider");fill(820,348,"http://127.0.0.1:9999/v1")
@@ -239,7 +253,7 @@ print(json.dumps(r))
         if args.real_cli:
             data=json.loads(subprocess.check_output([actual,"privacy","show","--json","--config",str(config)],env=env))
             assert data["mode"]=="personal"
-        click(90,382);shot("updates")
+        click(90,430);shot("updates")
         if not args.real_cli:
             click(300,283);wait_for(lambda:count(["update","check"])==1,"Update check did not invoke CLI");time.sleep(.2)
         click(90,334);click(80,650);click(984,255);click(846,563)

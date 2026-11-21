@@ -25,5 +25,5 @@ if "--ui" in sys.argv:
     if sys.platform!="linux":raise SystemExit("--ui requires an isolated Linux Xvfb display")
     subprocess.run(["cargo","build","--manifest-path","vendor/zgpui/Cargo.toml","--features","native","--release","--example","window_probe","--locked","--offline"],cwd=root,check=True)
     subprocess.run(["xvfb-run","-a","-s","-screen 0 1280x900x24 -nolisten tcp","python3","vendor/zgpui/scripts/check_x11.py","--binary",str(target_directory("vendor/zgpui/Cargo.toml")/"release/examples/window_probe"),"--output","_validation/x11-properties.json"],cwd=root,check=True)
-    for script in ["scripts/ui_smoke.py", "scripts/managed_update_smoke.py", "scripts/core_install_ui_smoke.py"]:
+    for script in ["scripts/ui_smoke.py", "scripts/usage_recording_smoke.py", "scripts/managed_update_smoke.py", "scripts/core_install_ui_smoke.py"]:
         subprocess.run(["xvfb-run","-a","-s","-screen 0 1100x740x24 -nolisten tcp","python3",script,str(binary.resolve())],cwd=root,check=True)

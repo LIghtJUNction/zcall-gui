@@ -245,3 +245,38 @@ setup.config_location	設定位置
 setup.no_start	服務將保持停止。
 setup.changed	安裝或設定狀態已變更，請重新整理後繼續。
 agents.visible_count	第 {start}–{end} 項，共 {total} 個工具
+nav.usage	用量
+page.usage	本機歷史中的上游嘗試與 Token 用量，包含重試。
+usage.loading	正在讀取用量…
+usage.loading_help	正在彙總本機記錄，不會請求模型服務商。
+usage.refreshed	用量已重新整理
+usage.all_history	全部已記錄用量
+usage.requests	上游嘗試
+usage.succeeded	成功嘗試
+usage.failed	失敗嘗試
+usage.tokens	Token 分布
+usage.input	輸入 Token
+usage.output	輸出 Token
+usage.success_rate	嘗試成功率
+usage.empty	從第一個請求開始
+usage.empty_help	用量記錄已設定。如果閘道仍在使用舊設定，請先重新啟動服務。
+usage.recorded_help	統計範圍為本機用量歷史中保留的上游嘗試。
+usage.refresh_help	點選「重新整理」讀取最新統計。
+usage.cache_read	快取讀取
+usage.cache_write	快取寫入
+usage.reasoning	推理 Token
+usage.details_help	快取與推理為明細計數，不會額外累加到 Token 總量。
+providers.search	搜尋服務商、模型或網址…
+providers.no_matches	沒有符合的服務商
+providers.no_matches_help	試試其他名稱、模型、協定或網址。
+usage.enable	啟用用量記錄
+usage.disable	關閉用量記錄
+usage.saving	正在儲存記錄設定…
+usage.saved	記錄設定已儲存
+usage.restart_required	需要重新啟動閘道，記錄設定才會生效。
+usage.recording_configured	已設定用量記錄
+usage.recording_off	尚未設定用量記錄
+usage.recording_off_help	啟用本機請求與 Token 記錄後，重新啟動閘道即可套用設定。
+usage.recording_unknown	記錄設定狀態未知
+usage.recording_unknown_help	目前閘道版本不提供記錄設定狀態，更新後可在這裡管理。
+usage.open_updates	前往更新

@@ -13,6 +13,7 @@ mod package_update;
 mod pages;
 mod settings;
 mod updater;
+mod usage;
 mod view_state;
 use backend::{Backend, Reply};
 use i18n::tr;
@@ -24,20 +25,24 @@ use std::{
 use view_state::LoadState;
 use zgpui::native::{ButtonStyle as Style, Canvas, Event, Rect, Ui, Window, colors::*};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const PAGES: [&str; 6] = [
+const USAGE_PAGE: usize = 5;
+const UPDATES_PAGE: usize = 6;
+const PAGES: [&str; 7] = [
     "nav.overview",
     "nav.providers",
     "nav.agents",
     "nav.plugins",
     "nav.privacy",
+    "nav.usage",
     "nav.updates",
 ];
-const PAGE_IDS: [&str; 6] = [
+const PAGE_IDS: [&str; 7] = [
     "overview",
     "providers",
     "agents",
     "plugins",
     "privacy",
+    "usage",
     "updates",
 ];
 #[derive(Default)]
@@ -87,12 +92,15 @@ struct App {
     page: usize,
     scroll: usize,
     state: Json,
+    usage: Json,
+    usage_restart_pending: bool,
     busy: bool,
     notice: String,
     failed: bool,
     sender: mpsc::Sender<Reply>,
     receiver: mpsc::Receiver<Reply>,
     provider: ProviderForm,
+    provider_query: String,
     plugin: PluginForm,
     route_picker: Option<AgentRoutePicker>,
     confirm: Option<Action>,
@@ -152,12 +160,15 @@ impl App {
             page: 0,
             scroll: 0,
             state: Json::Null,
+            usage: Json::Null,
+            usage_restart_pending: false,
             busy: true,
             notice: tr("status.loading").into(),
             failed: false,
             sender,
             receiver,
             provider: ProviderForm::default(),
+            provider_query: String::new(),
             plugin: PluginForm::default(),
             route_picker: None,
             confirm: None,
@@ -244,6 +255,10 @@ impl App {
         self.ui = Ui::default();
     }
     fn refresh(&mut self) {
+        if self.page == USAGE_PAGE {
+            self.refresh_usage();
+            return;
+        }
         if !self.busy {
             self.busy = true;
             self.notice = tr("status.loading").into();
@@ -275,6 +290,17 @@ impl App {
         while let Ok(reply) = self.receiver.try_recv() {
             changed = true;
             self.busy = false;
+            if reply.label == usage::READ_LABEL {
+                self.accept_usage(reply.result);
+                continue;
+            }
+            if matches!(
+                reply.label.as_str(),
+                usage::ENABLE_LABEL | usage::DISABLE_LABEL
+            ) {
+                self.accept_usage_recording(reply.result);
+                continue;
+            }
             match reply.result {
                 Ok(data) if reply.label == "refresh" => {
                     if data.get("installation") != &Json::Null {
@@ -312,6 +338,7 @@ impl App {
                     self.accept_setup(&reply.label, &data);
                     if reply.starts_gateway {
                         self.privacy_restart_pending = false;
+                        self.usage_restart_pending = false;
                     }
                     if reply.label == "Set privacy mode" && data.get("restart_required").boolean() {
                         self.privacy_restart_pending = true;
@@ -359,6 +386,8 @@ impl App {
                 self.notice = notice.into();
             } else if !self.failed && self.privacy_needs_restart() {
                 self.notice = tr("privacy.restart_required").into();
+            } else if !self.failed && self.usage_restart_pending {
+                self.notice = tr("usage.restart_required").into();
             }
         }
         changed
@@ -475,6 +504,9 @@ impl App {
         });
     }
     fn draw(&mut self, c: &mut Canvas<'_>, event: Option<Event>) {
+        if self.page == USAGE_PAGE && self.usage == Json::Null && !self.busy {
+            self.refresh_usage();
+        }
         if matches!(event, Some(Event::Key { code: 27, .. })) {
             if self.protocol_menu {
                 self.protocol_menu = false;
@@ -594,6 +626,7 @@ impl App {
             tr("page.agents"),
             tr("page.plugins"),
             tr("page.privacy"),
+            tr("page.usage"),
             tr("page.updates"),
         ];
         if self.page != 0 {
@@ -644,6 +677,7 @@ impl App {
                 2 => self.agents(c, x, width),
                 3 => self.plugins(c, x, width),
                 4 => self.privacy(c, x, width),
+                USAGE_PAGE => self.usage_page(c, x, width),
                 _ => self.updates(c, x, width),
             }
         }
@@ -863,6 +897,11 @@ fn icon(c: &mut Canvas<'_>, index: usize, x: f32, y: f32, ink: u32, bg: u32) {
             outline(c, Rect::new(x + 1., y + 7., 15., 11.), 3.);
             c.line((x + 8.5, y + 11.), (x + 8.5, y + 14.), 1.5, ink);
         }
+        USAGE_PAGE => {
+            for (dx, height) in [(1., 6.), (7., 11.), (13., 17.)] {
+                c.rect(Rect::new(x + dx, y + 18. - height, 3., height), 1.5, ink);
+            }
+        }
         _ => {
             let mut previous = None;
             for i in 0..=18 {
@@ -905,7 +944,7 @@ fn run() -> Result<(), String> {
             }
             "--help" | "-h" => {
                 println!(
-                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|updates]\n       zcall-gui --update check|apply\n       zcall-gui --core-install prepare|apply|status|resume|rollback\n\n--core-install returns JSON and uses the same verified full-bundle installer as the UI.\n--theme system|light|dark selects appearance for this session.\n--language system|zh-CN|zh-TW|en|ja selects the interface language.\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
+                    "zcall-gui {VERSION}\n\nUsage: zcall-gui [--zcalld PATH] [--config PATH] [--page overview|providers|agents|plugins|privacy|usage|updates]\n       zcall-gui --update check|apply\n       zcall-gui --core-install prepare|apply|status|resume|rollback\n\n--core-install returns JSON and uses the same verified full-bundle installer as the UI.\n--theme system|light|dark selects appearance for this session.\n--language system|zh-CN|zh-TW|en|ja selects the interface language.\n\nCtrl+Q closes the window. The gateway service stays independent.\n--smoke-seconds N opens a real window for a bounded release smoke test."
                 );
                 return Ok(());
             }

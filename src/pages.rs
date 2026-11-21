@@ -225,54 +225,68 @@ impl App {
             self.provider_edit = false;
             self.provider_panel = 2;
         }
-        let items = self
-            .state
-            .get("providers")
-            .get("providers")
-            .array()
-            .to_vec();
+        if self.ui.input(
+            c,
+            401,
+            Rect::new(x, 118., width, 42.),
+            &mut self.provider_query,
+            tr("providers.search"),
+            false,
+            enabled,
+        ) {
+            self.scroll = 0;
+        }
+        let query = self.provider_query.trim().to_lowercase();
+        let providers = self.state.get("providers").get("providers").array();
+        if providers.is_empty() {
+            empty(
+                c,
+                Rect::new(x, 190., width, 172.),
+                tr("providers.empty"),
+                tr("providers.empty_help"),
+            );
+            return;
+        }
+        // Rendering borrows the snapshot. Copy only the one selected provider.
+        let items = providers
+            .iter()
+            .filter(|item| {
+                query.is_empty()
+                    || ["name", "base_url", "model", "protocol"]
+                        .iter()
+                        .any(|key| item.get(key).text().to_lowercase().contains(&query))
+            })
+            .collect::<Vec<_>>();
         if items.is_empty() {
             empty(
                 c,
-                Rect::new(x, 140., width, 172.),
-                tr("providers.empty"),
-                tr("providers.empty_help"),
+                Rect::new(x, 190., width, 172.),
+                tr("providers.no_matches"),
+                tr("providers.no_matches_help"),
             );
             return;
         }
         c.text(
             &i18n::message("providers.count", &[("count", &items.len().to_string())]),
             x,
-            125.,
+            179.,
             13,
             false,
             MUTED,
         );
-        let rows = ((c.height - 235.) / 80.).max(1.) as usize;
+        let rows = ((c.height - 285.) / 80.).max(1.) as usize;
         self.scroll = self.scroll.min(items.len().saturating_sub(rows));
         let visible = items.len().saturating_sub(self.scroll).min(rows);
-        card(c, Rect::new(x, 157., width, visible as f32 * 80.));
+        c.rect(Rect::new(x, 211., width, visible as f32 * 80.), 8., SURFACE);
+        let mut selected_provider = None;
         for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
-            let y = 157. + (index - self.scroll) as f32 * 80.;
+            let y = 211. + (index - self.scroll) as f32 * 80.;
             let r = Rect::new(x + 1., y + 1., width - 2., 78.);
             if self
                 .ui
                 .button(c, 10000 + index as u64, r, "", Style::Quiet, enabled)
             {
-                self.clear_key();
-                self.provider = ProviderForm {
-                    name: value(item, "name", "provider").into(),
-                    url: item.get("base_url").text().into(),
-                    model: item.get("model").text().into(),
-                    environment: item.get("api_key_env").text().into(),
-                    key: String::new(),
-                    protocol: protocols()
-                        .iter()
-                        .position(|p| *p == item.get("protocol").text())
-                        .unwrap_or(0),
-                };
-                self.provider_edit = true;
-                self.provider_panel = 1;
+                selected_provider = Some((**item).clone());
             }
             c.ellipsis(
                 value(item, "name", tr("providers.unnamed")),
@@ -320,6 +334,22 @@ impl App {
             if index - self.scroll + 1 < visible {
                 c.rect(Rect::new(x + 22., y + 79., width - 44., 1.), 0., LINE);
             }
+        }
+        if let Some(item) = selected_provider {
+            self.clear_key();
+            self.provider = ProviderForm {
+                name: value(&item, "name", "provider").into(),
+                url: item.get("base_url").text().into(),
+                model: item.get("model").text().into(),
+                environment: item.get("api_key_env").text().into(),
+                key: String::new(),
+                protocol: protocols()
+                    .iter()
+                    .position(|p| *p == item.get("protocol").text())
+                    .unwrap_or(0),
+            };
+            self.provider_edit = true;
+            self.provider_panel = 1;
         }
     }
 

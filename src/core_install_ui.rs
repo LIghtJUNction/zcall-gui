@@ -395,7 +395,7 @@ impl App {
         core_install::resolve_binary(&self.backend.binary).is_none()
     }
     pub(super) fn start_core_install(&mut self) {
-        self.page = 5;
+        self.page = UPDATES_PAGE;
         self.scroll = 0;
         self.repaint = true;
         match phase(&self.core_installation) {

@@ -19,7 +19,7 @@ args=sys.argv[1:]
 mode=(root/'scenario').read_text().strip()
 with (root/'calls.jsonl').open('a') as log:
     log.write(json.dumps(args)+'\n')
-if mode=='loading' and args[:1]==['status']:
+if (mode=='loading' and args[:1]==['status']) or (mode=='usage-loading' and args[:2]==['usage','summary']):
     (root/'loading-started').touch()
     deadline=time.monotonic()+10
     while not (root/'release-loading').exists() and time.monotonic()<deadline:
@@ -35,8 +35,10 @@ responses={
     'plugins':{'plugins':[]},
     'privacy':{} if mode=='privacy-unavailable' else {'mode':'secrets','enabled':True},
     'models':{'object':'list','data':[] if mode=='empty-catalog' else [{'id':'fixture-model','name':'Fixture model'}]},
+    'usage':{'requests':0,'failed':0,'input_tokens':0,'output_tokens':0} if mode in ('empty-usage','recording-disabled','legacy-usage') else ({'requests':'invalid'} if mode=='invalid-usage' else {'requests':1250,'failed':5,'input_tokens':480000,'output_tokens':96000,'cache_read_tokens':160000,'cache_write_tokens':24000,'reasoning_tokens':18000}),
 }
-failures={'unavailable':'status','providers-unavailable':'providers','catalog-unavailable':'models'}
+if mode!='legacy-usage':responses['usage']['recording_configured']=mode!='recording-disabled'
+failures={'unavailable':'status','providers-unavailable':'providers','catalog-unavailable':'models','usage-unavailable':'usage'}
 if failures.get(mode)==args[0]:
     print(json.dumps({'error':'Synthetic local read failed; retry is available.'}));raise SystemExit(1)
 if args[0] not in responses:
@@ -51,6 +53,7 @@ def main():
     parser.add_argument("--output", default="_validation/state-ui")
     parser.add_argument("--theme", choices=["light", "dark"], default="dark")
     parser.add_argument("--language", default="zh-CN")
+    parser.add_argument("--only-usage", action="store_true")
     args = parser.parse_args()
     display = os.environ.get("DISPLAY", "")
     if not display or display in (":0", ":0.0"):
@@ -71,7 +74,17 @@ def main():
         ("catalog-unavailable", "agents", (965, 143)),
         ("empty-catalog", "agents", None),
         ("privacy-unavailable", "privacy", None),
+        ("usage-loading", "usage", None),
+        ("healthy", "usage", None),
+        ("empty-usage", "usage", None),
+        ("recording-disabled", "usage", None),
+        ("legacy-usage", "usage", None),
+        ("usage-unavailable", "usage", (285, 290)),
+        ("invalid-usage", "usage", (285, 290)),
     ]
+
+    if args.only_usage:
+        cases = [case for case in cases if case[1] == "usage"]
 
     def xd(*command):
         return subprocess.check_output(
@@ -139,7 +152,7 @@ def main():
                     wait_for(lambda: len(windows() - before) == 1, "Native state window missing")
                     window = next(iter(windows() - before))
                     xd("windowmove", "--sync", window, 0, 0)
-                    if mode == "loading":
+                    if mode in ("loading", "usage-loading"):
                         wait_for(lambda: (root / "loading-started").exists(), "Delayed status did not begin")
                         time.sleep(.2)
                         capture(name, window)
@@ -148,20 +161,24 @@ def main():
                         lambda: "Smoke ready: state loaded and presented" in diagnostic.read_text(),
                         "Completed snapshot was not presented",
                     )
-                    if mode != "loading":
+                    if mode not in ("loading", "usage-loading"):
                         capture(name, window)
                     if retry_point:
                         previous = len(calls())
                         scenario.write_text("healthy")
                         xd("mousemove", "--window", window, *retry_point, "click", 1)
-                        wait_for(lambda: len(calls()) >= previous + 6, "Retry did not refresh the local snapshot")
+                        wait_for(lambda: len(calls()) >= previous + (1 if page == "usage" else 6), "Retry did not refresh the local snapshot")
                         time.sleep(.25)
                         capture(name + "-recovered", window)
                     allowed = {
                         ("status",), ("providers", "list"), ("agents", "list"),
-                        ("plugins", "list"), ("privacy", "show"), ("models",),
+                        ("plugins", "list"), ("privacy", "show"), ("models",), ("usage", "summary"),
                     }
                     assert all(tuple(call[:call.index("--json")]) in allowed for call in calls()), calls()
+                    # Event handling must not repeatedly rescan local usage history.
+                    previous_reads = len(calls())
+                    time.sleep(.3)
+                    assert len(calls()) == previous_reads, "Idle page invoked the CLI"
                     # Only the owned fixture window receives the close key.
                     subprocess.run(
                         ["xdotool", "key", "--window", window, "ctrl+q"],

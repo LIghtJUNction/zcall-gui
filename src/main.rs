@@ -532,6 +532,7 @@ impl App {
             {
                 self.page = index;
                 self.scroll = 0;
+                self.repaint = true;
             }
             if selected {
                 c.rect(Rect::new(r.x + 1., r.y + 13., 3., 16.), 1.5, BLUE);

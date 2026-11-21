@@ -1,7 +1,50 @@
 #!/usr/bin/env python3
 """Exercise the real window on a private X server; never send host input."""
-import argparse,json,os,pathlib,subprocess,tempfile,time,sys
+import argparse,ctypes,ctypes.util,hashlib,json,os,pathlib,subprocess,tempfile,time,sys
 from PIL import ImageGrab
+
+def click_without_motion(display, window, x, y):
+    """Send only this fixture window's press/release; no later event may repaint it."""
+    class Button(ctypes.Structure):
+        _fields_ = [
+            ("type", ctypes.c_int), ("serial", ctypes.c_ulong), ("send_event", ctypes.c_int),
+            ("display", ctypes.c_void_p), ("window", ctypes.c_ulong), ("root", ctypes.c_ulong),
+            ("subwindow", ctypes.c_ulong), ("time", ctypes.c_ulong),
+            ("x", ctypes.c_int), ("y", ctypes.c_int),
+            ("x_root", ctypes.c_int), ("y_root", ctypes.c_int),
+            ("state", ctypes.c_uint), ("button", ctypes.c_uint), ("same_screen", ctypes.c_int),
+        ]
+    class Event(ctypes.Union):
+        _fields_ = [("button", Button), ("pad", ctypes.c_long * 24)]
+    library = ctypes.util.find_library("X11")
+    if not library:
+        raise AssertionError("X11 is required for the navigation repaint regression")
+    x11 = ctypes.CDLL(library)
+    for name, result, arguments in [
+        ("XOpenDisplay", ctypes.c_void_p, [ctypes.c_char_p]),
+        ("XCloseDisplay", ctypes.c_int, [ctypes.c_void_p]),
+        ("XDefaultRootWindow", ctypes.c_ulong, [ctypes.c_void_p]),
+        ("XSendEvent", ctypes.c_int, [ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_long, ctypes.POINTER(Event)]),
+        ("XSync", ctypes.c_int, [ctypes.c_void_p, ctypes.c_int]),
+    ]:
+        function = getattr(x11, name);function.restype = result;function.argtypes = arguments
+    connection = x11.XOpenDisplay(display.encode())
+    if not connection:
+        raise AssertionError("Private Xvfb display could not be opened")
+    try:
+        root = x11.XDefaultRootWindow(connection)
+        for kind, mask in [(4, 1 << 2), (5, 1 << 3)]:
+            event = Event()
+            event.button.type = kind;event.button.display = connection
+            event.button.window = int(window);event.button.root = root
+            event.button.x = x;event.button.y = y
+            event.button.x_root = x;event.button.y_root = y
+            event.button.button = 1;event.button.same_screen = 1
+            assert x11.XSendEvent(connection, int(window), 0, mask, ctypes.byref(event))
+            x11.XSync(connection, 0)
+    finally:
+        x11.XCloseDisplay(connection)
+
 parser=argparse.ArgumentParser()
 parser.add_argument("binary",nargs="?",default="target/release/zcall-gui")
 parser.add_argument("--output",default="_validation")
@@ -95,8 +138,29 @@ print(json.dumps(r))
         def shot(name):ImageGrab.grab(bbox=(0,0,1080,740),xdisplay=display).save(out/(name+".png"))
         def ready(previous):wait_for(lambda:count(["models"])>previous,"Action refresh did not finish");time.sleep(.25)
         def confirm():click(682,438)
+        navigation=[]
+        def navigate(x,y,page,label):
+            click_without_motion(display,window,x,y)
+            def selected():
+                frame=ImageGrab.grab(bbox=(0,0,1080,740),xdisplay=display)
+                markers=[frame.getpixel((13,142+row*48)) for row in range(6)]
+                others=[color for row,color in enumerate(markers) if row!=page]
+                return len(set(others))==1 and markers[page]!=others[0]
+            try:
+                # Capture/query only: pointer, keyboard and Expose events would mask the bug.
+                wait_for(selected,"Navigation did not repaint the selected page: "+label,timeout=2)
+            except AssertionError:
+                shot("navigation-failed-"+label)
+                raise
+            frame=ImageGrab.grab(bbox=(0,0,1080,740),xdisplay=display)
+            navigation.append({"case":label,"selected_page":page,"header_sha256":hashlib.sha256(frame.crop((198,26,520,70)).tobytes()).hexdigest()})
+        reads_before_navigation=len(calls())
+        for page in [1,2,3,4,5,0]:
+            navigate(80,142+page*48,page,"sidebar-"+str(page))
+        assert len({item["header_sha256"] for item in navigation})==6,"Page content did not change with navigation"
+        assert len(calls())==reads_before_navigation,"Navigation unexpectedly invoked the CLI"
         shot("overview")
-        click(410,400);click(977,56)
+        navigate(410,400,1,"overview-providers");click(977,56)
         fill(820,248,"fixture-provider");fill(820,348,"http://127.0.0.1:9999/v1")
         shot("provider-step1");click(977,675)
         fill(820,248,"fixture-secret");fill(820,394,"fixture-model")
@@ -108,7 +172,7 @@ print(json.dumps(r))
         if args.real_cli:
             data=json.loads(subprocess.check_output([actual,"providers","list","--json","--config",str(config)],env=env))
             assert any(p["name"]=="fixture-provider" for p in data["providers"])
-        click(90,142);click(840,400);shot("agents")
+        navigate(80,142,0,"return-overview");navigate(840,400,2,"overview-agents");shot("agents")
         before=count(["models"]);click(976,227);shot("agent-route-picker")
         # The second Agent's background button must not replace the picker owner.
         click(976,331)
@@ -148,7 +212,7 @@ print(json.dumps(r))
         previous=count(["agents","apply"]);click(976,227);time.sleep(.12)
         assert count(["agents","apply"])==previous,"An empty catalog must disable apply"
         shot("agents-no-routes")
-        click(968,143);shot("agents-add-provider-help");click(1035,45)
+        navigate(968,143,1,"empty-catalog-add-provider");shot("agents-add-provider-help");click(1035,45)
         if args.real_cli:config.write_text(saved)
         else:state_file.write_text(saved)
         before=count(["models"]);click(1012,713);ready(before)
@@ -179,7 +243,7 @@ print(json.dumps(r))
         window=find_window();xd("windowmove","--sync",window,0,0);time.sleep(.8)
         pixel=ImageGrab.grab(bbox=(200,90,201,91),xdisplay=display).getpixel((0,0))
         assert max(pixel[:3])<64,("Saved dark theme was not restored",pixel)
-        report={"backend":"actual zcalld" if args.real_cli else "isolated fixture","display":"private Xvfb","overview_provider_and_agent_navigation":True,"provider_stdin_verified":True,"actual_provider_state_verified":bool(args.real_cli),"agent_apply_and_restore":True,"catalog_uses_real_data_id":True,"no_guessed_local_route":True,"route_search_keyboard":True,"route_picker_blocks_background":True,"empty_catalog_disables_apply":True,"agent_pre_change_config_preserved":bool(args.real_cli),"privacy_mode_verified":True,"theme_language_persisted":True,"restart_restores_dark":True,"idle_cpu_ticks_2s":idle,"clock_ticks_per_second":os.sysconf("SC_CLK_TCK"),"calls":len(calls()),"host_input":False}
+        report={"backend":"actual zcalld" if args.real_cli else "isolated fixture","display":"private Xvfb","overview_provider_and_agent_navigation":True,"navigation_without_followup_input":navigation,"provider_stdin_verified":True,"actual_provider_state_verified":bool(args.real_cli),"agent_apply_and_restore":True,"catalog_uses_real_data_id":True,"no_guessed_local_route":True,"route_search_keyboard":True,"route_picker_blocks_background":True,"empty_catalog_disables_apply":True,"agent_pre_change_config_preserved":bool(args.real_cli),"privacy_mode_verified":True,"theme_language_persisted":True,"restart_restores_dark":True,"idle_cpu_ticks_2s":idle,"clock_ticks_per_second":os.sysconf("SC_CLK_TCK"),"calls":len(calls()),"host_input":False}
         (out/"ui-smoke.json").write_text(json.dumps(report,indent=2)+"\n");print(json.dumps(report,indent=2),flush=True)
     finally:
         if proc.poll()is None:proc.terminate()

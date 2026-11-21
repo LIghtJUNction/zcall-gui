@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Repaint immediately after sidebar and in-page navigation so the selected page and visible content stay in sync without another input event.
+- Keep source AUR builds offline by resolving the bundled toolkit locally, including on an empty Cargo cache.
+
 ## 0.1.5
 
 - Reopen Windows core-installer recovery transactions whose protected directories use owner and SYSTEM inheritance, while retaining strict file ACL validation.

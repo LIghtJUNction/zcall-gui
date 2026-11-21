@@ -112,10 +112,12 @@ impl App {
                     OverviewAction::ConnectTools => {
                         self.page = 2;
                         self.scroll = 0;
+                        self.repaint = true;
                     }
                     OverviewAction::AddProvider => {
                         self.page = 1;
                         self.scroll = 0;
+                        self.repaint = true;
                         self.clear_key();
                         self.provider = ProviderForm::default();
                         self.provider_edit = false;
@@ -184,6 +186,7 @@ impl App {
             ) {
                 self.page = *page;
                 self.scroll = 0;
+                self.repaint = true;
             }
             c.text(count, left + 22., top + 242., 30, true, TEXT);
             c.ellipsis(
@@ -378,6 +381,7 @@ impl App {
                 } else {
                     self.page = 1;
                     self.scroll = 0;
+                    self.repaint = true;
                     self.clear_key();
                     self.provider = ProviderForm::default();
                     self.provider_edit = false;

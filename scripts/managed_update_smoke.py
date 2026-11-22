@@ -80,12 +80,9 @@ print(json.dumps(r))
     def notice_color():
         return pixels().getpixel((201,718))[:3]
     def red_notice():
-        r,g,b=notice_color()
-        # Distinguish a red error from the warm copper busy/accent color.
-        return r>120 and r-g>70 and r-b>70
+        return notice_color() == (197, 34, 31)  # light palette danger
     def busy_notice():
-        r,g,b=notice_color()
-        return r>g>b and 35<=r-g<=65 and g-b>25
+        return notice_color() == (26, 115, 232)  # light palette accent
     try:
         window=""
         def locate():
@@ -105,7 +102,7 @@ print(json.dumps(r))
         time.sleep(.3)
         click()
         until(lambda:len(lines("helper.jsonl"))==1,"Package helper did not start")
-        until(busy_notice,"Running helper was not shown in copper")
+        until(busy_notice,"Running helper did not use the light accent color")
         assert not red_notice(),"Busy indicator was classified as an error"
         busy_color=notice_color()
         pixels().save(output/"busy.png")

@@ -100,7 +100,14 @@ def check(archive_path, pkgbuild_path, version, source_pkgrel):
         library = metadata(tree, tree / "vendor/zgpui/Cargo.toml", env, vendor_before, ("native", "bridge"))
         if prepared_locks != (root_lock.read_bytes(), vendor_lock.read_bytes()):
             raise ValueError("Frozen metadata changed a prepared lockfile")
-        if (cargo_home / "git").exists() or (cargo_home / "registry").exists():
+        registry = cargo_home / "registry"
+        entries = set(registry.iterdir()) if registry.is_dir() else set()
+        # Cargo can mark an empty cache directory even with source replacement.
+        tag = registry / "CACHEDIR.TAG"
+        if entries == {tag} and tag.is_file() and not tag.is_symlink():
+            if tag.read_bytes().splitlines()[:1] == [b"Signature: 8a477f597d28d172789f06886806bc55"]:
+                entries.clear()
+        if (cargo_home / "git").exists() or registry.is_symlink() or (registry.exists() and not registry.is_dir()) or entries:
             raise ValueError("Source prepare or metadata populated a Git or registry cache")
     print(json.dumps({"source_sha256": checksum, "version": version,
                       "source_pkgrel": source_pkgrel, "cargo_cache_initially_empty": True,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Create native binary archives and a source archive that includes submodules."""
-import argparse,gzip,hashlib,io,pathlib,plistlib,shutil,subprocess,tarfile,tempfile,zipfile
+import argparse,gzip,hashlib,io,pathlib,plistlib,shutil,subprocess,tarfile,tempfile,tomllib,zipfile
 from release import ROOT,current,clean
 TARGETS={"x86_64-unknown-linux-gnu","aarch64-unknown-linux-gnu","x86_64-pc-windows-msvc","aarch64-apple-darwin","x86_64-apple-darwin"}
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -63,6 +63,12 @@ printf 'Installed zcall-gui to %s/bin\\n' "$prefix"
     print(raw);print(archive)
 def source():
     clean();dist=ROOT/"_release"/"dist";dist.mkdir(parents=True,exist_ok=True)
+    library_commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD:vendor/zgpui"], cwd=ROOT, text=True).strip()
+    packages = tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]
+    sources = [row.get("source") for row in packages if row["name"] == "zgpui"]
+    if sources != ["git+https://github.com/LIghtJUNction/zgpui.git#" + library_commit]:
+        raise ValueError("The bundled zgpui gitlink differs from the application lock")
     with tempfile.TemporaryDirectory(prefix="zcall-gui-source-") as directory:
         tree=pathlib.Path(directory)/("zcall-gui-v"+current());tree.mkdir()
         for repository,prefix in [(ROOT,""),(ROOT/"vendor"/"zgpui","vendor/zgpui/")]:

@@ -33,10 +33,16 @@ def metadata(tree, manifest, env, expected, features=()):
     actual = sorted((p["name"], p["version"]) for p in data["packages"])
     if actual != sorted((name, version) for name, version, _ in expected):
         raise ValueError("Frozen metadata changed the bundled package versions")
+    locked = {(p["name"], p["version"]): p.get("source")
+              for p in tomllib.loads((manifest.parent / "Cargo.lock").read_text())["package"]}
     for package in data["packages"]:
         path = Path(package["manifest_path"]).resolve()
-        if package["source"] is not None or not path.is_relative_to(tree):
+        if not path.is_relative_to(tree):
             raise ValueError("Frozen metadata resolved a dependency outside the source archive")
+        if package["source"] != locked[package["name"], package["version"]]:
+            raise ValueError("Frozen metadata resolved a different source than the lock")
+        if package["source"] and not path.is_relative_to(tree / "vendor/cargo-sources"):
+            raise ValueError("External source was not resolved from the bundled Cargo sources")
         if package["name"] == "zgpui" and path != tree / "vendor/zgpui/Cargo.toml":
             raise ValueError("Frozen metadata did not use the bundled zgpui")
     return actual
@@ -91,7 +97,7 @@ def check(archive_path, pkgbuild_path, version, source_pkgrel):
             raise ValueError("Source prepare changed the locked package versions or dependency graph")
         prepared_locks = (root_lock.read_bytes(), vendor_lock.read_bytes())
         app = metadata(tree, tree / "Cargo.toml", env, root_before)
-        library = metadata(tree, tree / "vendor/zgpui/Cargo.toml", env, vendor_before, ("native",))
+        library = metadata(tree, tree / "vendor/zgpui/Cargo.toml", env, vendor_before, ("native", "bridge"))
         if prepared_locks != (root_lock.read_bytes(), vendor_lock.read_bytes()):
             raise ValueError("Frozen metadata changed a prepared lockfile")
         if (cargo_home / "git").exists() or (cargo_home / "registry").exists():

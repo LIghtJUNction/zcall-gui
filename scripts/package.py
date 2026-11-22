@@ -68,6 +68,13 @@ def source():
         for repository,prefix in [(ROOT,""),(ROOT/"vendor"/"zgpui","vendor/zgpui/")]:
             data=subprocess.check_output(["git","archive","--format=tar","--prefix="+prefix,"HEAD"],cwd=repository)
             with tarfile.open(fileobj=io.BytesIO(data),mode="r:") as archive:archive.extractall(tree,filter="data")
+        # The vendored workspace has optional and test dependencies of its own.
+        # Cargo emits a relocatable source replacement when given a relative path.
+        config = subprocess.check_output(
+            ["cargo", "vendor", "--locked", "--manifest-path", "vendor/zgpui/Cargo.toml",
+             "vendor/cargo-sources"], cwd=tree, text=True)
+        (tree / ".cargo").mkdir(exist_ok=True)
+        (tree / ".cargo/config.toml").write_text(config, encoding="utf-8")
         destination=dist/("zcall-gui-v"+current()+"-source.tar.gz");tar(tree,destination);print(destination)
 def main():
     parser=argparse.ArgumentParser();parser.add_argument("--target",choices=sorted(TARGETS));parser.add_argument("--source",action="store_true");args=parser.parse_args()

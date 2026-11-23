@@ -2,7 +2,9 @@
 
 zcall-gui is an optional native control panel for [zcalld](https://github.com/LIghtJUNction/zcalld). It manages providers, AI tool settings, plugins, privacy rules, usage, service state and updates by calling the installed `zcalld --json` interface. Closing the window leaves the gateway service running.
 
-The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) 0.1.5, with its public Git source pinned in `Cargo.lock` and the same revision recorded by the `vendor/zgpui` submodule. Cargo resolves only these two first-party packages; the GUI enables the toolkit's `native` feature and imports `zgpui::native`. Window creation, input, fonts and OpenGL use platform libraries; there is no embedded browser or third-party Rust crate.
+The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) through its `native` feature and `zgpui::native` API. `Cargo.lock` records the selected Git source, and `vendor/zgpui` records the same revision. Window creation, input, fonts and OpenGL use platform libraries.
+
+Release verification uses [RustCrypto sha2](https://github.com/RustCrypto/hashes) for SHA-256 and [zhex](https://github.com/LIghtJUNction/zhex) for lowercase hexadecimal output. The GUI and gateway helper verification share this implementation, while their existing download, confirmation and installation flows remain separate.
 
 ## Build and run
 
@@ -95,7 +97,7 @@ zcall-gui --core-install resume
 zcall-gui --core-install rollback
 ```
 
-These commands return JSON. `prepare` obtains the official metadata and verified helper; `apply` is the explicit installation action. `status` only reads local installation state. Native bootstrap needs system `curl` and `tar`; Windows uses native file-handle security APIs to set and verify private cache permissions. The GUI and installer add no third-party Rust dependency or Python runtime requirement. A core release without the complete archive and installer protocol is rejected before installation.
+These commands return JSON. `prepare` obtains the official metadata and verified helper; `apply` is the explicit installation action. `status` only reads local installation state. Native bootstrap needs system `curl` and `tar`; Windows uses native file-handle security APIs to set and verify private cache permissions. The GUI and installer require no Python runtime. A core release without the complete archive and installer protocol is rejected before installation.
 
 Managed paths remain on their package-manager update route. For AUR packages, the existing native terminal preserves package review, authorization, source-versus-binary package identity, and actual exit status.
 

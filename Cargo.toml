@@ -8,6 +8,8 @@ license = "MIT"
 repository = "https://github.com/LIghtJUNction/zcall-gui"
 [dependencies]
 zgpui = {  features = ["native"], git = "https://github.com/LIghtJUNction/zgpui.git"}
+zhex = { git = "https://github.com/LIghtJUNction/zhex.git" }
+sha2 = { version = "0.11.1", default-features = false }
 [workspace]
 exclude = ["vendor/zgpui"]
 [profile.release]

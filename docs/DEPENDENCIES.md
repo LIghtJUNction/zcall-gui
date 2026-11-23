@@ -2,10 +2,10 @@
 
 ## Unified native library
 
-The active GUI dependency is `zgpui =0.1.5`, stored as the
-`vendor/zgpui` Git submodule. The application enables `native` and imports
-`zgpui::native`. The package name, Rust dependency key and source directory
-use the same name; there is no legacy package alias.
+The GUI resolves `zgpui` from its public Git default branch. The application
+enables `native` and imports `zgpui::native`; `Cargo.lock` and the
+`vendor/zgpui` gitlink record the same verified source. Internal Git
+declarations omit version, branch, tag and revision selectors.
 
 The outer `zcalld` repository distributes this application through
 `apps/zcall-gui`. Its source pin must follow the accepted GUI commit.
@@ -23,14 +23,19 @@ for other applications. The
 [unified-library acceptance record](ZGPUI_MIGRATION.md) documents the local
 validation scope.
 
-The current manifest, lockfile and vendor gitlink select the canonical 0.1.5
-source. That source shares the Linux font implementation with a source-only
-headless raster companion and validates packed grayscale and negative-pitch
-glyphs before copying coverage. This GUI continues to use `zgpui::native`;
-it does not depend on the companion or change its window, theme or CLI contract.
-The exact accepted source remains recorded by the gitlink. The earlier
-cross-platform release evidence above describes its original source; current
-dependency propagation has its own local validation record.
+The current lockfile and vendor gitlink select `zgpui` 0.1.8. The latest
+source adds an optional `bridge` feature; this application continues to
+enable `native` without `bridge`. The native implementation and build script
+are unchanged by that source update. The earlier cross-platform release
+evidence above describes its original source and remains a separate record
+from current dependency validation.
+
+Checksum verification delegates SHA-256 to RustCrypto `sha2` and lowercase
+hexadecimal encoding to `zhex`. Both GUI self-updates and gateway helper
+verification call the same application wrapper. The GUI keeps its bounded
+download and installation policy, while the cryptographic and encoding
+implementations live in their independent libraries. `zhex` follows the same
+internal Git source rule; the external `sha2` crate uses a registry dependency.
 
 The existing `v0.1.3` tag remains fixed at
 `651aee3dc1eb43b561baafa77ce0ed12d9f3b2ff`, which uses zgpui 0.1.4.

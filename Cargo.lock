@@ -82,9 +82,16 @@ name = "zcall-gui"
 version = "0.1.6"
 dependencies = [
  "sha2",
+ "zconv",
  "zgpui",
  "zhex",
+ "zsys",
 ]
+
+[[package]]
+name = "zconv"
+version = "0.4.1"
+source = "git+https://github.com/LIghtJUNction/zconv.git#f9448d27997dc70dac05f0c0e58857bcce43ab72"
 
 [[package]]
 name = "zgpui"
@@ -95,3 +102,8 @@ source = "git+https://github.com/LIghtJUNction/zgpui.git#d34c41f79ddab343e7468c5
 name = "zhex"
 version = "0.1.3"
 source = "git+https://github.com/LIghtJUNction/zhex.git#52515207f9d97a2580182169b611b4763366b328"
+
+[[package]]
+name = "zsys"
+version = "0.1.1"
+source = "git+https://github.com/LIghtJUNction/zsys.git#48c4cafaf940fd7a404b885adefd2e1201b51881"

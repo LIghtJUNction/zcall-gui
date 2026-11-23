@@ -63,20 +63,18 @@ impl Json {
     }
 }
 fn quote(value: &str) -> String {
-    let mut out = String::from("\"");
-    for character in value.chars() {
-        match character {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c < ' ' => out.push_str(&format!("\\u{:04x}", c as u32)),
-            c => out.push(c),
-        }
-    }
-    out.push('"');
-    out
+    use zconv::json::{ControlEscapes, Writer};
+    let mut sizing = Writer::new(&mut []);
+    sizing.string_with_control_escapes(value.as_bytes(), ControlEscapes::Unicode);
+    let needed = match sizing.finish() {
+        Err(zconv::Error::OutputTooSmall { needed }) => needed,
+        result => panic!("valid JSON string sizing failed: {result:?}"),
+    };
+    let mut output = vec![0; needed];
+    let mut writer = Writer::new(&mut output);
+    writer.string_with_control_escapes(value.as_bytes(), ControlEscapes::Unicode);
+    writer.finish().expect("sized JSON string output");
+    String::from_utf8(output).expect("validated UTF-8 JSON string")
 }
 pub fn parse(text: &str) -> Result<Json, String> {
     if text.len() > 2 * 1024 * 1024 {
@@ -317,5 +315,19 @@ mod tests {
         let json =
             parse(r#"{"providers":[{"name":"local","configured":true}],"count":1e2}"#).unwrap();
         assert!(json.get("providers").array()[0].get("configured").boolean());
+    }
+}
+
+#[cfg(test)]
+mod shared_escape_contract {
+    #[test]
+    fn serialized_control_bytes_keep_the_consumer_contract() {
+        let controls: String = (0u8..32).map(char::from).collect();
+        let expected = r#""\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u0008\t\n\u000b\u000c\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f""#;
+        assert_eq!(super::quote(&controls), expected);
+        assert_eq!(
+            super::quote("literal \\b \\f \\u0008 \" 模型🚀"),
+            r#""literal \\b \\f \\u0008 \" 模型🚀""#
+        );
     }
 }

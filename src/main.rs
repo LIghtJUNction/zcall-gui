@@ -18,6 +18,7 @@ mod settings;
 mod updater;
 mod usage;
 mod view_state;
+mod virtual_models;
 use backend::{Backend, Reply};
 use i18n::tr;
 use json::Json;
@@ -129,6 +130,7 @@ struct App {
     oauth_prompt_offset: usize,
     provider_query: String,
     provider_models: Option<provider_models::Browser>,
+    virtual_models: Option<virtual_models::Panel>,
     plugin: PluginForm,
     route_picker: Option<AgentRoutePicker>,
     confirm: Option<Action>,
@@ -209,6 +211,7 @@ impl App {
             oauth_prompt_offset: 0,
             provider_query: String::new(),
             provider_models: None,
+            virtual_models: None,
             plugin: PluginForm::default(),
             route_picker: None,
             confirm: None,
@@ -235,6 +238,7 @@ impl App {
     fn modal(&self) -> bool {
         self.confirm.is_some()
             || self.provider_models.is_some()
+            || self.virtual_models.is_some()
             || self.provider_panel > 0
             || self.plugin_panel > 0
             || self.service_panel
@@ -411,6 +415,13 @@ impl App {
                 self.oauth_prompt = Json::Null;
                 self.oauth_code.clear();
                 self.oauth_instructions.clear();
+            }
+            if matches!(
+                reply.label.as_str(),
+                "Virtual models" | "Virtual metadata" | "Save virtual model"
+            ) {
+                self.accept_virtual_models(&reply.label, reply.result);
+                continue;
             }
             if reply.label == "Fetch provider models" {
                 if let Some(browser) = self.provider_models.as_mut() {
@@ -655,7 +666,9 @@ impl App {
             } else if self.route_picker.is_some() {
                 self.route_picker = None;
                 self.ui = Ui::default();
-            } else if self.provider_models.take().is_some() || self.palette_editor.take().is_some()
+            } else if self.virtual_models.take().is_some()
+                || self.provider_models.take().is_some()
+                || self.palette_editor.take().is_some()
             {
                 self.ui = Ui::default();
                 self.repaint = true;
@@ -675,6 +688,12 @@ impl App {
                     picker.scroll.saturating_add(1)
                 } else {
                     picker.scroll.saturating_sub(1)
+                };
+            } else if let Some(panel) = self.virtual_models.as_mut() {
+                panel.scroll = if *delta > 0 {
+                    panel.scroll.saturating_add(1)
+                } else {
+                    panel.scroll.saturating_sub(1)
                 };
             } else if let Some(browser) = self.provider_models.as_mut() {
                 if *delta > 0 {
@@ -868,7 +887,9 @@ impl App {
         ) {
             self.refresh();
         }
-        if self.provider_models.is_some() {
+        if self.virtual_models.is_some() {
+            self.virtual_models_dialog(c);
+        } else if self.provider_models.is_some() {
             self.provider_models_dialog(c);
         } else if self.provider_panel > 0 {
             self.provider_dialog(c);
@@ -898,7 +919,7 @@ impl App {
 }
 const PROVIDER_AUTH: [&str; 5] = ["default", "bearer", "x-api-key", "x-goog-api-key", "none"];
 
-fn protocols() -> [&'static str; 6] {
+fn protocols() -> [&'static str; 8] {
     [
         "chat",
         "responses",
@@ -906,6 +927,8 @@ fn protocols() -> [&'static str; 6] {
         "gemini",
         "completions",
         "interactions",
+        "systemone",
+        "decisions",
     ]
 }
 fn protocol_name(index: usize) -> &'static str {
@@ -916,6 +939,8 @@ fn protocol_name(index: usize) -> &'static str {
         "Gemini",
         "Completions",
         "Interactions",
+        "System One",
+        "OpenAI Decisions",
     ][index]
 }
 fn card(c: &mut Canvas<'_>, r: Rect) {

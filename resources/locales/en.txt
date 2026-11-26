@@ -339,3 +339,21 @@ providers.oauth_magpie_market	Magpie provider plugins
 providers.oauth_no_endpoint	The account was authorized. Enter an endpoint to configure this provider.
 providers.oauth_search	Search providers or plugins
 providers.oauth_plugin_endpoint	Provided by the plugin
+virtual.provider	Routing provider
+virtual.models	Virtual models
+virtual.description	Combine routes from existing providers.
+virtual.create	Create virtual model
+virtual.order_help	Select member models in the order you want.
+virtual.metadata	models.dev metadata
+virtual.metadata_help	Select the catalog model to describe this route.
+virtual.failed	Could not manage virtual models
+virtual.restart	Virtual model saved. Restart the gateway to activate it.
+virtual.empty	No virtual models yet
+virtual.members	{count} members · {mode}
+virtual.name	Virtual model ID
+virtual.search_routes	Search supplier or configured route…
+virtual.save	Save virtual model
+virtual.clear_metadata	Clear metadata
+virtual.order	Priority order
+virtual.rotate	Round robin
+virtual.duplicate	This model ID already exists.

@@ -235,6 +235,17 @@ impl App {
         let enabled = self.enabled();
         if self.ui.button(
             c,
+            404,
+            Rect::new(x + width - 297., 35., 143., 42.),
+            tr("virtual.provider"),
+            Style::Secondary,
+            enabled,
+        ) {
+            self.open_virtual_models();
+            return;
+        }
+        if self.ui.button(
+            c,
             400,
             Rect::new(x + width - 142., 35., 142., 42.),
             tr("action.add_provider"),

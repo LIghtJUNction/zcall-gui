@@ -350,9 +350,11 @@ impl App {
                 }
             }
             if self.protocol_menu {
-                let y = (r.h - 332.).min(474.);
-                card(c, Rect::new(x, y, width, 216.));
-                for i in 0..6 {
+                let count = protocols().len();
+                let height = count as f32 * 34. + 12.;
+                let y = (r.h - height - 55.).min(474.);
+                card(c, Rect::new(x, y, width, height));
+                for i in 0..count {
                     let b = Rect::new(x + 5., y + 5. + i as f32 * 34., width - 10., 34.);
                     if self
                         .ui

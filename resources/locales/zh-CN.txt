@@ -339,3 +339,21 @@ providers.oauth_magpie_market	Magpie 供应商插件
 providers.oauth_no_endpoint	账号已授权。请填写接口地址以配置此供应商。
 providers.oauth_search	搜索供应商或插件
 providers.oauth_plugin_endpoint	由插件提供
+virtual.provider	路由供应商
+virtual.models	虚拟模型
+virtual.description	组合已有供应商的模型路由。
+virtual.create	创建虚拟模型
+virtual.order_help	按希望的优先级选择成员模型。
+virtual.metadata	models.dev 元数据
+virtual.metadata_help	选择用来描述该路由的目录模型。
+virtual.failed	虚拟模型操作失败
+virtual.restart	已保存，重启网关后生效。
+virtual.empty	还没有虚拟模型
+virtual.members	{count} 个成员 · {mode}
+virtual.name	虚拟模型 ID
+virtual.search_routes	搜索供应商或已配置路由…
+virtual.save	保存虚拟模型
+virtual.clear_metadata	清除元数据
+virtual.order	按优先级
+virtual.rotate	轮询
+virtual.duplicate	这个模型 ID 已存在。

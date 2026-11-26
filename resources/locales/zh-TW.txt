@@ -339,3 +339,21 @@ providers.oauth_magpie_market	Magpie 供應商外掛
 providers.oauth_no_endpoint	帳號已授權。請填寫介面網址以設定此供應商。
 providers.oauth_search	搜尋供應商或外掛
 providers.oauth_plugin_endpoint	由外掛提供
+virtual.provider	路由供應商
+virtual.models	虛擬模型
+virtual.description	組合現有供應商的模型路由。
+virtual.create	建立虛擬模型
+virtual.order_help	依想要的優先順序選擇成員模型。
+virtual.metadata	models.dev 中繼資料
+virtual.metadata_help	選擇用於描述此路由的目錄模型。
+virtual.failed	虛擬模型操作失敗
+virtual.restart	已儲存，重新啟動閘道後生效。
+virtual.empty	尚無虛擬模型
+virtual.members	{count} 個成員 · {mode}
+virtual.name	虛擬模型 ID
+virtual.search_routes	搜尋供應商或已設定路由…
+virtual.save	儲存虛擬模型
+virtual.clear_metadata	清除中繼資料
+virtual.order	依優先順序
+virtual.rotate	輪詢
+virtual.duplicate	這個模型 ID 已存在。

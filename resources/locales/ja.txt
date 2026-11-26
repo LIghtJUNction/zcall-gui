@@ -339,3 +339,21 @@ providers.oauth_magpie_market	Magpie プロバイダープラグイン
 providers.oauth_no_endpoint	アカウントは認可されました。プロバイダーを設定するにはエンドポイントを入力してください。
 providers.oauth_search	プロバイダーやプラグインを検索
 providers.oauth_plugin_endpoint	プラグインから取得
+virtual.provider	ルーティング
+virtual.models	仮想モデル
+virtual.description	既存のプロバイダーのモデルを組み合わせます。
+virtual.create	仮想モデルを作成
+virtual.order_help	優先順にメンバーモデルを選択します。
+virtual.metadata	models.dev メタデータ
+virtual.metadata_help	ルートを説明するカタログモデルを選択します。
+virtual.failed	仮想モデルを操作できませんでした
+virtual.restart	保存しました。ゲートウェイを再起動すると反映されます。
+virtual.empty	仮想モデルはまだありません
+virtual.members	{count} メンバー · {mode}
+virtual.name	仮想モデル ID
+virtual.search_routes	プロバイダーや設定済みルートを検索…
+virtual.save	仮想モデルを保存
+virtual.clear_metadata	メタデータを消去
+virtual.order	優先順
+virtual.rotate	ラウンドロビン
+virtual.duplicate	このモデル ID は既に存在します。

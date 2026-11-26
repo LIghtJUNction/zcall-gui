@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9
+
+- Build the installer acceptance fixture with locked Cargo dependencies [skip ci]
+
 ## 0.1.8
 
 - Fetch locked dependencies for GUI release packages [skip ci]

@@ -303,7 +303,7 @@ providers.oauth_update_gateway	請更新閘道以儲存 OAuth 供應商。
 providers.oauth_other_plugin	使用其他 OAuth 外掛
 providers.oauth_invalid_name	供應商 ID 只支援英文字母、數字、點、連字號及底線。
 settings.custom_colors	自訂配色
-settings.colors_help	輸入十六進位色碼，即時預覽目前模式。
+settings.colors_help	點選色塊選色，或輸入十六進位色碼。變更會即時預覽。
 settings.color_background	背景
 settings.color_surface	卡片與面板
 settings.color_text	文字
@@ -335,7 +335,8 @@ providers.oauth_no_plugins	已啟用的外掛未提供 OAuth 登入方式
 providers.oauth_copy_instructions	複製授權說明
 providers.oauth_prompt_unsupported	請更新相容元件以處理此外掛的登入問題。
 providers.oauth_prompt_invalid	外掛不接受這個回答，請重試。
-providers.oauth_magpie_market	Magpie 供應商外掛
+providers.oauth_magpie_market	OAuth 供應商
+providers.oauth_installed	已安裝
 providers.oauth_no_endpoint	帳號已授權。請填寫介面網址以設定此供應商。
 providers.oauth_search	搜尋供應商或外掛
 providers.oauth_plugin_endpoint	由外掛提供

@@ -303,7 +303,7 @@ providers.oauth_update_gateway	请更新网关以保存 OAuth 供应商。
 providers.oauth_other_plugin	使用其他 OAuth 插件
 providers.oauth_invalid_name	供应商 ID 只支持英文字母、数字、点、连字符和下划线。
 settings.custom_colors	自定义配色
-settings.colors_help	输入十六进制颜色，实时预览当前模式。
+settings.colors_help	点击色块选色，或输入十六进制色值。更改会实时预览。
 settings.color_background	背景
 settings.color_surface	卡片和面板
 settings.color_text	文字
@@ -335,7 +335,8 @@ providers.oauth_no_plugins	已启用的插件未提供 OAuth 登录方式
 providers.oauth_copy_instructions	复制授权说明
 providers.oauth_prompt_unsupported	请更新兼容组件以处理此插件的登录问题。
 providers.oauth_prompt_invalid	插件不接受这个回答，请重试。
-providers.oauth_magpie_market	Magpie 供应商插件
+providers.oauth_magpie_market	OAuth 供应商
+providers.oauth_installed	已安装
 providers.oauth_no_endpoint	账号已授权。请填写接口地址以配置此供应商。
 providers.oauth_search	搜索供应商或插件
 providers.oauth_plugin_endpoint	由插件提供

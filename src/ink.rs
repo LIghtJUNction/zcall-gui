@@ -32,13 +32,7 @@ impl Colors {
         let mut values = values.into_iter();
         let mut colors = [0; COLOR_LABELS.len()];
         for color in &mut colors {
-            let value = values.next()?;
-            let digits = value.as_ref().trim();
-            let digits = digits.strip_prefix('#').unwrap_or(digits);
-            if digits.len() != 6 || !digits.bytes().all(|c| c.is_ascii_hexdigit()) {
-                return None;
-            }
-            *color = (u32::from_str_radix(digits, 16).ok()? << 8) | 255;
+            *color = parse_color(values.next()?.as_ref())?;
         }
         values.next().is_none().then_some(Self(colors))
     }
@@ -86,6 +80,30 @@ impl Colors {
     }
 }
 
+pub fn parse_color(value: &str) -> Option<u32> {
+    let digits = value.trim();
+    let digits = digits.strip_prefix('#').unwrap_or(digits);
+    if digits.len() != 6 || !digits.bytes().all(|c| c.is_ascii_hexdigit()) {
+        return None;
+    }
+    Some((u32::from_str_radix(digits, 16).ok()? << 8) | 255)
+}
+
+pub const SWATCH_HUES: [u32; 9] = [
+    0x808080ff, 0xb65b41ff, 0xe28c3fff, 0xe7c54dff, 0x659c50ff, 0x429d93ff, 0x4d7fc8ff, 0x8266bdff,
+    0xc36895ff,
+];
+
+pub fn swatch(hue: u32, shade: usize) -> u32 {
+    match shade {
+        0 => mix(hue, 0x000000ff, 78),
+        1 => mix(hue, 0x000000ff, 42),
+        2 => hue,
+        3 => mix(hue, 0xffffffff, 52),
+        _ => mix(hue, 0xffffffff, 86),
+    }
+}
+
 fn mix(base: u32, color: u32, percent: u32) -> u32 {
     [24, 16, 8].into_iter().fold(255, |rgba, shift| {
         let channel =
@@ -97,6 +115,7 @@ fn mix(base: u32, color: u32, percent: u32) -> u32 {
 pub struct Editor {
     pub theme: Theme,
     pub preview: Colors,
+    pub active: Option<usize>,
     pub fields: [String; COLOR_LABELS.len()],
 }
 

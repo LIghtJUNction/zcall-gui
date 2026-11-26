@@ -303,7 +303,7 @@ providers.oauth_update_gateway	OAuth プロバイダーを保存するにはゲ�
 providers.oauth_other_plugin	別の OAuth プラグインを使う
 providers.oauth_invalid_name	プロバイダー ID には英数字、ピリオド、ハイフン、アンダースコアを使用できます。
 settings.custom_colors	カスタム配色
-settings.colors_help	16進カラーを入力して現在の外観をプレビューします。
+settings.colors_help	色見本をクリックするか、16進カラーを入力すると、変更をすぐに確認できます。
 settings.color_background	背景
 settings.color_surface	パネル
 settings.color_text	文字
@@ -335,7 +335,8 @@ providers.oauth_no_plugins	有効なプラグインに OAuth ログインがあ�
 providers.oauth_copy_instructions	手順をコピー
 providers.oauth_prompt_unsupported	プラグインのログイン質問に答えるには互換ヘルパーを更新してください。
 providers.oauth_prompt_invalid	プラグインが回答を拒否しました。
-providers.oauth_magpie_market	Magpie プロバイダープラグイン
+providers.oauth_magpie_market	OAuth プロバイダー
+providers.oauth_installed	インストール済み
 providers.oauth_no_endpoint	アカウントは認可されました。プロバイダーを設定するにはエンドポイントを入力してください。
 providers.oauth_search	プロバイダーやプラグインを検索
 providers.oauth_plugin_endpoint	プラグインから取得

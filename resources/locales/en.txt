@@ -303,7 +303,7 @@ providers.oauth_update_gateway	Update the gateway to save OAuth providers.
 providers.oauth_other_plugin	Use another OAuth plugin
 providers.oauth_invalid_name	Enter a provider ID using letters, numbers, dots, dashes or underscores.
 settings.custom_colors	Custom colors
-settings.colors_help	Enter hex colors to preview this appearance live.
+settings.colors_help	Choose a color swatch or enter a hex value. Changes preview live.
 settings.color_background	Background
 settings.color_surface	Surface
 settings.color_text	Text
@@ -335,7 +335,8 @@ providers.oauth_no_plugins	No OAuth methods from enabled plugins
 providers.oauth_copy_instructions	Copy instructions
 providers.oauth_prompt_unsupported	Update the compatibility helper to answer this plugin’s sign-in questions.
 providers.oauth_prompt_invalid	The plugin rejected the answer.
-providers.oauth_magpie_market	Magpie provider plugins
+providers.oauth_magpie_market	OAuth providers
+providers.oauth_installed	Installed
 providers.oauth_no_endpoint	The account was authorized. Enter an endpoint to configure this provider.
 providers.oauth_search	Search providers or plugins
 providers.oauth_plugin_endpoint	Provided by the plugin

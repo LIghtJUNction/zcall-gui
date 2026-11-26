@@ -65,6 +65,7 @@ struct ProviderForm {
     oauth: bool,
     plugin_id: String,
     oauth_method: Option<usize>,
+    oauth_spec: String,
     plugin_endpoint: String,
     pending_oauth_binding: Json,
     plugin_picker: bool,

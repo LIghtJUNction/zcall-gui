@@ -195,8 +195,10 @@ impl App {
                     self.provider.url = LMM_DOMAIN.into();
                     self.repaint = true;
                     self.provider.plugin_id = "lmm".into();
+                    self.provider.oauth_spec.clear();
                     self.provider.endpoint_menu = false;
                     self.protocol_menu = false;
+                    self.open_oauth_market();
                     return;
                 }
                 field(
@@ -594,6 +596,7 @@ impl App {
                 if self.provider.oauth {
                     self.provider.plugin_id = plugin.into();
                     self.provider.oauth_method = None;
+                    self.provider.oauth_spec.clear();
                     self.provider.plugin_endpoint.clear();
                     self.provider.pending_oauth_binding = Json::Null;
                 } else if self.provider.name.trim().is_empty() && !self.provider_edit {
@@ -634,6 +637,19 @@ impl App {
                 MUTED,
             );
         }
+    }
+
+    fn open_oauth_market(&mut self) {
+        self.provider.plugin_picker = true;
+        self.provider.browse_market = true;
+        self.provider.plugin_offset = 0;
+        self.provider.plugin_query.clear();
+        self.repaint = true;
+        self.action(
+            "Magpie provider market",
+            words(&["plugins", "provider-market"]),
+            None,
+        );
     }
 
     fn oauth_provider_dialog(&mut self, c: &mut Canvas<'_>, r: Rect, enabled: bool) {
@@ -721,16 +737,7 @@ impl App {
             Style::Secondary,
             enabled,
         ) {
-            self.provider.plugin_picker = true;
-            self.provider.browse_market = false;
-            self.provider.plugin_offset = 0;
-            self.provider.plugin_query.clear();
-            self.repaint = true;
-            self.action(
-                "Discover OAuth plugins",
-                words(&["plugins", "providers"]),
-                None,
-            );
+            self.open_oauth_market();
         }
         let lmm = self.provider.plugin_id.trim() == "lmm";
         let installed = self
@@ -972,6 +979,7 @@ impl App {
             {
                 self.provider.plugin_id = option.provider.into();
                 self.provider.oauth_method = Some(option.method);
+                self.provider.oauth_spec = option.spec.into();
                 self.provider.plugin_endpoint = option.endpoint.into();
                 self.provider.pending_oauth_binding = Json::Null;
                 self.provider.url = if option.provider == "lmm" {
@@ -1088,21 +1096,21 @@ impl App {
             self.repaint = true;
         }
         let search = &self.provider.plugin_query;
-        let listings =
-            self.provider
-                .plugin_market
-                .get("plugins")
-                .array()
+        let subscriptions = provider_oauth::subscription_listings().collect::<Vec<_>>();
+        let mut listings =
+            subscriptions
                 .iter()
+                .chain(self.provider.plugin_market.get("plugins").array())
                 .filter(|item| {
                     let candidate =
-                        format!("{} {}", item.get("name").text(), item.get("package").text());
+                        format!("{} {}", item.get("name").text(), item.get("package").text(),);
                     provider_oauth::endpoint_matches(search, &candidate)
                         || item.get("providers").array().iter().any(|provider| {
                             provider_oauth::endpoint_matches(search, provider.text())
                         })
                 })
                 .collect::<Vec<_>>();
+        listings.sort_by_key(|item| provider_oauth::market_priority(item.get("package").text()));
         let offset = self.provider.plugin_offset;
         let count = ((r.h - 390.) / 43.).floor().clamp(1., 6.) as usize;
         for (index, item) in listings.iter().skip(offset).take(count).enumerate() {
@@ -1145,7 +1153,11 @@ impl App {
                 if let Some(plugin) = installed {
                     if plugin.get("enabled").boolean() {
                         self.provider.browse_market = false;
-                        self.provider.plugin_query.clear();
+                        self.provider.plugin_query = item
+                            .get("providers")
+                            .array()
+                            .first()
+                            .map_or_else(String::new, |provider| provider.text().to_owned());
                         self.provider.plugin_offset = 0;
                         self.action(
                             "Discover OAuth plugins",
@@ -1156,6 +1168,13 @@ impl App {
                         let args = words(&["plugins", "enable", plugin.get("name").text()]);
                         self.ask(tr("action.enable_plugin"), args);
                     }
+                } else if !item.get("source").text().is_empty() {
+                    let source = item.get("source").text();
+                    let title = format!("{} · {source}", tr("action.install_plugin"));
+                    self.ask(
+                        &title,
+                        words(&["plugins", "install", source, "--name", pkg]),
+                    );
                 } else {
                     let args = words(&["plugins", "provider-market", pkg]);
                     self.action("Resolve Magpie plugin", args, None);
@@ -1174,6 +1193,26 @@ impl App {
             );
         }
         let nav_y = r.h - 143.;
+        if self.ui.button(
+            c,
+            9323,
+            Rect::new(x + width - 178., r.h - 87., 178., 44.),
+            LMM_DOMAIN,
+            Style::Secondary,
+            enabled,
+        ) {
+            self.provider.plugin_picker = false;
+            self.provider.browse_market = false;
+            self.provider.plugin_id = "lmm".into();
+            self.provider.url = LMM_DOMAIN.into();
+            self.provider.oauth_method = None;
+            self.provider.oauth_spec.clear();
+            self.provider.plugin_endpoint.clear();
+            self.provider.pending_oauth_binding = Json::Null;
+            self.provider.protocol = 0;
+            self.provider.endpoint_menu = false;
+            self.repaint = true;
+        }
         if self.ui.button(
             c,
             9320,
@@ -1201,7 +1240,7 @@ impl App {
             c,
             9322,
             Rect::new(x, r.h - 87., 110., 44.),
-            tr("action.back"),
+            tr("providers.oauth_installed"),
             Style::Quiet,
             enabled,
         ) {
@@ -1690,6 +1729,7 @@ impl App {
             self.palette_editor = Some(ink::Editor {
                 theme,
                 preview,
+                active: None,
                 fields: preview.fields(),
             });
             self.ui = Ui::default();
@@ -1755,10 +1795,29 @@ impl App {
             let left = x + (index % 2) as f32 * (column + 16.);
             let top = 175. + (index / 2) as f32 * 62.;
             c.ellipsis(tr(label), left, top, column, 13, true, TEXT);
+            let swatch = Rect::new(left, top + 21., 38., 34.);
+            if self.ui.button(
+                c,
+                9530 + index as u64,
+                swatch,
+                "",
+                if editor.active == Some(index) {
+                    Style::Primary
+                } else {
+                    Style::Secondary
+                },
+                true,
+            ) {
+                editor.active = (editor.active != Some(index)).then_some(index);
+                self.repaint = true;
+            }
+            if let Some(color) = ink::parse_color(field) {
+                let _ = c.image(swatch.inset(6.), 1, 1, &color.to_be_bytes());
+            }
             if self.ui.input(
                 c,
                 9500 + index as u64,
-                Rect::new(left, top + 21., column, 34.),
+                Rect::new(left + 46., top + 21., column - 46., 34.),
                 field,
                 "#RRGGBB",
                 false,
@@ -1769,11 +1828,57 @@ impl App {
             }
         }
 
+        if let Some(active) = editor.active {
+            c.ellipsis(
+                tr(ink::COLOR_LABELS[active]),
+                x,
+                427.,
+                width,
+                13,
+                true,
+                TEXT,
+            );
+            let swatch_width = width / ink::SWATCH_HUES.len() as f32;
+            for (column, hue) in ink::SWATCH_HUES.into_iter().enumerate() {
+                for shade in 0..5 {
+                    let color = ink::swatch(hue, shade);
+                    let position = Rect::new(
+                        x + column as f32 * swatch_width,
+                        449. + shade as f32 * 23.,
+                        swatch_width - 3.,
+                        22.,
+                    );
+                    let selected = ink::parse_color(&editor.fields[active]) == Some(color);
+                    if self.ui.button(
+                        c,
+                        9540 + (shade * ink::SWATCH_HUES.len() + column) as u64,
+                        position,
+                        "",
+                        if selected {
+                            Style::Primary
+                        } else {
+                            Style::Secondary
+                        },
+                        true,
+                    ) {
+                        editor.fields[active] = format!("#{:06X}", color >> 8);
+                        self.repaint = true;
+                        self.failed = false;
+                    }
+                    let _ = c.image(position.inset(4.), 1, 1, &color.to_be_bytes());
+                }
+            }
+        }
+
         let colors = ink::Colors::parse(&editor.fields);
         if let Some(colors) = colors {
             editor.preview = colors;
         }
-        let bottom = (r.h - 69.).clamp(463., 500.);
+        let bottom = if editor.active.is_some() {
+            604.
+        } else {
+            (r.h - 69.).clamp(463., 500.)
+        };
         if colors.is_none() || self.failed {
             let text = if colors.is_none() {
                 tr("settings.colors_invalid")

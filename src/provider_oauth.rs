@@ -48,11 +48,71 @@ pub(super) fn endpoint_matches(query: &str, candidate: &str) -> bool {
     })
 }
 
+// These two OpenCode adapters expose OAuth methods without a catalog API base.
+const SUBSCRIPTION_PRESETS: [(&str, &str, &str, &str, &str, usize); 2] = [
+    (
+        "ChatGPT / OpenAI Codex",
+        "openai",
+        "opencode-openai-codex-auth",
+        "4.4.0",
+        "https://chatgpt.com/backend-api/codex",
+        1,
+    ),
+    (
+        "Kimi Code / Moonshot",
+        "kimi-code",
+        "opencode-kimi-subscription",
+        "0.1.0",
+        "https://api.kimi.com/coding/v1",
+        0,
+    ),
+];
+
+pub(super) fn subscription_listings() -> impl Iterator<Item = Json> {
+    SUBSCRIPTION_PRESETS
+        .into_iter()
+        .map(|(name, provider, package, version, _, _)| {
+            Json::object([
+                ("package".into(), Json::String(package.into())),
+                ("name".into(), Json::String(name.into())),
+                (
+                    "source".into(),
+                    Json::String(format!("npm:{package}@{version}")),
+                ),
+                (
+                    "providers".into(),
+                    Json::Array(vec![Json::String(provider.into())]),
+                ),
+            ])
+        })
+}
+
+pub(super) fn market_priority(package: &str) -> usize {
+    [
+        "opencode-openai-codex-auth",
+        "opencode-kimi-subscription",
+        "@magpie-community/opencode-copilot-auth",
+        "@magpie-community/opencode-gemini-web-auth",
+        "@magpie-community/opencode-kimi-work-auth",
+        "@magpie-community/opencode-grok-auth",
+        "@magpie-community/opencode-cursor-auth",
+        "@magpie-community/opencode-minimax-auth",
+        "@magpie-community/opencode-qoder-auth",
+        "@magpie-community/opencode-mimo-auth",
+        "@magpie-community/opencode-doubao-work-auth",
+        "magpie-aws-bedrock-sso",
+    ]
+    .iter()
+    .position(|candidate| *candidate == package)
+    .unwrap_or(usize::MAX)
+}
+
 pub(super) struct PluginMethod<'a> {
     pub provider: &'a str,
     pub name: &'a str,
     pub label: &'a str,
     pub method: usize,
+    pub spec: &'a str,
     pub endpoint: &'a str,
     pub protocol: usize,
 }
@@ -64,18 +124,24 @@ pub(super) fn plugin_methods<'a>(catalog: &'a Json, query: &str) -> Vec<PluginMe
         if provider.is_empty() {
             continue;
         }
-        let name = crate::value(row, "name", provider);
-        let endpoint = row.get("api").text();
-        let endpoint = if endpoint.starts_with("https://") {
-            endpoint
-        } else {
-            ""
-        };
-        let protocol = match row.get("npm").text() {
+        let mut name = crate::value(row, "name", provider);
+        let mut endpoint = row.get("api").text();
+        if !endpoint.starts_with("https://") {
+            endpoint = "";
+        }
+        let mut protocol = match row.get("npm").text() {
             "@ai-sdk/anthropic" => 2,
             "@ai-sdk/google" | "@ai-sdk/google-vertex" => 3,
             _ => 0,
         };
+        for (label, id, package, version, api, wire) in SUBSCRIPTION_PRESETS {
+            if provider == id && row.get("spec").text() == format!("npm:{package}@{version}") {
+                name = label;
+                endpoint = api;
+                protocol = wire;
+                break;
+            }
+        }
         for (method, option) in row.get("methods").array().iter().enumerate() {
             let label = option.get("label").text();
             let description = format!("{name} {provider} {label}");
@@ -85,6 +151,7 @@ pub(super) fn plugin_methods<'a>(catalog: &'a Json, query: &str) -> Vec<PluginMe
                     name,
                     label,
                     method,
+                    spec: row.get("spec").text(),
                     endpoint,
                     protocol,
                 });
@@ -284,6 +351,7 @@ struct Login {
     base: String,
     plugin: String,
     method: Option<usize>,
+    spec: String,
     protocol: &'static str,
 }
 
@@ -385,6 +453,7 @@ fn login(
         .iter()
         .find(|row| {
             row.get("id").text() == login.plugin
+                && (login.spec.is_empty() || row.get("spec").text() == login.spec)
                 && (login.plugin != "lmm" || row.get("spec").text() == LMM_REPO)
         })
         .ok_or_else(|| tr("providers.oauth_missing_plugin").to_owned())?;
@@ -520,6 +589,7 @@ impl App {
             base,
             plugin,
             method: self.provider.oauth_method,
+            spec: self.provider.oauth_spec.clone(),
             protocol: crate::protocols()[self.provider.protocol],
         };
         let (input, code) = mpsc::channel();

@@ -11,6 +11,7 @@ mod ink;
 mod json;
 mod package_update;
 mod pages;
+mod provider_oauth;
 mod settings;
 mod updater;
 mod usage;
@@ -53,6 +54,10 @@ struct ProviderForm {
     environment: String,
     key: String,
     protocol: usize,
+    oauth: bool,
+    plugin_id: String,
+    endpoint_menu: bool,
+    endpoint_filter: bool,
 }
 #[derive(Default)]
 struct PluginForm {
@@ -100,6 +105,9 @@ struct App {
     sender: mpsc::Sender<Reply>,
     receiver: mpsc::Receiver<Reply>,
     provider: ProviderForm,
+    oauth_input: Option<mpsc::Sender<String>>,
+    oauth_code: String,
+    oauth_instructions: String,
     provider_query: String,
     plugin: PluginForm,
     route_picker: Option<AgentRoutePicker>,
@@ -131,6 +139,7 @@ fn value<'a>(j: &'a Json, key: &str, fallback: &'a str) -> &'a str {
 }
 fn human(s: &str) -> &str {
     match s {
+        "OAuth provider" => tr("providers.oauth_login"),
         "Save provider" => tr("action.save_provider"),
         "Test provider" => tr("action.test_provider"),
         "Sync AI tool status" => tr("action.detect_agents"),
@@ -168,6 +177,9 @@ impl App {
             sender,
             receiver,
             provider: ProviderForm::default(),
+            oauth_input: None,
+            oauth_code: String::new(),
+            oauth_instructions: String::new(),
             provider_query: String::new(),
             plugin: PluginForm::default(),
             route_picker: None,
@@ -301,6 +313,26 @@ impl App {
                 self.accept_usage_recording(reply.result);
                 continue;
             }
+            if reply.label == "OAuth code" {
+                self.busy = true;
+                self.oauth_instructions = reply.result.map_or_else(
+                    |_| tr("providers.oauth_code_help").to_owned(),
+                    |data| {
+                        let text = data.text();
+                        if text.is_empty() {
+                            tr("providers.oauth_code_help").into()
+                        } else {
+                            text.into()
+                        }
+                    },
+                );
+                continue;
+            }
+            if reply.label == "OAuth provider" {
+                self.oauth_input = None;
+                self.oauth_code.clear();
+                self.oauth_instructions.clear();
+            }
             match reply.result {
                 Ok(data) if reply.label == "refresh" => {
                     if data.get("installation") != &Json::Null {
@@ -360,7 +392,7 @@ impl App {
                         self.gateway_update = Json::Null;
                         self.gui_update = Json::Null;
                     }
-                    if reply.label == "Save provider" {
+                    if matches!(reply.label.as_str(), "Save provider" | "OAuth provider") {
                         self.provider_panel = 0;
                         self.protocol_menu = false;
                     }

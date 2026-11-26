@@ -283,3 +283,24 @@ usage.open_updates	更新を開く
 agents.synced	ツールの状態を同期しました
 agents.changed_connected	接続済み（外部で設定変更）
 agents.changed_disconnected	未接続（外部で設定変更）
+providers.oauth_mode	OAuth ログイン
+providers.api_key_mode	API キー設定
+providers.oauth_domain	ドメイン
+providers.oauth_plugin_id	プラグインのプロバイダー ID
+providers.oauth_login	OAuth でログイン
+providers.oauth_wait	ブラウザーで認可を完了してください。
+providers.oauth_code	認可コード
+providers.oauth_install_lmm	LMM OAuth プラグインをインストール
+providers.oauth_invalid_domain	有効な HTTPS ドメインを入力してください。
+providers.oauth_unavailable	OAuth に失敗しました。ゲートウェイと互換ヘルパーを確認してください。
+providers.oauth_bad_link	認可リンクを開けませんでした。
+providers.oauth_issuer_in_use	既存の LMM アカウントが別のドメインに関連付けられているか、ドメインが不明です。
+providers.oauth_name_taken	同名のプロバイダーが既に存在します。
+providers.oauth_missing_plugin	このプロバイダーの OAuth プラグインをインストールして有効にしてください。
+providers.oauth_cancelled	認可が拒否、取り消し、または期限切れになりました。
+providers.endpoint_hint	プリセットを検索、または URL を入力
+providers.endpoint_no_matches	一致するプリセットがありません
+providers.oauth_code_help	ブラウザーに表示されたコードを入力してください。
+providers.oauth_update_gateway	OAuth プロバイダーを保存するにはゲートウェイを更新してください。
+providers.oauth_other_plugin	別の OAuth プラグインを使う
+providers.oauth_invalid_name	プロバイダー ID には英数字、ピリオド、ハイフン、アンダースコアを使用できます。

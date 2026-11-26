@@ -283,3 +283,24 @@ usage.open_updates	前往更新
 agents.synced	工具状态已同步
 agents.changed_connected	已接入网关（配置被外部修改）
 agents.changed_disconnected	未接入网关（配置被外部修改）
+providers.oauth_mode	OAuth 登录
+providers.api_key_mode	API Key 设置
+providers.oauth_domain	域名
+providers.oauth_plugin_id	插件供应商 ID
+providers.oauth_login	使用 OAuth 登录
+providers.oauth_wait	请在浏览器中完成授权。
+providers.oauth_code	授权码
+providers.oauth_install_lmm	安装 LMM OAuth 插件
+providers.oauth_invalid_domain	请输入有效的 HTTPS 域名。
+providers.oauth_unavailable	OAuth 无法启动或完成，请检查网关和兼容组件。
+providers.oauth_bad_link	无法打开授权链接。
+providers.oauth_issuer_in_use	已有 LMM 账号绑定了其他域名或域名未知。
+providers.oauth_name_taken	该供应商名称已存在。
+providers.oauth_missing_plugin	请安装并启用为此供应商提供 OAuth 登录的插件。
+providers.oauth_cancelled	授权被拒绝、取消或已过期。
+providers.endpoint_hint	搜索预设或输入完整地址
+providers.endpoint_no_matches	没有匹配的预设
+providers.oauth_code_help	请输入浏览器显示的验证码。
+providers.oauth_update_gateway	请更新网关以保存 OAuth 供应商。
+providers.oauth_other_plugin	使用其他 OAuth 插件
+providers.oauth_invalid_name	供应商 ID 只支持英文字母、数字、点、连字符和下划线。

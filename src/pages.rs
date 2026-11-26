@@ -347,6 +347,7 @@ impl App {
                     .iter()
                     .position(|p| *p == item.get("protocol").text())
                     .unwrap_or(0),
+                ..ProviderForm::default()
             };
             self.provider_edit = true;
             self.provider_panel = 1;

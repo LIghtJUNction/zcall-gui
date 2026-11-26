@@ -283,3 +283,24 @@ usage.open_updates	Open updates
 agents.synced	Tool status synced
 agents.changed_connected	Connected · configuration changed
 agents.changed_disconnected	Disconnected · configuration changed
+providers.oauth_mode	OAuth sign-in
+providers.api_key_mode	API key setup
+providers.oauth_domain	Domain
+providers.oauth_plugin_id	Plugin provider ID
+providers.oauth_login	Sign in with OAuth
+providers.oauth_wait	Complete authorization in your browser.
+providers.oauth_code	Authorization code
+providers.oauth_install_lmm	Install LMM OAuth plugin
+providers.oauth_invalid_domain	Enter a valid HTTPS domain.
+providers.oauth_unavailable	OAuth could not start or complete. Check the gateway and compatibility helper.
+providers.oauth_bad_link	Could not open the authorization link.
+providers.oauth_issuer_in_use	An existing LMM account uses a different or unknown domain.
+providers.oauth_name_taken	A provider with this name already exists.
+providers.oauth_missing_plugin	Install and enable a plugin with an OAuth method for this provider.
+providers.oauth_cancelled	Authorization was rejected, cancelled, or expired.
+providers.endpoint_hint	Search presets or enter a URL
+providers.endpoint_no_matches	No matching preset
+providers.oauth_code_help	Enter the code from your browser.
+providers.oauth_update_gateway	Update the gateway to save OAuth providers.
+providers.oauth_other_plugin	Use another OAuth plugin
+providers.oauth_invalid_name	Enter a provider ID using letters, numbers, dots, dashes or underscores.

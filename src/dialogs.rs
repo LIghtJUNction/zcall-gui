@@ -1,3 +1,4 @@
+use crate::provider_oauth::{self, LMM_DOMAIN, LMM_PLUGIN, LMM_REVISION, LMM_SOURCE};
 use crate::view_state::GatewayState;
 use crate::*;
 fn sheet(c: &mut Canvas<'_>, heading: &str) -> Rect {
@@ -48,7 +49,7 @@ impl App {
         );
         let x = r.x + 32.;
         let width = r.w - 64.;
-        let enabled = !self.busy && self.confirm.is_none();
+        let enabled = !self.busy && self.confirm.is_none() && self.plugin_panel == 0;
         if self.ui.button(
             c,
             9100,
@@ -60,6 +61,10 @@ impl App {
             self.provider_panel = 0;
             self.protocol_menu = false;
             self.clear_key();
+            return;
+        }
+        if self.provider.oauth {
+            self.oauth_provider_dialog(c, r, enabled);
             return;
         }
         if self.provider_panel == 1 {
@@ -145,6 +150,26 @@ impl App {
                 MUTED,
             );
             if basics {
+                if !self.provider_edit
+                    && self.ui.button(
+                        c,
+                        9111,
+                        Rect::new(x + width - 156., 132., 156., 38.),
+                        tr("providers.oauth_mode"),
+                        Style::Secondary,
+                        enabled,
+                    )
+                {
+                    self.provider.oauth = true;
+                    self.provider.name.clear();
+                    self.provider.protocol = 0;
+                    self.provider.url = LMM_DOMAIN.into();
+                    self.repaint = true;
+                    self.provider.plugin_id = "lmm".into();
+                    self.provider.endpoint_menu = false;
+                    self.protocol_menu = false;
+                    return;
+                }
                 field(
                     &mut self.ui,
                     c,
@@ -158,29 +183,19 @@ impl App {
                     false,
                     enabled && !self.provider_edit && !self.protocol_menu,
                 );
-                field(
-                    &mut self.ui,
-                    c,
-                    9121,
-                    x,
-                    296.,
-                    width,
-                    tr("providers.url"),
-                    &mut self.provider.url,
-                    "https://api.example.com/v1",
-                    false,
-                    enabled && !self.protocol_menu,
-                );
-                c.text(tr("providers.protocol"), x, 396., 14, true, TEXT);
-                if self.ui.button(
-                    c,
-                    9122,
-                    Rect::new(x, 425., width, 44.),
-                    &format!("{}  ▾", protocol_name(self.provider.protocol)),
-                    Style::Secondary,
-                    enabled,
-                ) {
-                    self.protocol_menu = !self.protocol_menu;
+                self.provider_endpoint(c, x, 296., width, enabled && !self.protocol_menu);
+                if !self.provider.endpoint_menu {
+                    c.text(tr("providers.protocol"), x, 396., 14, true, TEXT);
+                    if self.ui.button(
+                        c,
+                        9122,
+                        Rect::new(x, 425., width, 44.),
+                        &format!("{}  ▾", protocol_name(self.provider.protocol)),
+                        Style::Secondary,
+                        enabled,
+                    ) {
+                        self.protocol_menu = !self.protocol_menu;
+                    }
                 }
             } else {
                 field(
@@ -235,8 +250,9 @@ impl App {
                     self.provider_panel = 2;
                 }
             }
-            let valid =
-                !self.provider.name.trim().is_empty() && !self.provider.url.trim().is_empty();
+            let valid = !self.provider.name.trim().is_empty()
+                && (self.provider.url.trim().starts_with("https://")
+                    || self.provider.url.trim().starts_with("http://"));
             if self.ui.button(
                 c,
                 9133,
@@ -250,6 +266,7 @@ impl App {
                 enabled && valid && !self.protocol_menu,
             ) {
                 if basics {
+                    self.provider.endpoint_menu = false;
                     self.provider_panel = 3;
                 } else {
                     let mut args = words(&[
@@ -302,6 +319,315 @@ impl App {
                     );
                 }
             }
+        }
+    }
+    fn provider_endpoint(&mut self, c: &mut Canvas<'_>, x: f32, y: f32, width: f32, enabled: bool) {
+        let old = self.provider.url.clone();
+        field(
+            &mut self.ui,
+            c,
+            9121,
+            x,
+            y,
+            width - 48.,
+            tr(if self.provider.oauth {
+                "providers.oauth_domain"
+            } else {
+                "providers.url"
+            }),
+            &mut self.provider.url,
+            if self.provider.oauth {
+                LMM_DOMAIN
+            } else {
+                tr("providers.endpoint_hint")
+            },
+            false,
+            enabled,
+        );
+        if self.provider.url != old {
+            self.repaint = true;
+            self.provider.endpoint_menu = true;
+            self.provider.endpoint_filter = true;
+        }
+        if self.ui.button(
+            c,
+            9124,
+            Rect::new(x + width - 44., y + 28., 44., 44.),
+            if self.provider.endpoint_menu {
+                "▴"
+            } else {
+                "▾"
+            },
+            Style::Secondary,
+            enabled,
+        ) {
+            self.repaint = true;
+            self.provider.endpoint_menu = !self.provider.endpoint_menu;
+            self.provider.endpoint_filter = false;
+        }
+        if !self.provider.endpoint_menu {
+            return;
+        }
+        let rows = [
+            ("LMM", "https://api.lmm.best/v1", LMM_DOMAIN, "lmm", 0),
+            (
+                "OpenAI",
+                "https://api.openai.com/v1",
+                "api.openai.com",
+                "",
+                0,
+            ),
+            (
+                "Anthropic",
+                "https://api.anthropic.com/v1",
+                "api.anthropic.com",
+                "",
+                2,
+            ),
+            (
+                "OpenRouter",
+                "https://openrouter.ai/api/v1",
+                "openrouter.ai",
+                "",
+                0,
+            ),
+            (
+                "DeepSeek",
+                "https://api.deepseek.com/v1",
+                "api.deepseek.com",
+                "",
+                0,
+            ),
+            (
+                "Google Gemini",
+                "https://generativelanguage.googleapis.com/v1beta",
+                "generativelanguage.googleapis.com",
+                "",
+                3,
+            ),
+        ];
+        let mut shown = 0;
+        for (index, (name, url, host, plugin, protocol)) in rows.into_iter().enumerate() {
+            if self.provider.oauth && plugin.is_empty() {
+                continue;
+            }
+            let candidate = format!("{name} {url}");
+            if self.provider.endpoint_filter
+                && !provider_oauth::endpoint_matches(&self.provider.url, &candidate)
+            {
+                continue;
+            }
+            let row = Rect::new(x, y + 76. + shown as f32 * 29., width, 29.);
+            shown += 1;
+            if self
+                .ui
+                .button(c, 9160 + index as u64, row, "", Style::Secondary, enabled)
+            {
+                self.provider.url = if self.provider.oauth { host } else { url }.into();
+                if self.provider.oauth {
+                    self.provider.plugin_id = plugin.into();
+                } else if self.provider.name.trim().is_empty() && !self.provider_edit {
+                    self.provider.name = [
+                        "lmm",
+                        "openai",
+                        "anthropic",
+                        "openrouter",
+                        "deepseek",
+                        "gemini",
+                    ][index]
+                        .into();
+                }
+                self.provider.protocol = protocol;
+                self.provider.endpoint_menu = false;
+                self.repaint = true;
+            }
+            c.ellipsis(
+                &format!(
+                    "{name}  ·  {}",
+                    if self.provider.oauth { host } else { url }
+                ),
+                row.x + 10.,
+                row.y + 6.,
+                row.w - 20.,
+                13,
+                false,
+                TEXT,
+            );
+        }
+        if shown == 0 {
+            c.text(
+                tr("providers.endpoint_no_matches"),
+                x,
+                y + 83.,
+                13,
+                false,
+                MUTED,
+            );
+        }
+    }
+
+    fn oauth_provider_dialog(&mut self, c: &mut Canvas<'_>, r: Rect, enabled: bool) {
+        let x = r.x + 32.;
+        let width = r.w - 64.;
+        c.text(tr("providers.oauth_mode"), x, 100., 27, true, TEXT);
+        if self.busy {
+            if self.oauth_instructions.is_empty() {
+                c.text(tr("providers.oauth_wait"), x, 161., 14, false, MUTED);
+            } else {
+                c.ellipsis(&self.oauth_instructions, x, 159., width, 13, false, MUTED);
+                field(
+                    &mut self.ui,
+                    c,
+                    9170,
+                    x,
+                    198.,
+                    width,
+                    tr("providers.oauth_code"),
+                    &mut self.oauth_code,
+                    "",
+                    true,
+                    true,
+                );
+                if self.ui.button(
+                    c,
+                    9171,
+                    Rect::new(x, r.h - 87., 120., 44.),
+                    tr("action.cancel"),
+                    Style::Quiet,
+                    true,
+                ) {
+                    self.oauth_input = None;
+                    self.oauth_instructions.clear();
+                    self.repaint = true;
+                }
+                if self.ui.button(
+                    c,
+                    9172,
+                    Rect::new(x + width - 142., r.h - 87., 142., 44.),
+                    tr("action.next"),
+                    Style::Primary,
+                    !self.oauth_code.trim().is_empty(),
+                ) {
+                    if let Some(input) = self.oauth_input.take() {
+                        let _ = input.send(std::mem::take(&mut self.oauth_code));
+                    }
+                    self.oauth_instructions.clear();
+                    self.repaint = true;
+                }
+            }
+            return;
+        }
+        self.provider_endpoint(c, x, 153., width, enabled);
+        if self.provider.plugin_id == "lmm" {
+            if self.ui.button(
+                c,
+                9179,
+                Rect::new(x, 304., width, 40.),
+                tr("providers.oauth_other_plugin"),
+                Style::Quiet,
+                enabled,
+            ) {
+                self.provider.plugin_id.clear();
+                self.repaint = true;
+            }
+        } else {
+            field(
+                &mut self.ui,
+                c,
+                9173,
+                x,
+                276.,
+                width,
+                tr("providers.oauth_plugin_id"),
+                &mut self.provider.plugin_id,
+                "",
+                false,
+                enabled,
+            );
+        }
+        let lmm = self.provider.plugin_id.trim() == "lmm";
+        let installed = self
+            .state
+            .get("plugins")
+            .get("plugins")
+            .array()
+            .iter()
+            .find(|plugin| plugin.get("name").text() == LMM_PLUGIN)
+            .map(|plugin| plugin.get("enabled").boolean());
+        if lmm && installed.is_none() {
+            if self.ui.button(
+                c,
+                9174,
+                Rect::new(x, 367., width, 42.),
+                tr("providers.oauth_install_lmm"),
+                Style::Secondary,
+                enabled,
+            ) {
+                self.ask(
+                    tr("providers.oauth_install_lmm"),
+                    words(&[
+                        "plugins",
+                        "install",
+                        LMM_SOURCE,
+                        "--revision",
+                        LMM_REVISION,
+                        "--name",
+                        LMM_PLUGIN,
+                    ]),
+                );
+            }
+        } else if lmm && installed == Some(false) {
+            if self.ui.button(
+                c,
+                9175,
+                Rect::new(x, 367., width, 42.),
+                tr("action.enable_plugin"),
+                Style::Secondary,
+                enabled,
+            ) {
+                self.ask(
+                    tr("action.enable_plugin"),
+                    words(&["plugins", "enable", LMM_PLUGIN]),
+                );
+            }
+        } else if self.ui.button(
+            c,
+            9176,
+            Rect::new(x, 367., width, 42.),
+            tr("action.install_plugin"),
+            Style::Secondary,
+            enabled,
+        ) {
+            self.plugin = PluginForm::default();
+            self.plugin_panel = 2;
+            return;
+        }
+        self.drawer_notice(c, r);
+        if self.ui.button(
+            c,
+            9177,
+            Rect::new(x, r.h - 87., 140., 44.),
+            tr("providers.api_key_mode"),
+            Style::Quiet,
+            enabled,
+        ) {
+            self.provider.oauth = false;
+            self.provider.url.clear();
+            self.repaint = true;
+            self.provider.endpoint_menu = false;
+        }
+        let ready = !self.provider.url.trim().is_empty()
+            && !self.provider.plugin_id.trim().is_empty()
+            && (!lmm || installed == Some(true));
+        if self.ui.button(
+            c,
+            9178,
+            Rect::new(x + width - 172., r.h - 87., 172., 44.),
+            tr("providers.oauth_login"),
+            Style::Primary,
+            enabled && ready,
+        ) {
+            self.start_oauth();
         }
     }
     pub(super) fn plugin_dialog(&mut self, c: &mut Canvas<'_>) {

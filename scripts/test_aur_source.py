@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the real source AUR prepare step without a Git or registry cache."""
+"""Check the real source AUR prepare step from an initially empty Cargo cache."""
 import argparse
 import hashlib
 import json
@@ -16,7 +16,7 @@ from release import ROOT, current, validate
 
 def lock_graph(path):
     packages = tomllib.loads(path.read_text())["package"]
-    return sorted((p["name"], p["version"], tuple(sorted(p.get("dependencies", []))))
+    return sorted((p["name"], p["version"], p.get("source", ""), tuple(sorted(p.get("dependencies", []))))
                   for p in packages)
 
 
@@ -30,16 +30,15 @@ def metadata(tree, manifest, env, expected, features=()):
         check=True, text=True, stdout=subprocess.PIPE, timeout=120,
     )
     data = json.loads(result.stdout)
-    actual = sorted((p["name"], p["version"]) for p in data["packages"])
-    if actual != sorted((name, version) for name, version, _ in expected):
-        raise ValueError("Frozen metadata changed the bundled package versions")
+    actual = {(p["name"], p["version"], p.get("source") or "") for p in data["packages"]}
+    locked = {(name, version, source) for name, version, source, _ in expected}
+    if not actual or not actual <= locked:
+        raise ValueError("Frozen metadata resolved an identity absent from the committed lock")
     for package in data["packages"]:
         path = Path(package["manifest_path"]).resolve()
-        if package["source"] is not None or not path.is_relative_to(tree):
-            raise ValueError("Frozen metadata resolved a dependency outside the source archive")
-        if package["name"] == "zgpui" and path != tree / "vendor/zgpui/Cargo.toml":
-            raise ValueError("Frozen metadata did not use the bundled zgpui")
-    return actual
+        if package["source"] is None and not path.is_relative_to(tree):
+            raise ValueError("Frozen metadata resolved a local package outside the source archive")
+    return sorted(actual)
 
 
 def check(archive_path, pkgbuild_path, version, source_pkgrel):
@@ -70,6 +69,7 @@ def check(archive_path, pkgbuild_path, version, source_pkgrel):
         root_lock = tree / "Cargo.lock"
         vendor_lock = tree / "vendor/zgpui/Cargo.lock"
         root_before, vendor_before = lock_graph(root_lock), lock_graph(vendor_lock)
+        original_locks = (root_lock.read_bytes(), vendor_lock.read_bytes())
         if tomllib.loads((tree / "Cargo.toml").read_text())["package"]["version"] != version:
             raise ValueError("Source archive version differs")
         recipe = work / "PKGBUILD"
@@ -77,7 +77,7 @@ def check(archive_path, pkgbuild_path, version, source_pkgrel):
         cargo_home = work / "empty-cargo-home"
         cargo_home.mkdir()
         env = os.environ.copy()
-        env.update(CARGO_HOME=str(cargo_home), CARGO_NET_OFFLINE="true",
+        env.update(CARGO_HOME=str(cargo_home), CARGO_NET_OFFLINE="false",
                    CARGO_TARGET_DIR=str(work / "target"), RUSTUP_TOOLCHAIN="1.100.0")
         subprocess.run(
             ["bash", "--noprofile", "--norc", "-c",
@@ -89,13 +89,12 @@ def check(archive_path, pkgbuild_path, version, source_pkgrel):
         )
         if lock_graph(root_lock) != root_before or lock_graph(vendor_lock) != vendor_before:
             raise ValueError("Source prepare changed the locked package versions or dependency graph")
-        prepared_locks = (root_lock.read_bytes(), vendor_lock.read_bytes())
+        if original_locks != (root_lock.read_bytes(), vendor_lock.read_bytes()):
+            raise ValueError("Source preparation rewrote a committed lockfile")
         app = metadata(tree, tree / "Cargo.toml", env, root_before)
         library = metadata(tree, tree / "vendor/zgpui/Cargo.toml", env, vendor_before, ("native",))
-        if prepared_locks != (root_lock.read_bytes(), vendor_lock.read_bytes()):
+        if original_locks != (root_lock.read_bytes(), vendor_lock.read_bytes()):
             raise ValueError("Frozen metadata changed a prepared lockfile")
-        if (cargo_home / "git").exists() or (cargo_home / "registry").exists():
-            raise ValueError("Source prepare or metadata populated a Git or registry cache")
     print(json.dumps({"source_sha256": checksum, "version": version,
                       "source_pkgrel": source_pkgrel, "cargo_cache_initially_empty": True,
                       "gui_packages": app, "vendor_packages": library,

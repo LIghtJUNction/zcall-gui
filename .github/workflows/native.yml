@@ -195,7 +195,9 @@ jobs:
           mv -- "_release/dist/$source_archive" "$source_directory/$source_archive"
           python3 scripts/test_aur_source.py --archive "$source_directory/$source_archive"
       - name: Fetch locked Git dependencies
-        run: cargo fetch --locked
+        run: |
+          cargo fetch --locked
+          cargo fetch --locked --manifest-path vendor/zgpui/Cargo.toml
       - name: Validate Linux
         if: runner.os == 'Linux'
         run: python3 scripts/check.py --ui

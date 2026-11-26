@@ -17,7 +17,7 @@ def metadata(name,version,hashes,source_pkgrel=1):
     source_pkgrel=positive_revision(source_pkgrel)
     binary=name.endswith("-bin");description="Native Project Z control panel for the zcalld local AI gateway"+(" (binary)" if binary else "")
     lines=[f"pkgbase = {name}",f"\tpkgdesc = {description}",f"\tpkgver = {version}",f"\tpkgrel = {1 if binary else source_pkgrel}",f"\turl = {BASE}","\tarch = x86_64","\tarch = aarch64","\tlicense = MIT"]
-    if not binary:lines.extend(["\tmakedepends = rust","\tmakedepends = pkgconf"])
+    if not binary:lines.extend(["\tmakedepends = rust","\tmakedepends = pkgconf","\tmakedepends = git"])
     lines.extend("\tdepends = "+dependency for dependency in DEPS)
     lines.extend(["\toptdepends = xorg-xwayland: run on Wayland sessions","\toptdepends = noto-fonts-cjk: Chinese and Japanese glyphs"])
     if binary:

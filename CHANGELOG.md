@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.11
+
+- Show popular OAuth providers and add visual color selection [skip ci]
+- Connect AI tools without prompting for a route [skip ci]
+
 ## 0.1.10
 
 - Test gateway package updates through the zcalld command [skip ci]

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.7
 
 - Share Windows private-file checks and creation protection with zsys, retaining handle-based reads, owner/current-account/SYSTEM restrictions, non-inheriting creation and existing error messages. Route JSON string output through zconv while preserving control-byte spelling.
 - Add bundled vector identities and display names for all 16 supported AI tools, with a neutral fallback for unknown tools and the same identity in the route picker.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10
+
+- Test gateway package updates through the zcalld command [skip ci]
+- Add a routing provider for virtual models
+
 ## 0.1.9
 
 - Build the installer acceptance fixture with locked Cargo dependencies [skip ci]

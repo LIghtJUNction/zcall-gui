@@ -295,7 +295,6 @@ providers.oauth_invalid_domain	Enter a valid HTTPS domain.
 providers.oauth_unavailable	OAuth could not start or complete. Check the gateway and compatibility helper.
 providers.oauth_bad_link	Could not open the authorization link.
 providers.oauth_issuer_in_use	An existing LMM account uses a different or unknown domain.
-providers.oauth_name_taken	A provider with this name already exists.
 providers.oauth_missing_plugin	Install and enable a plugin with an OAuth method for this provider.
 providers.oauth_cancelled	Authorization was rejected, cancelled, or expired.
 providers.endpoint_hint	Search presets or enter a URL

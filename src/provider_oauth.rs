@@ -239,6 +239,22 @@ struct Login {
     protocol: &'static str,
 }
 
+fn available_name(requested: &str, providers: &[Json]) -> String {
+    let occupied = |name: &str| providers.iter().any(|item| item.get("name").text() == name);
+    if !occupied(requested) {
+        return requested.into();
+    }
+    for index in 2.. {
+        let suffix = format!("-{index}");
+        let prefix = &requested[..requested.len().min(128 - suffix.len())];
+        let name = format!("{prefix}{suffix}");
+        if !occupied(&name) {
+            return name;
+        }
+    }
+    unreachable!("finite provider list");
+}
+
 fn login(
     backend: &Backend,
     login: Login,
@@ -250,12 +266,7 @@ fn login(
         return Err(tr("providers.oauth_update_gateway").into());
     }
     let providers = providers.get("providers").array();
-    if providers
-        .iter()
-        .any(|item| item.get("name").text() == login.name)
-    {
-        return Err(tr("providers.oauth_name_taken").into());
-    }
+    let name = available_name(&login.name, providers);
     let base = format!("{}/v1", login.domain);
     if login.plugin == "lmm" {
         configure_lmm(backend, &login.domain, providers)?;
@@ -313,7 +324,7 @@ fn login(
         &words(&[
             "providers",
             "add",
-            &login.name,
+            &name,
             "--base-url",
             &base,
             "--protocol",
@@ -391,6 +402,14 @@ mod tests {
         ] {
             assert!(issuer(url).is_err(), "{url}");
         }
+    }
+
+    #[test]
+    fn duplicate_names_leave_existing_providers_in_place() {
+        let providers =
+            ["lmm", "lmm-2"].map(|name| Json::object([("name".into(), Json::String(name.into()))]));
+        assert_eq!(available_name("lmm", &providers), "lmm-3");
+        assert_eq!(available_name("other", &providers), "other");
     }
 
     #[test]

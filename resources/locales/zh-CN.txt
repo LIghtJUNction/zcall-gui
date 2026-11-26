@@ -295,7 +295,6 @@ providers.oauth_invalid_domain	请输入有效的 HTTPS 域名。
 providers.oauth_unavailable	OAuth 无法启动或完成，请检查网关和兼容组件。
 providers.oauth_bad_link	无法打开授权链接。
 providers.oauth_issuer_in_use	已有 LMM 账号绑定了其他域名或域名未知。
-providers.oauth_name_taken	该供应商名称已存在。
 providers.oauth_missing_plugin	请安装并启用为此供应商提供 OAuth 登录的插件。
 providers.oauth_cancelled	授权被拒绝、取消或已过期。
 providers.endpoint_hint	搜索预设或输入完整地址

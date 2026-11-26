@@ -260,13 +260,23 @@ impl App {
         if self.ui.input(
             c,
             401,
-            Rect::new(x, 118., width, 42.),
+            Rect::new(x, 118., width - 150., 42.),
             &mut self.provider_query,
             tr("providers.search"),
             false,
             enabled,
         ) {
             self.scroll = 0;
+        }
+        if self.ui.button(
+            c,
+            405,
+            Rect::new(x + width - 138., 118., 138., 42.),
+            tr("providers.sync"),
+            Style::Secondary,
+            enabled,
+        ) {
+            self.ask(tr("providers.sync"), words(&["providers", "sync"]));
         }
         let query = self.provider_query.trim().to_lowercase();
         let providers = self.state.get("providers").get("providers").array();
@@ -310,6 +320,7 @@ impl App {
         self.scroll = self.scroll.min(items.len().saturating_sub(rows));
         let mut selected_provider = None;
         let mut selected_models = None;
+        let mut provider_toggle = None;
         for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
             let y = 208. + (index - self.scroll) as f32 * 81.;
             let r = Rect::new(x, y, width, 72.);
@@ -319,10 +330,17 @@ impl App {
             let title = provider_title(id, endpoint, item.get("plugin").text());
             let model_label = tr("providers.browse_models");
             let model_width = (c.measure(model_label, 13, false) + 32.).clamp(100., 166.);
-            let lane = width - model_width - 48.;
+            let active = item.get("enabled") != &Json::Bool(false);
+            let toggle = tr(if active {
+                "providers.turn_off"
+            } else {
+                "providers.turn_on"
+            });
+            let toggle_width = (c.measure(toggle, 13, false) + 24.).max(78.);
+            let lane = width - model_width - toggle_width - 59.;
             if self.ui.button(
                 c,
-                10000 + index as u64 * 2,
+                10000 + index as u64 * 3,
                 Rect::new(x + 1., y + 1., lane + 20., 70.),
                 "",
                 Style::Quiet,
@@ -330,7 +348,11 @@ impl App {
             ) {
                 selected_provider = Some((**item).clone());
             }
-            let protocol = item.get("protocol").text();
+            let protocol = if active {
+                item.get("protocol").text()
+            } else {
+                tr("status.disabled")
+            };
             let tag_width = if width > 710. {
                 c.measure(protocol, 12, false) + 18.
             } else {
@@ -368,13 +390,32 @@ impl App {
             }
             if self.ui.button(
                 c,
-                10001 + index as u64 * 2,
+                10001 + index as u64 * 3,
                 Rect::new(x + width - model_width - 17., y + 17., model_width, 38.),
                 model_label,
                 Style::Secondary,
                 enabled && !id.is_empty(),
             ) {
                 selected_models = Some((id.to_owned(), title.to_owned()));
+            }
+            if self.ui.button(
+                c,
+                10002 + index as u64 * 3,
+                Rect::new(
+                    x + width - model_width - toggle_width - 25.,
+                    y + 17.,
+                    toggle_width,
+                    38.,
+                ),
+                toggle,
+                if active {
+                    Style::Quiet
+                } else {
+                    Style::Secondary
+                },
+                enabled && !id.is_empty(),
+            ) {
+                provider_toggle = Some((id.to_owned(), active));
             }
         }
         if items.len() > rows {
@@ -400,6 +441,18 @@ impl App {
                 self.scroll += rows;
                 self.repaint = true;
             }
+        }
+        if let Some((provider, active)) = provider_toggle {
+            self.action(
+                "Set provider state",
+                words(&[
+                    "providers",
+                    if active { "disable" } else { "enable" },
+                    &provider,
+                ]),
+                None,
+            );
+            return;
         }
         if let Some((provider, label)) = selected_models {
             self.open_provider_models(provider, label);

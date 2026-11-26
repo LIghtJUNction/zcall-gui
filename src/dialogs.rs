@@ -1632,11 +1632,21 @@ impl App {
                 MUTED,
             );
         } else {
-            c.text(
-                tr("confirm.description"),
+            let args = &self.confirm.as_ref().unwrap().args;
+            let description = match (
+                args.first().map(String::as_str),
+                args.get(1).map(String::as_str),
+            ) {
+                (Some("providers"), Some("remove")) => "providers.remove_help",
+                (Some("providers"), Some("sync")) => "providers.sync_help",
+                _ => "confirm.description",
+            };
+            c.ellipsis(
+                tr(description),
                 r.x + 28.,
                 r.y + 84.,
-                15,
+                396.,
+                13,
                 false,
                 MUTED,
             );

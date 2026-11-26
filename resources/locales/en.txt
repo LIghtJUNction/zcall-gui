@@ -97,7 +97,7 @@ providers.url	Endpoint URL
 providers.protocol	Protocol
 action.edit	Edit
 providers.remove_title	Remove endpoint
-providers.remove_help	Requests can no longer use this endpoint.
+providers.remove_help	Remove this endpoint, its routes, and any routing groups left without members.
 action.remove_provider	Remove provider
 status.testing	Testing…
 providers.basics	Connection
@@ -388,3 +388,16 @@ privacy.option_whole	Match whole words
 privacy.option_whole_help	Require word boundaries when matching custom terms.
 privacy.option_shape	Preserve format
 privacy.option_shape_help	Keep the general shape of supported replaced values.
+privacy.events	Live redaction log
+privacy.events_empty	No redactions recorded yet.
+privacy.events_unavailable	The redaction log could not be read.
+privacy.event_masked	Redacted · {count} replacements
+privacy.event_blocked	Blocked · {count} replacements
+providers.sync	Sync status
+providers.turn_off	Disable
+providers.turn_on	Enable
+providers.restart_pending	Restart the gateway to apply the saved provider changes.
+providers.oauth_catalog	OAuth account catalog
+providers.oauth_catalog_expired	The OAuth session expired and could not be renewed. Sign in again.
+providers.oauth_catalog_missing	The bound OAuth account is missing. Link the account again.
+providers.sync_help	Remove broken references and empty routing groups.

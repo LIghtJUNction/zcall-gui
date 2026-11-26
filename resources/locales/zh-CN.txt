@@ -97,7 +97,7 @@ providers.url	接口地址
 providers.protocol	接口类型
 action.edit	编辑
 providers.remove_title	删除接口
-providers.remove_help	移除后将无法再通过此接口转发。
+providers.remove_help	将移除这个接口、它的路由，以及因此没有成员的路由组。
 action.remove_provider	删除供应商
 status.testing	正在测试…
 providers.basics	连接信息
@@ -388,3 +388,16 @@ privacy.option_whole	匹配完整词
 privacy.option_whole_help	仅匹配有词边界的自定义词。
 privacy.option_shape	保留格式
 privacy.option_shape_help	替换受支持的值时保留大致格式。
+privacy.events	实时脱敏日志
+privacy.events_empty	还没有脱敏事件。
+privacy.events_unavailable	无法读取脱敏日志。
+privacy.event_masked	已脱敏 · 替换 {count} 处
+privacy.event_blocked	已拦截 · 替换 {count} 处
+providers.sync	同步状态
+providers.turn_off	停用
+providers.turn_on	启用
+providers.restart_pending	供应商变更已保存，重启网关后生效。
+providers.oauth_catalog	OAuth 账号目录
+providers.oauth_catalog_expired	OAuth 登录已过期且未能续期，请重新登录。
+providers.oauth_catalog_missing	找不到绑定的 OAuth 账号，请重新绑定。
+providers.sync_help	清理失效引用及没有成员的路由组。

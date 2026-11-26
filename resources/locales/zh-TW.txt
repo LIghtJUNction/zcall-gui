@@ -97,7 +97,7 @@ providers.url	介面位址
 providers.protocol	介面類型
 action.edit	編輯
 providers.remove_title	刪除介面
-providers.remove_help	移除後將無法再透過此介面轉送。
+providers.remove_help	將移除此介面、它的路由，以及因此沒有成員的路由群組。
 action.remove_provider	刪除供應商
 status.testing	正在測試…
 providers.basics	連線資訊
@@ -388,3 +388,16 @@ privacy.option_whole	比對完整詞
 privacy.option_whole_help	只比對具有詞邊界的自訂詞。
 privacy.option_shape	保留格式
 privacy.option_shape_help	替換支援的值時保留大致格式。
+privacy.events	即時去識別紀錄
+privacy.events_empty	尚無去識別事件。
+privacy.events_unavailable	無法讀取去識別紀錄。
+privacy.event_masked	已去識別 · 取代 {count} 處
+privacy.event_blocked	已攔截 · 取代 {count} 處
+providers.sync	同步狀態
+providers.turn_off	停用
+providers.turn_on	啟用
+providers.restart_pending	供應商變更已儲存，重新啟動閘道後生效。
+providers.oauth_catalog	OAuth 帳號目錄
+providers.oauth_catalog_expired	OAuth 登入已過期且無法續期，請重新登入。
+providers.oauth_catalog_missing	找不到綁定的 OAuth 帳號，請重新綁定。
+providers.sync_help	清理失效引用及沒有成員的路由群組。

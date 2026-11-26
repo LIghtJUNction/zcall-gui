@@ -97,7 +97,7 @@ providers.url	接続先 URL
 providers.protocol	プロトコル
 action.edit	編集
 providers.remove_title	接続先を削除
-providers.remove_help	削除後はこの接続先を使用できません。
+providers.remove_help	接続先とルート、およびメンバーが残らないルーティンググループを削除します。
 action.remove_provider	接続先を削除
 status.testing	テスト中…
 providers.basics	接続情報
@@ -388,3 +388,16 @@ privacy.option_whole	単語全体を照合
 privacy.option_whole_help	カスタム語句を単語境界で照合します。
 privacy.option_shape	形式を維持
 privacy.option_shape_help	対象の値を置き換えるときに大まかな形式を保ちます。
+privacy.events	リアルタイムのマスキングログ
+privacy.events_empty	マスキングの記録はまだありません。
+privacy.events_unavailable	マスキングログを読み込めませんでした。
+privacy.event_masked	マスキング済み · {count} 箇所を置換
+privacy.event_blocked	ブロック済み · {count} 箇所を置換
+providers.sync	状態を同期
+providers.turn_off	無効にする
+providers.turn_on	有効にする
+providers.restart_pending	設定を保存しました。適用するにはゲートウェイを再起動してください。
+providers.oauth_catalog	OAuth アカウントのモデル一覧
+providers.oauth_catalog_expired	OAuth の有効期限が切れ、更新できませんでした。再ログインしてください。
+providers.oauth_catalog_missing	紐付けた OAuth アカウントが見つかりません。再度紐付けてください。
+providers.sync_help	無効な参照と空のルーティンググループを整理します。

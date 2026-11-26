@@ -155,8 +155,11 @@ struct App {
     repaint: bool,
     executable: Option<std::path::PathBuf>,
     privacy_restart_pending: bool,
+    providers_restart_pending: bool,
     privacy_panel: bool,
     privacy_stats: Json,
+    privacy_request: Option<Instant>,
+    privacy_reading: bool,
 }
 fn words(args: &[&str]) -> Vec<String> {
     args.iter().map(|s| (*s).into()).collect()
@@ -175,7 +178,7 @@ fn human(s: &str) -> &str {
         "Test provider" => tr("action.test_provider"),
         "Sync AI tool status" => tr("action.detect_agents"),
         "Set privacy mode" => tr("action.privacy"),
-        privacy_page::STATS => tr("privacy.stats"),
+        "Set provider state" => tr("nav.providers"),
         "Check gateway update" => tr("action.check_gateway"),
         "Check GUI update" => tr("action.check_gui"),
         "Update GUI" => tr("action.update_gui"),
@@ -239,8 +242,11 @@ impl App {
             repaint: false,
             executable: std::env::current_exe().ok(),
             privacy_restart_pending: false,
+            providers_restart_pending: false,
             privacy_panel: false,
             privacy_stats: Json::Null,
+            privacy_request: None,
+            privacy_reading: false,
         }
     }
     fn modal(&self) -> bool {
@@ -345,6 +351,13 @@ impl App {
         let mut changed = false;
         while let Ok(reply) = self.receiver.try_recv() {
             changed = true;
+            if reply.label == privacy_page::STATS {
+                self.privacy_reading = false;
+                self.privacy_stats = reply
+                    .result
+                    .unwrap_or_else(|error| Json::object([("error".into(), Json::String(error))]));
+                continue;
+            }
             self.busy = false;
             if reply.label == usage::READ_LABEL {
                 self.accept_usage(reply.result);
@@ -426,19 +439,6 @@ impl App {
                 self.oauth_code.clear();
                 self.oauth_instructions.clear();
             }
-            if reply.label == privacy_page::STATS {
-                self.failed = reply.result.is_err();
-                self.notice = if self.failed {
-                    tr("privacy.stats_unavailable").into()
-                } else {
-                    String::new()
-                };
-                self.privacy_stats = match reply.result {
-                    Ok(value) => value,
-                    Err(error) => Json::object([("error".into(), Json::String(error))]),
-                };
-                continue;
-            }
             if agent_config::handles(&reply.label) {
                 self.accept_agent_config(&reply.label, reply.result);
                 continue;
@@ -518,6 +518,7 @@ impl App {
                     self.accept_setup(&reply.label, &data);
                     if reply.starts_gateway {
                         self.privacy_restart_pending = false;
+                        self.providers_restart_pending = false;
                         self.usage_restart_pending = false;
                     }
                     if reply.label == "Set privacy mode" && data.get("restart_required").boolean() {
@@ -527,6 +528,20 @@ impl App {
                         self.state = data.get("state").clone();
                         self.gateway_update = Json::Null;
                         self.gui_update = Json::Null;
+                    }
+                    if data.get("restart_required").boolean()
+                        && (!matches!(data.get("enabled"), Json::Null)
+                            && reply.label == "Set provider state"
+                            || !matches!(data.get("detached_members"), Json::Null))
+                    {
+                        self.providers_restart_pending = true;
+                        self.provider_panel = 0;
+                        if self.backend.config.is_none()
+                            && self.state.get("status").get("service").text() == "active"
+                        {
+                            self.action("Restart gateway", words(&["service", "restart"]), None);
+                            continue;
+                        }
                     }
                     if matches!(reply.label.as_str(), "Save provider" | "OAuth provider") {
                         self.provider_panel = 0;
@@ -564,6 +579,8 @@ impl App {
                 && let Some(notice) = self.installation_notice()
             {
                 self.notice = notice.into();
+            } else if !self.failed && self.providers_restart_pending {
+                self.notice = tr("providers.restart_pending").into();
             } else if !self.failed && self.privacy_needs_restart() {
                 self.notice = tr("privacy.restart_required").into();
             } else if !self.failed && self.usage_restart_pending {
@@ -684,9 +701,6 @@ impl App {
         });
     }
     fn draw(&mut self, c: &mut Canvas<'_>, event: Option<Event>) {
-        if self.page == 4 && self.privacy_stats == Json::Null && !self.busy {
-            self.action(privacy_page::STATS, words(&["privacy", "stats"]), None);
-        }
         if self.page == USAGE_PAGE && self.usage == Json::Null && !self.busy {
             self.refresh_usage();
         }
@@ -1285,6 +1299,13 @@ fn run() -> Result<(), String> {
             break;
         }
         dirty |= app.poll();
+        if app.page == 4
+            && app
+                .privacy_request
+                .is_none_or(|at| at.elapsed() >= Duration::from_secs(2))
+        {
+            app.refresh_privacy();
+        }
         if dirty || event.is_some() {
             let theme = app.preferences.resolved_theme();
             window.set_theme(theme);
@@ -1312,7 +1333,11 @@ fn run() -> Result<(), String> {
                 continue;
             }
         }
-        event = window.event(if app.busy { 100 } else { 1000 });
+        event = window.event(if app.busy || app.privacy_reading {
+            100
+        } else {
+            1000
+        });
         if let Some(Event::Move(x, y)) = event.as_ref()
             && !app.ui.pointer_changed(*x, *y)
         {

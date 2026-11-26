@@ -7,6 +7,20 @@ fn number(value: &Json) -> u64 {
 }
 
 impl App {
+    pub(super) fn refresh_privacy(&mut self) {
+        if self.privacy_reading {
+            return;
+        }
+        self.privacy_reading = true;
+        self.privacy_request = Some(Instant::now());
+        self.backend.spawn(
+            self.sender.clone(),
+            STATS.into(),
+            words(&["privacy", "stats"]),
+            None,
+        );
+    }
+
     pub(super) fn privacy_chart(&mut self, c: &mut Canvas<'_>, x: f32, y: f32, width: f32) {
         c.text(tr("privacy.stats"), x + 2., y, 19, true, TEXT);
         if self.ui.button(
@@ -17,7 +31,7 @@ impl App {
             Style::Quiet,
             self.enabled(),
         ) {
-            self.action(STATS, words(&["privacy", "stats"]), None);
+            self.refresh_privacy();
         }
         let stats = &self.privacy_stats;
         let rows = stats.get("days").array();
@@ -31,6 +45,7 @@ impl App {
                 tr("privacy.stats_empty")
             };
             c.ellipsis(message, x + 2., y + 43., width - 4., 14, false, MUTED);
+            self.privacy_events(c, x, y + 81., width);
             return;
         }
         let total = |key| {
@@ -59,13 +74,10 @@ impl App {
             );
         }
         let chart_y = y + if skipped == 0 { 67. } else { 84. };
-        let bottom = c.height - 76.;
-        if bottom - chart_y < 30. {
-            return;
-        }
+        let bottom = chart_y + 89.;
         let backdrop = Rect::new(x, chart_y, width, bottom - chart_y + 30.);
         c.rect(backdrop, 8., SURFACE);
-        let top = chart_y + 14.;
+        let top = chart_y + 23.;
         let span = (width - 32.) / rows.len() as f32;
         let peak = rows
             .iter()
@@ -93,7 +105,7 @@ impl App {
                 number(row.get("checked")),
                 number(row.get("masked"))
             );
-            if peak > 1. && span >= 45. {
+            if span >= 45. {
                 let label_y = (bottom - shade("checked") - 17.).max(chart_y + 1.);
                 c.text(
                     &label,
@@ -112,6 +124,72 @@ impl App {
                 false,
                 MUTED,
             );
+        }
+        self.privacy_events(c, x, chart_y + 135., width);
+    }
+
+    fn privacy_events(&mut self, c: &mut Canvas<'_>, x: f32, y: f32, width: f32) {
+        c.text(tr("privacy.events"), x + 2., y, 18, true, TEXT);
+        let rows = self.privacy_stats.get("events").array();
+        let available = ((c.height - y - 79.) / 31.).floor().max(1.) as usize;
+        self.scroll = self.scroll.min(rows.len().saturating_sub(available));
+        if rows.len() > available {
+            for (id, offset, icon, enabled) in [
+                (817, 84., "‹", self.scroll > 0),
+                (818, 40., "›", self.scroll + available < rows.len()),
+            ] {
+                if self.ui.button(
+                    c,
+                    id,
+                    Rect::new(x + width - offset, y - 5., 40., 30.),
+                    icon,
+                    Style::Quiet,
+                    self.enabled() && enabled,
+                ) {
+                    if id == 817 {
+                        self.scroll = self.scroll.saturating_sub(available);
+                    } else {
+                        self.scroll =
+                            (self.scroll + available).min(rows.len().saturating_sub(available));
+                    }
+                }
+            }
+        }
+        if rows.is_empty() {
+            let empty = if self.privacy_stats == Json::Null {
+                "status.loading"
+            } else if self.privacy_stats.get("events_partial").boolean()
+                || !self.privacy_stats.get("error").text().is_empty()
+            {
+                "privacy.events_unavailable"
+            } else {
+                "privacy.events_empty"
+            };
+            c.ellipsis(tr(empty), x + 2., y + 37., width - 4., 13, false, MUTED);
+        }
+        for (index, row) in rows.iter().skip(self.scroll).take(available).enumerate() {
+            let top = y + 31. + index as f32 * 31.;
+            c.rect(Rect::new(x, top, width, 27.), 6., SURFACE);
+            let time = row.get("time").text();
+            c.ellipsis(
+                time.get(5..).unwrap_or_default(),
+                x + 12.,
+                top + 6.,
+                121.,
+                12,
+                false,
+                MUTED,
+            );
+            let count = number(row.get("replacements")).to_string();
+            let result = i18n::message(
+                if row.get("blocked").boolean() {
+                    "privacy.event_blocked"
+                } else {
+                    "privacy.event_masked"
+                },
+                &[("count", &count)],
+            );
+            c.ellipsis(&result, x + 143., top + 6., width - 155., 12, true, TEXT);
         }
     }
 

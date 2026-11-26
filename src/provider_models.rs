@@ -14,7 +14,7 @@ pub(super) struct Browser {
     label: String,
     models: Option<Vec<Model>>,
     error: Option<String>,
-    configured: bool,
+    source: String,
     query: String,
     pub(super) scroll: usize,
 }
@@ -58,17 +58,23 @@ impl Browser {
     pub(super) fn accept(&mut self, result: Result<Json, String>) -> bool {
         match result.and_then(|data| {
             let models = catalog(&data).ok_or_else(|| tr("error.invalid_response").to_string())?;
-            Ok((models, data.get("source").text() == "configured_catalog"))
+            Ok((models, data.get("source").text().to_owned()))
         }) {
-            Ok((models, configured)) => {
+            Ok((models, source)) => {
                 self.models = Some(models);
-                self.configured = configured;
+                self.source = source;
                 self.error = None;
                 self.scroll = 0;
                 true
             }
             Err(error) => {
-                self.error = Some(error);
+                self.error = Some(if error.contains("oauth_catalog_account_expired") {
+                    tr("providers.oauth_catalog_expired").into()
+                } else if error.contains("oauth_catalog_account_missing") {
+                    tr("providers.oauth_catalog_missing").into()
+                } else {
+                    error
+                });
                 false
             }
         }
@@ -82,7 +88,7 @@ impl App {
             label,
             models: None,
             error: None,
-            configured: false,
+            source: String::new(),
             query: String::new(),
             scroll: 0,
         });
@@ -150,7 +156,9 @@ impl App {
             c.text(tr("status.loading"), x, 200., 13, false, MUTED);
         } else {
             c.text(
-                tr(if browser.configured {
+                tr(if browser.source == "oauth_catalog" {
+                    "providers.oauth_catalog"
+                } else if browser.source == "configured_catalog" {
                     "providers.catalog_local"
                 } else {
                     "providers.catalog_upstream"

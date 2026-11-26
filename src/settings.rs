@@ -1,3 +1,4 @@
+use crate::ink::Colors;
 #[cfg(not(target_os = "windows"))]
 use std::process::Command;
 use std::{fs, path::PathBuf};
@@ -29,6 +30,8 @@ pub struct Preferences {
     pub theme: ThemeChoice,
     pub language: &'static str,
     pub core_binary: Option<String>,
+    palette_light: Option<Colors>,
+    palette_dark: Option<Colors>,
     system_dark: bool,
     path: PathBuf,
 }
@@ -39,6 +42,8 @@ impl Preferences {
             theme: ThemeChoice::Light,
             language: "en",
             core_binary: None,
+            palette_light: None,
+            palette_dark: None,
             system_dark: false,
             path: PathBuf::new(),
         }
@@ -49,6 +54,8 @@ impl Preferences {
             theme: ThemeChoice::System,
             language: "system",
             core_binary: None,
+            palette_light: None,
+            palette_dark: None,
             system_dark: false,
             path,
         };
@@ -61,6 +68,8 @@ impl Preferences {
                                 prefs.theme = theme;
                             }
                         }
+                        "palette_light" => prefs.palette_light = Colors::parse(value.split(',')),
+                        "palette_dark" => prefs.palette_dark = Colors::parse(value.split(',')),
                         "language" => {
                             if let Some(language) =
                                 crate::i18n::LANGUAGES.iter().find(|id| **id == value)
@@ -92,6 +101,30 @@ impl Preferences {
             Theme::Light
         }
     }
+    pub fn colors(&self, theme: Theme) -> Colors {
+        match theme {
+            Theme::Light => self.palette_light,
+            Theme::Dark => self.palette_dark,
+        }
+        .unwrap_or_else(|| Colors::defaults(theme))
+    }
+    pub fn save_colors(&mut self, theme: Theme, colors: Colors) -> Result<(), String> {
+        let edited = if theme == Theme::Dark {
+            &mut self.palette_dark
+        } else {
+            &mut self.palette_light
+        };
+        let previous = *edited;
+        *edited = (colors != Colors::defaults(theme)).then_some(colors);
+        if let Err(error) = self.save() {
+            match theme {
+                Theme::Light => self.palette_light = previous,
+                Theme::Dark => self.palette_dark = previous,
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
     pub fn save(&mut self) -> Result<(), String> {
         self.apply();
         if let Some(parent) = self.path.parent() {
@@ -101,16 +134,21 @@ impl Preferences {
         if !binary.is_empty() && !valid_binary(binary) {
             return Err("The remembered gateway path is invalid.".into());
         }
-        fs::write(
-            &self.path,
-            format!(
-                "theme={}\nlanguage={}\ncore_binary={}\n",
-                self.theme.id(),
-                self.language,
-                binary
-            ),
-        )
-        .map_err(|e| e.to_string())
+        let mut text = format!(
+            "theme={}\nlanguage={}\ncore_binary={}\n",
+            self.theme.id(),
+            self.language,
+            binary
+        );
+        for (key, colors) in [
+            ("palette_light", self.palette_light),
+            ("palette_dark", self.palette_dark),
+        ] {
+            if let Some(colors) = colors {
+                text.push_str(&format!("{key}={}\n", colors.fields().join(",")));
+            }
+        }
+        fs::write(&self.path, text).map_err(|e| e.to_string())
     }
 }
 fn valid_binary(value: &str) -> bool {

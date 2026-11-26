@@ -7,6 +7,7 @@ description = "A small native control panel for the zcalld local AI gateway"
 license = "MIT"
 repository = "https://github.com/LIghtJUNction/zcall-gui"
 [dependencies]
+zi18n = { git = "https://github.com/LIghtJUNction/zi18n.git", default-features = false }
 zconv = { git = "https://github.com/LIghtJUNction/zconv.git", default-features = false }
 zgpui = {  features = ["native"], git = "https://github.com/LIghtJUNction/zgpui.git"}
 zhex = { git = "https://github.com/LIghtJUNction/zhex.git" }

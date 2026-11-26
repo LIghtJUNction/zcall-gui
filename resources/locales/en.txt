@@ -303,3 +303,31 @@ providers.oauth_code_help	Enter the code from your browser.
 providers.oauth_update_gateway	Update the gateway to save OAuth providers.
 providers.oauth_other_plugin	Use another OAuth plugin
 providers.oauth_invalid_name	Enter a provider ID using letters, numbers, dots, dashes or underscores.
+settings.custom_colors	Custom colors
+settings.colors_help	Enter hex colors to preview this appearance live.
+settings.color_background	Background
+settings.color_surface	Surface
+settings.color_text	Text
+settings.color_muted	Secondary text
+settings.color_accent	Accent
+settings.color_success	Success
+settings.color_danger	Error
+settings.colors_invalid	Enter a six-digit hex color in each field.
+settings.colors_reset	Reset colors
+settings.colors_save	Save colors
+providers.browse_models	Browse models
+providers.search_models	Search model names or IDs…
+providers.catalog_local	Configured gateway models
+providers.catalog_upstream	Upstream model catalog
+providers.models_empty	No matching models
+providers.copy_model	Copy ID
+providers.advanced	Advanced options
+providers.auth_env	API key environment variable
+providers.route_alias	Route alias for the model
+providers.auth_method	Authentication
+providers.auth_none	None
+providers.header_refs	Header references (Header=ENV_VAR)
+providers.advanced_upgrade	Update the gateway to edit auth or header references.
+providers.models_range	{start}–{end} of {total} models
+providers.models_loaded	Model catalog loaded
+providers.models_failed	Could not load the model catalog

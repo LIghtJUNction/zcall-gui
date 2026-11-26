@@ -1,4 +1,8 @@
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::{
+    OnceLock,
+    atomic::{AtomicU8, Ordering},
+};
+use zi18n::{Argument, Catalog, Catalogs, Locale, Message};
 static ACTIVE: AtomicU8 = AtomicU8::new(0);
 pub const LANGUAGES: [&str; 5] = ["system", "zh-CN", "zh-TW", "en", "ja"];
 pub const LANGUAGE_NAMES: [&str; 4] = ["简体中文", "繁體中文", "English", "日本語"];
@@ -63,19 +67,57 @@ pub fn select(language: &str) {
     );
 }
 
+fn locales() -> &'static [Locale<'static>; 4] {
+    static LOCALES: OnceLock<[Locale<'static>; 4]> = OnceLock::new();
+    LOCALES.get_or_init(|| {
+        LANGUAGES[1..]
+            .try_into()
+            .map(|ids: [&str; 4]| ids.map(|id| Locale::parse(id).expect("supported locale")))
+            .expect("one locale per catalog")
+    })
+}
+fn catalogs() -> &'static Catalogs<'static, 'static> {
+    static ROWS: OnceLock<[Vec<Message<'static>>; 4]> = OnceLock::new();
+    static TABLES: OnceLock<[Catalog<'static>; 4]> = OnceLock::new();
+    static CATALOGS_INDEX: OnceLock<Catalogs<'static, 'static>> = OnceLock::new();
+    let rows = ROWS.get_or_init(|| {
+        CATALOGS.map(|source| {
+            source
+                .lines()
+                .map(|line| {
+                    let (key, text) = line.split_once('\t').expect("catalog row");
+                    Message::text(key, text)
+                })
+                .collect()
+        })
+    });
+    let tables = TABLES.get_or_init(|| {
+        std::array::from_fn(|index| {
+            Catalog::new(locales()[index], &rows[index]).expect("valid embedded catalog")
+        })
+    });
+    CATALOGS_INDEX
+        .get_or_init(|| Catalogs::new(tables, &locales()[2..3]).expect("English fallback"))
+}
 pub fn tr(key: &'static str) -> &'static str {
-    CATALOGS[ACTIVE.load(Ordering::Relaxed) as usize]
-        .lines()
-        .filter_map(|line| line.split_once('\t'))
-        .find_map(|(id, text)| (id == key).then_some(text))
+    let locale = locales()[ACTIVE.load(Ordering::Relaxed) as usize];
+    catalogs()
+        .lookup(locale, key)
+        .ok()
+        .and_then(|message| message.text())
         .unwrap_or(key)
 }
 pub fn message(key: &'static str, values: &[(&str, &str)]) -> String {
-    let mut text = tr(key).to_owned();
-    for (key, value) in values {
-        text = text.replace(&format!("{{{key}}}"), value);
+    let template = tr(key);
+    let arguments: Vec<_> = values
+        .iter()
+        .map(|(name, value)| Argument::new(name, value))
+        .collect();
+    let mut result = String::new();
+    match zi18n::format_to(&mut result, template, &arguments) {
+        Ok(()) => result,
+        Err(_) => template.to_owned(),
     }
-    text
 }
 #[cfg(test)]
 mod tests {
@@ -83,6 +125,7 @@ mod tests {
     use std::collections::BTreeSet;
     #[test]
     fn catalogs_have_same_complete_keys() {
+        let _ = catalogs();
         let expected = CATALOGS[0]
             .lines()
             .map(|l| l.split_once('\t').unwrap().0)

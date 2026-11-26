@@ -1,5 +1,27 @@
 use crate::view_state::{CatalogState, GatewayState, OverviewAction};
 use crate::*;
+fn provider_title<'a>(id: &'a str, endpoint: &'a str, plugin: &str) -> &'a str {
+    let known = match plugin {
+        "codex" => Some("OpenAI Codex"),
+        "copilot" => Some("GitHub Copilot"),
+        "cursor" => Some("Cursor"),
+        "devin" => Some("Devin"),
+        _ => None,
+    };
+    if let Some(name) = known {
+        return name;
+    }
+    if id.starts_with("plugin-p-") || id.starts_with("p-") {
+        return endpoint
+            .split_once("://")
+            .map(|(_, rest)| rest)
+            .and_then(|rest| rest.split('/').next())
+            .filter(|host| !host.is_empty())
+            .unwrap_or(id);
+    }
+    id
+}
+
 impl App {
     pub(super) fn overview(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let gateway = view_state::gateway_state(&self.state);
@@ -13,8 +35,7 @@ impl App {
 
         let top = 126.;
         let panel = Rect::new(x, top, width, 202.);
-        c.rect(panel, 8., LINE);
-        c.rect(panel.inset(1.), 7., SURFACE);
+        card(c, panel);
         brand(c, Rect::new(x + 22., top + 22., 40., 40.), SURFACE);
         let heading = match setup {
             Some(core_install_ui::SetupStep::Initialize) => tr("setup.config_needed"),
@@ -48,7 +69,7 @@ impl App {
         c.rect(
             Rect::new(status_x - 12., top + 32., 5., 5.),
             2.5,
-            if healthy { GREEN } else { MUTED },
+            if healthy { SUCCESS } else { MUTED },
         );
         c.text(
             status,
@@ -56,7 +77,7 @@ impl App {
             top + 26.,
             13,
             false,
-            if healthy { GREEN } else { MUTED },
+            if healthy { SUCCESS } else { MUTED },
         );
         c.ellipsis(
             view_state::endpoint(&self.state).unwrap_or(tr("overview.endpoint_unknown")),
@@ -274,70 +295,116 @@ impl App {
             false,
             MUTED,
         );
-        let rows = ((c.height - 285.) / 80.).max(1.) as usize;
+        let rows = ((c.height - 264.) / 81.).max(1.) as usize;
         self.scroll = self.scroll.min(items.len().saturating_sub(rows));
-        let visible = items.len().saturating_sub(self.scroll).min(rows);
-        c.rect(Rect::new(x, 211., width, visible as f32 * 80.), 8., SURFACE);
         let mut selected_provider = None;
+        let mut selected_models = None;
         for (index, item) in items.iter().enumerate().skip(self.scroll).take(rows) {
-            let y = 211. + (index - self.scroll) as f32 * 80.;
-            let r = Rect::new(x + 1., y + 1., width - 2., 78.);
-            if self
-                .ui
-                .button(c, 10000 + index as u64, r, "", Style::Quiet, enabled)
-            {
+            let y = 208. + (index - self.scroll) as f32 * 81.;
+            let r = Rect::new(x, y, width, 72.);
+            c.rect(r, 9., SURFACE);
+            let id = item.get("name").text();
+            let endpoint = item.get("base_url").text();
+            let title = provider_title(id, endpoint, item.get("plugin").text());
+            let model_label = tr("providers.browse_models");
+            let model_width = (c.measure(model_label, 13, false) + 32.).clamp(100., 166.);
+            let lane = width - model_width - 48.;
+            if self.ui.button(
+                c,
+                10000 + index as u64 * 2,
+                Rect::new(x + 1., y + 1., lane + 20., 70.),
+                "",
+                Style::Quiet,
+                enabled,
+            ) {
                 selected_provider = Some((**item).clone());
             }
+            let protocol = item.get("protocol").text();
+            let tag_width = if width > 710. {
+                c.measure(protocol, 12, false) + 18.
+            } else {
+                0.
+            };
             c.ellipsis(
-                value(item, "name", tr("providers.unnamed")),
-                x + 22.,
-                y + 16.,
-                width - 220.,
+                title,
+                x + 19.,
+                y + 11.,
+                lane - 27. - tag_width,
                 17,
                 true,
                 TEXT,
             );
-            c.ellipsis(
-                value(item, "base_url", tr("providers.no_address")),
-                x + 22.,
-                y + 46.,
-                width - 220.,
-                13,
-                false,
-                MUTED,
-            );
-            let protocol = match item.get("protocol").text() {
-                "chat" => "Chat",
-                "responses" => "Responses",
-                "anthropic" => "Claude",
-                "gemini" => "Gemini",
-                "completions" => "Completions",
-                "interactions" => "Interactions",
-                other => other,
+            let subtitle = if title == id {
+                endpoint.to_owned()
+            } else {
+                format!("{id}  ·  {endpoint}")
             };
-            let pill = (c.measure(protocol, 12, false) + 20.).round();
-            let px = x + width - pill - 53.;
-            c.rect(Rect::new(px, y + 28., pill, 25.), 6., BG);
-            c.text(protocol, px + 10., y + 33., 12, false, MUTED);
-            c.line(
-                (x + width - 29., y + 35.),
-                (x + width - 25., y + 39.),
-                1.5,
-                MUTED,
-            );
-            c.line(
-                (x + width - 25., y + 39.),
-                (x + width - 29., y + 43.),
-                1.5,
-                MUTED,
-            );
-            if index - self.scroll + 1 < visible {
-                c.rect(Rect::new(x + 22., y + 79., width - 44., 1.), 0., LINE);
+            c.ellipsis(&subtitle, x + 19., y + 41., lane - 12., 12, false, MUTED);
+            if tag_width > 0. {
+                c.rect(
+                    Rect::new(x + lane - tag_width, y + 12., tag_width, 22.),
+                    5.,
+                    BG,
+                );
+                c.text(
+                    protocol,
+                    x + lane - tag_width + 9.,
+                    y + 16.,
+                    12,
+                    false,
+                    MUTED,
+                );
             }
+            if self.ui.button(
+                c,
+                10001 + index as u64 * 2,
+                Rect::new(x + width - model_width - 17., y + 17., model_width, 38.),
+                model_label,
+                Style::Secondary,
+                enabled && !id.is_empty(),
+            ) {
+                selected_models = Some((id.to_owned(), title.to_owned()));
+            }
+        }
+        if items.len() > rows {
+            if self.ui.button(
+                c,
+                402,
+                Rect::new(x + width - 84., c.height - 82., 38., 31.),
+                "‹",
+                Style::Quiet,
+                enabled && self.scroll > 0,
+            ) {
+                self.scroll = self.scroll.saturating_sub(rows);
+                self.repaint = true;
+            }
+            if self.ui.button(
+                c,
+                403,
+                Rect::new(x + width - 40., c.height - 82., 38., 31.),
+                "›",
+                Style::Quiet,
+                enabled && self.scroll + rows < items.len(),
+            ) {
+                self.scroll += rows;
+                self.repaint = true;
+            }
+        }
+        if let Some((provider, label)) = selected_models {
+            self.open_provider_models(provider, label);
+            return;
         }
         if let Some(item) = selected_provider {
             self.clear_key();
+            let authentication = PROVIDER_AUTH
+                .iter()
+                .position(|auth| *auth == item.get("auth").text())
+                .unwrap_or(0);
             self.provider = ProviderForm {
+                authentication,
+                original_authentication: authentication,
+                header_refs: item.get("header_env").text().into(),
+                original_header_refs: item.get("header_env").text().into(),
                 name: value(&item, "name", "provider").into(),
                 url: item.get("base_url").text().into(),
                 model: item.get("model").text().into(),
@@ -464,7 +531,7 @@ impl App {
                 TEXT,
             );
             let status_color = if configured && writable && !changed {
-                GREEN
+                SUCCESS
             } else {
                 MUTED
             };
@@ -681,7 +748,7 @@ impl App {
             let row = Rect::new(x, r.y + 154. + position as f32 * 54., inner, 48.);
             let selected = picker.selected == route.id;
             if selected {
-                c.rect(row, 6., BLUE_PALE);
+                c.rect(row, 6., ACCENT_SOFT);
             }
             if self
                 .ui
@@ -690,7 +757,7 @@ impl App {
                 picker.selected = route.id.clone();
             }
             if selected {
-                c.rect(Rect::new(row.x + 3., row.y + 12., 3., 24.), 1.5, BLUE);
+                c.rect(Rect::new(row.x + 3., row.y + 12., 3., 24.), 1.5, ACCENT);
             }
             c.ellipsis(
                 &route.label,
@@ -863,7 +930,7 @@ impl App {
                 y + 28.,
                 13,
                 false,
-                if on { GREEN } else { MUTED },
+                if on { SUCCESS } else { MUTED },
             );
             c.text("›", x + width - 31., y + 24., 24, false, MUTED);
         }
@@ -893,8 +960,12 @@ impl App {
             let y = 139. + index as f32 * 115.;
             let selected = mode == *id;
             let r = Rect::new(x, y, width, 99.);
-            c.rect(r, 8., if selected { BLUE_PALE } else { LINE });
-            c.rect(r.inset(1.), 7., if selected { BLUE_PALE } else { SURFACE });
+            c.rect(r, 8., if selected { ACCENT_SOFT } else { LINE });
+            c.rect(
+                r.inset(1.),
+                7.,
+                if selected { ACCENT_SOFT } else { SURFACE },
+            );
             if !selected
                 && self
                     .ui
@@ -905,11 +976,11 @@ impl App {
             c.rect(
                 Rect::new(x + 24., y + 27., 20., 20.),
                 10.,
-                if selected { BLUE } else { 0x9aa0a6ff },
+                if selected { ACCENT } else { MUTED },
             );
             c.rect(Rect::new(x + 26., y + 29., 16., 16.), 8., SURFACE);
             if selected {
-                c.rect(Rect::new(x + 30., y + 33., 8., 8.), 4., BLUE);
+                c.rect(Rect::new(x + 30., y + 33., 8., 8.), 4., ACCENT);
             }
             c.text(title, x + 62., y + 20., 19, true, TEXT);
             c.text(description, x + 62., y + 57., 14, false, MUTED);
@@ -920,7 +991,7 @@ impl App {
                     y + 27.,
                     12,
                     true,
-                    BLUE,
+                    ACCENT,
                 );
             }
         }

@@ -303,3 +303,31 @@ providers.oauth_code_help	請輸入瀏覽器顯示的驗證碼。
 providers.oauth_update_gateway	請更新閘道以儲存 OAuth 供應商。
 providers.oauth_other_plugin	使用其他 OAuth 外掛
 providers.oauth_invalid_name	供應商 ID 只支援英文字母、數字、點、連字號及底線。
+settings.custom_colors	自訂配色
+settings.colors_help	輸入十六進位色碼，即時預覽目前模式。
+settings.color_background	背景
+settings.color_surface	卡片與面板
+settings.color_text	文字
+settings.color_muted	次要文字
+settings.color_accent	強調色
+settings.color_success	成功狀態
+settings.color_danger	錯誤狀態
+settings.colors_invalid	每一項請填入六位十六進位色碼。
+settings.colors_reset	恢復預設
+settings.colors_save	儲存配色
+providers.browse_models	瀏覽模型
+providers.search_models	搜尋模型名稱或 ID…
+providers.catalog_local	閘道已設定的模型
+providers.catalog_upstream	上游模型目錄
+providers.models_empty	沒有符合的模型
+providers.copy_model	複製 ID
+providers.advanced	進階設定
+providers.auth_env	API 金鑰環境變數
+providers.route_alias	模型路由別名
+providers.auth_method	驗證方式
+providers.auth_none	無驗證
+providers.header_refs	標頭參照（標頭=環境變數）
+providers.advanced_upgrade	更新閘道後即可編輯驗證方式與標頭參照。
+providers.models_range	第 {start}–{end} 項，共 {total} 個模型
+providers.models_loaded	模型目錄已載入
+providers.models_failed	無法載入模型目錄

@@ -1,5 +1,6 @@
 //! Presentation names never replace the backend's stable tool IDs.
-use zgpui::native::{Canvas, Rect, Theme, colors::*};
+use crate::ink::ACCENT;
+use zgpui::native::{Canvas, Rect, colors::*};
 
 pub fn display_name(id: &str) -> &str {
     match id {
@@ -26,24 +27,8 @@ pub fn display_name(id: &str) -> &str {
 pub fn draw(c: &mut Canvas<'_>, id: &str, r: Rect) {
     c.rect(r, r.w * 0.24, BG);
     let inner = r.inset(r.w * 0.16);
-    let dark = c.theme == Theme::Dark;
     let color = match id {
-        "claude" => {
-            if dark {
-                0xe8a589ff
-            } else {
-                0xb95c39ff
-            }
-        }
-        "gemini" | "vscode" => BLUE,
-        "qwen" => {
-            if dark {
-                0xb9a3ffff
-            } else {
-                0x6845c0ff
-            }
-        }
-        "aider" => GREEN,
+        "claude" | "gemini" | "qwen" | "vscode" | "aider" => ACCENT,
         _ => TEXT,
     };
     if let Some(mesh) = crate::agent_logos::get(id) {

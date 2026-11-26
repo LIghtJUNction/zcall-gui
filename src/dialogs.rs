@@ -1,11 +1,10 @@
 use crate::provider_oauth::{self, LMM_DOMAIN, LMM_PLUGIN, LMM_REVISION, LMM_SOURCE};
 use crate::view_state::GatewayState;
 use crate::*;
-fn sheet(c: &mut Canvas<'_>, heading: &str) -> Rect {
-    c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x20212438);
+pub(super) fn sheet(c: &mut Canvas<'_>, heading: &str) -> Rect {
+    c.rect(Rect::new(0., 0., c.width, c.height), 0., 0x00000038);
     let r = Rect::new((c.width - 468.).max(0.), 0., 468., c.height);
     c.rect(r, 0., SURFACE);
-    c.rect(Rect::new(r.x, 0., 1., r.h), 0., LINE);
     c.text(heading, r.x + 32., 38., 17, true, TEXT);
     r
 }
@@ -41,6 +40,8 @@ impl App {
             c,
             if self.provider_panel == 1 {
                 tr("providers.details")
+            } else if self.provider_panel == 4 {
+                tr("providers.advanced")
             } else if self.provider_edit {
                 tr("providers.edit")
             } else {
@@ -65,6 +66,10 @@ impl App {
         }
         if self.provider.oauth {
             self.oauth_provider_dialog(c, r, enabled);
+            return;
+        }
+        if self.provider_panel == 4 {
+            self.provider_advanced(c, r, enabled);
             return;
         }
         if self.provider_panel == 1 {
@@ -101,13 +106,37 @@ impl App {
                 let name = self.provider.name.clone();
                 self.action("Test provider", words(&["providers", "test", &name]), None);
             }
-            c.rect(Rect::new(x, r.h - 204., width, 1.), 0., LINE);
-            c.text(tr("providers.remove_title"), x, r.h - 181., 14, true, TEXT);
-            c.text(tr("providers.remove_help"), x, r.h - 152., 13, false, MUTED);
+            if self.ui.button(
+                c,
+                9104,
+                Rect::new(x, 390., 180., 40.),
+                tr("providers.browse_models"),
+                Style::Secondary,
+                enabled,
+            ) {
+                self.open_provider_models(self.provider.name.clone(), self.provider.name.clone());
+                return;
+            }
+            c.text(
+                tr("providers.remove_title"),
+                x,
+                (r.h - 181.).max(474.),
+                14,
+                true,
+                TEXT,
+            );
+            c.text(
+                tr("providers.remove_help"),
+                x,
+                (r.h - 152.).max(500.),
+                13,
+                false,
+                MUTED,
+            );
             if self.ui.button(
                 c,
                 9103,
-                Rect::new(x, r.h - 101., 140., 40.),
+                Rect::new(x, (r.h - 101.).max(532.), 140., 40.),
                 tr("action.remove_provider"),
                 Style::Danger,
                 enabled,
@@ -119,9 +148,9 @@ impl App {
                 );
             }
             if self.failed {
-                c.ellipsis(&self.notice, x, 412., width, 13, false, RED);
+                c.ellipsis(&self.notice, x, 439., width, 13, false, RED);
             } else if self.busy {
-                c.text(tr("status.testing"), x, 412., 14, false, MUTED);
+                c.text(tr("status.testing"), x, 439., 14, false, MUTED);
             }
         } else {
             let basics = self.provider_panel == 2;
@@ -230,6 +259,21 @@ impl App {
                     enabled,
                 );
             }
+            if !basics
+                && self.ui.button(
+                    c,
+                    9140,
+                    Rect::new(x, 441., width, 37.),
+                    tr("providers.advanced"),
+                    Style::Secondary,
+                    enabled,
+                )
+            {
+                self.provider_panel = 4;
+                self.ui = Ui::default();
+                self.repaint = true;
+                return;
+            }
             self.drawer_notice(c, r);
             if self.ui.button(
                 c,
@@ -271,7 +315,7 @@ impl App {
                 } else {
                     let mut args = words(&[
                         "providers",
-                        "add",
+                        if self.provider_edit { "edit" } else { "add" },
                         self.provider.name.trim(),
                         "--base-url",
                         self.provider.url.trim(),
@@ -280,8 +324,20 @@ impl App {
                     ]);
                     if !self.provider.model.trim().is_empty() {
                         args.extend(words(&["--model", self.provider.model.trim()]));
+                        if !self.provider.route.trim().is_empty() {
+                            args.extend(words(&["--route", self.provider.route.trim()]));
+                        }
                     }
-                    if !self.provider.environment.is_empty() {
+                    if self.provider.authentication != self.provider.original_authentication {
+                        args.extend(words(&[
+                            "--auth",
+                            PROVIDER_AUTH[self.provider.authentication],
+                        ]));
+                    }
+                    if self.provider.header_refs != self.provider.original_header_refs {
+                        args.extend(words(&["--header-env", self.provider.header_refs.trim()]));
+                    }
+                    if self.provider.key.is_empty() && !self.provider.environment.is_empty() {
                         args.extend(words(&["--api-key-env", &self.provider.environment]));
                     }
                     let secret = if self.provider.key.is_empty() {
@@ -312,13 +368,116 @@ impl App {
                         14,
                         false,
                         if i == self.provider.protocol {
-                            BLUE
+                            ACCENT
                         } else {
                             TEXT
                         },
                     );
                 }
             }
+        }
+    }
+    fn provider_advanced(&mut self, c: &mut Canvas<'_>, r: Rect, enabled: bool) {
+        let x = r.x + 32.;
+        let width = r.w - 64.;
+        let supported = self
+            .state
+            .get("providers")
+            .get("advanced_options")
+            .boolean();
+        c.text(tr("providers.advanced"), x, 96., 25, true, TEXT);
+        field(
+            &mut self.ui,
+            c,
+            9170,
+            x,
+            144.,
+            width,
+            tr("providers.auth_env"),
+            &mut self.provider.environment,
+            "PROVIDER_API_KEY",
+            false,
+            enabled,
+        );
+        field(
+            &mut self.ui,
+            c,
+            9171,
+            x,
+            230.,
+            width,
+            tr("providers.route_alias"),
+            &mut self.provider.route,
+            "",
+            false,
+            enabled,
+        );
+        c.text(tr("providers.auth_method"), x, 316., 14, true, TEXT);
+        let names = [
+            tr("settings.system"),
+            "Bearer",
+            "x-api-key",
+            "x-goog-api-key",
+            tr("providers.auth_none"),
+        ];
+        let column = (width - 12.) / 3.;
+        for (index, name) in names.into_iter().enumerate() {
+            if self.ui.button(
+                c,
+                9172 + index as u64,
+                Rect::new(
+                    x + (index % 3) as f32 * (column + 6.),
+                    339. + (index / 3) as f32 * 32.,
+                    column,
+                    29.,
+                ),
+                name,
+                if self.provider.authentication == index {
+                    Style::Primary
+                } else {
+                    Style::Secondary
+                },
+                enabled && supported,
+            ) {
+                self.provider.authentication = index;
+                self.repaint = true;
+            }
+        }
+        field(
+            &mut self.ui,
+            c,
+            9177,
+            x,
+            413.,
+            width,
+            tr("providers.header_refs"),
+            &mut self.provider.header_refs,
+            "X-Client=CLIENT_ID, X-Project=PROJECT_ID",
+            false,
+            enabled && supported,
+        );
+        if !supported {
+            c.ellipsis(
+                tr("providers.advanced_upgrade"),
+                x,
+                495.,
+                width,
+                13,
+                false,
+                MUTED,
+            );
+        }
+        if self.ui.button(
+            c,
+            9178,
+            Rect::new(x, (r.h - 62.).max(520.), 136., 40.),
+            tr("action.back"),
+            Style::Primary,
+            enabled,
+        ) {
+            self.provider_panel = 3;
+            self.ui = Ui::default();
+            self.repaint = true;
         }
     }
     fn provider_endpoint(&mut self, c: &mut Canvas<'_>, x: f32, y: f32, width: f32, enabled: bool) {
@@ -668,7 +827,7 @@ impl App {
                 147.,
                 14,
                 false,
-                if on { GREEN } else { MUTED },
+                if on { SUCCESS } else { MUTED },
             );
             c.text(tr("plugins.path"), x, 194., 13, true, MUTED);
             c.ellipsis(item.get("path").text(), x, 224., width, 13, false, TEXT);
@@ -1090,6 +1249,25 @@ impl App {
                 changed = true;
             }
         }
+        if self.ui.button(
+            c,
+            9420,
+            Rect::new(x, 280., width, 33.),
+            tr("settings.custom_colors"),
+            Style::Secondary,
+            true,
+        ) {
+            let theme = self.preferences.resolved_theme();
+            self.failed = false;
+            let preview = self.preferences.colors(theme);
+            self.palette_editor = Some(ink::Editor {
+                theme,
+                preview,
+                fields: preview.fields(),
+            });
+            self.ui = Ui::default();
+            self.repaint = true;
+        }
         c.text(tr("settings.language"), x, 316., 14, true, TEXT);
         for (index, language) in i18n::LANGUAGES.iter().enumerate() {
             let selected = self.preferences.language == *language;
@@ -1127,6 +1305,103 @@ impl App {
                 }
             }
             self.repaint = true;
+        }
+    }
+    pub(super) fn palette_dialog(&mut self, c: &mut Canvas<'_>) {
+        let r = sheet(c, tr("settings.custom_colors"));
+        let x = r.x + 32.;
+        let width = r.w - 64.;
+        let editor = self
+            .palette_editor
+            .as_mut()
+            .expect("palette editor is open");
+        let label = if editor.theme == zgpui::native::Theme::Dark {
+            "settings.dark"
+        } else {
+            "settings.light"
+        };
+        c.text(tr(label), x, 98., 25, true, TEXT);
+        c.ellipsis(tr("settings.colors_help"), x, 134., width, 13, false, MUTED);
+        let column = (width - 16.) / 2.;
+        for (index, (label, field)) in ink::COLOR_LABELS.iter().zip(&mut editor.fields).enumerate()
+        {
+            let left = x + (index % 2) as f32 * (column + 16.);
+            let top = 175. + (index / 2) as f32 * 62.;
+            c.ellipsis(tr(label), left, top, column, 13, true, TEXT);
+            if self.ui.input(
+                c,
+                9500 + index as u64,
+                Rect::new(left, top + 21., column, 34.),
+                field,
+                "#RRGGBB",
+                false,
+                true,
+            ) {
+                self.repaint = true;
+                self.failed = false;
+            }
+        }
+
+        let colors = ink::Colors::parse(&editor.fields);
+        if let Some(colors) = colors {
+            editor.preview = colors;
+        }
+        let bottom = (r.h - 69.).clamp(463., 500.);
+        if colors.is_none() || self.failed {
+            let text = if colors.is_none() {
+                tr("settings.colors_invalid")
+            } else {
+                &self.notice
+            };
+            c.ellipsis(text, x, bottom - 25., width, 13, false, RED);
+        }
+        if self.ui.button(
+            c,
+            9520,
+            Rect::new(x, bottom, 132., 39.),
+            tr("settings.colors_reset"),
+            Style::Secondary,
+            true,
+        ) {
+            editor.preview = ink::Colors::defaults(editor.theme);
+            editor.fields = editor.preview.fields();
+            self.failed = false;
+            self.repaint = true;
+        }
+        if self.ui.button(
+            c,
+            9521,
+            Rect::new(x + width - 216., bottom, 100., 39.),
+            tr("action.cancel"),
+            Style::Quiet,
+            true,
+        ) {
+            self.palette_editor = None;
+            self.ui = Ui::default();
+            self.repaint = true;
+        } else if self.ui.button(
+            c,
+            9522,
+            Rect::new(x + width - 104., bottom, 104., 39.),
+            tr("settings.colors_save"),
+            Style::Primary,
+            colors.is_some(),
+        ) && let Some(colors) = colors
+        {
+            match self.preferences.save_colors(editor.theme, colors) {
+                Ok(()) => {
+                    self.palette_editor = None;
+                    self.ui = Ui::default();
+                    self.notice = tr("settings.saved").into();
+                    self.failed = false;
+                    self.repaint = true;
+                }
+                Err(error) => {
+                    self.notice = i18n::message("error.action", &[("error", &error)]);
+                    self.failed = true;
+                    self.repaint = true;
+                }
+            }
         }
     }
 }

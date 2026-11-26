@@ -79,6 +79,10 @@ The previews use synthetic local configuration in a private native window.
 
 [Providers in dark mode](docs/evidence-archive-20261120.md)
 
+Choose **Custom colors** in Settings to preview and save separate light and dark palettes. Each palette accepts six-digit hex colors for the background, surfaces, text, accent and status colors.
+
+In Providers, **Browse models** opens the upstream catalog or the models already configured for a plugin provider. Search and copy model IDs from the list. The provider form's **Advanced options** include a credential environment variable, a model route alias, an authentication method and environment-backed request headers.
+
 ## Updates
 
 ### Gateway and native plugins

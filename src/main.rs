@@ -1,4 +1,5 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+use ink::{ACCENT, ACCENT_SOFT, SUCCESS};
 mod agent_identity;
 mod agent_logos;
 mod backend;
@@ -11,6 +12,7 @@ mod ink;
 mod json;
 mod package_update;
 mod pages;
+mod provider_models;
 mod provider_oauth;
 mod settings;
 mod updater;
@@ -52,6 +54,11 @@ struct ProviderForm {
     url: String,
     model: String,
     environment: String,
+    route: String,
+    authentication: usize,
+    header_refs: String,
+    original_authentication: usize,
+    original_header_refs: String,
     key: String,
     protocol: usize,
     oauth: bool,
@@ -109,6 +116,7 @@ struct App {
     oauth_code: String,
     oauth_instructions: String,
     provider_query: String,
+    provider_models: Option<provider_models::Browser>,
     plugin: PluginForm,
     route_picker: Option<AgentRoutePicker>,
     confirm: Option<Action>,
@@ -126,6 +134,7 @@ struct App {
     protocol_menu: bool,
     preferences: settings::Preferences,
     settings_panel: bool,
+    palette_editor: Option<ink::Editor>,
     repaint: bool,
     executable: Option<std::path::PathBuf>,
     privacy_restart_pending: bool,
@@ -141,6 +150,7 @@ fn human(s: &str) -> &str {
     match s {
         "OAuth provider" => tr("providers.oauth_login"),
         "Save provider" => tr("action.save_provider"),
+        "Fetch provider models" => tr("providers.browse_models"),
         "Test provider" => tr("action.test_provider"),
         "Sync AI tool status" => tr("action.detect_agents"),
         "Set privacy mode" => tr("action.privacy"),
@@ -181,6 +191,7 @@ impl App {
             oauth_code: String::new(),
             oauth_instructions: String::new(),
             provider_query: String::new(),
+            provider_models: None,
             plugin: PluginForm::default(),
             route_picker: None,
             confirm: None,
@@ -198,6 +209,7 @@ impl App {
             protocol_menu: false,
             preferences,
             settings_panel: false,
+            palette_editor: None,
             repaint: false,
             executable: std::env::current_exe().ok(),
             privacy_restart_pending: false,
@@ -205,6 +217,7 @@ impl App {
     }
     fn modal(&self) -> bool {
         self.confirm.is_some()
+            || self.provider_models.is_some()
             || self.provider_panel > 0
             || self.plugin_panel > 0
             || self.service_panel
@@ -332,6 +345,18 @@ impl App {
                 self.oauth_input = None;
                 self.oauth_code.clear();
                 self.oauth_instructions.clear();
+            }
+            if reply.label == "Fetch provider models" {
+                if let Some(browser) = self.provider_models.as_mut() {
+                    self.failed = !browser.accept(reply.result);
+                    self.notice = tr(if self.failed {
+                        "providers.models_failed"
+                    } else {
+                        "providers.models_loaded"
+                    })
+                    .into();
+                }
+                continue;
             }
             match reply.result {
                 Ok(data) if reply.label == "refresh" => {
@@ -557,6 +582,10 @@ impl App {
             } else if self.route_picker.is_some() {
                 self.route_picker = None;
                 self.ui = Ui::default();
+            } else if self.provider_models.take().is_some() || self.palette_editor.take().is_some()
+            {
+                self.ui = Ui::default();
+                self.repaint = true;
             } else {
                 self.confirm = None;
                 self.provider_panel = 0;
@@ -574,6 +603,12 @@ impl App {
                 } else {
                     picker.scroll.saturating_sub(1)
                 };
+            } else if let Some(browser) = self.provider_models.as_mut() {
+                if *delta > 0 {
+                    browser.scroll = browser.scroll.saturating_add(1);
+                } else {
+                    browser.scroll = browser.scroll.saturating_sub(1);
+                }
             } else if !self.modal() {
                 self.scroll = if *delta > 0 {
                     self.scroll.saturating_add(1)
@@ -585,7 +620,6 @@ impl App {
         self.ui.begin(event);
         let sidebar = 166.;
         c.rect(Rect::new(0., 0., sidebar, c.height), 0., SURFACE);
-        c.rect(Rect::new(sidebar - 1., 0., 1., c.height), 0., LINE);
         brand(c, Rect::new(18., 26., 38., 38.), SURFACE);
         c.text("zcall", 64., 33., 21, true, TEXT);
         c.ellipsis(
@@ -602,26 +636,27 @@ impl App {
             let r = Rect::new(11., 121. + index as f32 * 48., 144., 42.);
             let selected = self.page == index;
             if selected {
-                c.rect(r, 6., BLUE_PALE);
+                c.rect(r, 6., ACCENT_SOFT);
             }
-            if self
-                .ui
-                .button(c, 10 + index as u64, r, "", Style::Quiet, !modal)
+            if !modal
+                && self
+                    .ui
+                    .button(c, 10 + index as u64, r, "", Style::Quiet, true)
             {
                 self.page = index;
                 self.scroll = 0;
                 self.repaint = true;
             }
             if selected {
-                c.rect(Rect::new(r.x + 1., r.y + 13., 3., 16.), 1.5, BLUE);
+                c.rect(Rect::new(r.x + 1., r.y + 13., 3., 16.), 1.5, ACCENT);
             }
             icon(
                 c,
                 index,
                 r.x + 16.,
                 r.y + 13.,
-                if selected { BLUE } else { MUTED },
-                if selected { BLUE_PALE } else { SURFACE },
+                if selected { ACCENT } else { MUTED },
+                if selected { ACCENT_SOFT } else { SURFACE },
             );
             c.text(
                 tr(label),
@@ -629,7 +664,7 @@ impl App {
                 r.y + 11.,
                 16,
                 selected,
-                if selected { BLUE } else { TEXT },
+                if selected { ACCENT } else { TEXT },
             );
         }
         if self.ui.button(
@@ -730,16 +765,15 @@ impl App {
             0.,
             SURFACE,
         );
-        c.rect(Rect::new(x, c.height - 44., width, 1.), 0., LINE);
         c.rect(
             Rect::new(x, c.height - 25., 6., 6.),
             3.,
             if self.failed {
                 RED
             } else if self.busy {
-                BLUE
+                ACCENT
             } else {
-                0x9aa0a6ff
+                MUTED
             },
         );
         c.ellipsis(
@@ -761,7 +795,9 @@ impl App {
         ) {
             self.refresh();
         }
-        if self.provider_panel > 0 {
+        if self.provider_models.is_some() {
+            self.provider_models_dialog(c);
+        } else if self.provider_panel > 0 {
             self.provider_dialog(c);
         }
         if self.plugin_panel > 0 {
@@ -770,7 +806,9 @@ impl App {
         if self.service_panel {
             self.service_dialog(c);
         }
-        if self.settings_panel {
+        if self.palette_editor.is_some() {
+            self.palette_dialog(c);
+        } else if self.settings_panel {
             self.settings_dialog(c);
         }
         if self.route_picker.is_some() {
@@ -785,6 +823,8 @@ impl App {
         self.ui.end();
     }
 }
+const PROVIDER_AUTH: [&str; 5] = ["default", "bearer", "x-api-key", "x-goog-api-key", "none"];
+
 fn protocols() -> [&'static str; 6] {
     [
         "chat",
@@ -806,8 +846,7 @@ fn protocol_name(index: usize) -> &'static str {
     ][index]
 }
 fn card(c: &mut Canvas<'_>, r: Rect) {
-    c.rect(r, 8., LINE);
-    c.rect(r.inset(1.), 7., SURFACE);
+    c.rect(r, 10., SURFACE);
 }
 fn empty(c: &mut Canvas<'_>, r: Rect, title: &str, detail: &str) {
     c.rect(r, 8., SURFACE);
@@ -1111,7 +1150,12 @@ fn run() -> Result<(), String> {
         if dirty || event.is_some() {
             let theme = app.preferences.resolved_theme();
             window.set_theme(theme);
-            window.set_palette(ink::palette(theme));
+            let colors = app
+                .palette_editor
+                .as_ref()
+                .map(|editor| editor.preview)
+                .unwrap_or_else(|| app.preferences.colors(theme));
+            window.set_palette(colors.palette());
             {
                 let mut c = window.begin(BG);
                 app.draw(&mut c, event.take());

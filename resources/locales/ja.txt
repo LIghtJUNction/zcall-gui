@@ -303,3 +303,31 @@ providers.oauth_code_help	ブラウザーに表示されたコードを入力し
 providers.oauth_update_gateway	OAuth プロバイダーを保存するにはゲートウェイを更新してください。
 providers.oauth_other_plugin	別の OAuth プラグインを使う
 providers.oauth_invalid_name	プロバイダー ID には英数字、ピリオド、ハイフン、アンダースコアを使用できます。
+settings.custom_colors	カスタム配色
+settings.colors_help	16進カラーを入力して現在の外観をプレビューします。
+settings.color_background	背景
+settings.color_surface	パネル
+settings.color_text	文字
+settings.color_muted	補助文字
+settings.color_accent	アクセント
+settings.color_success	成功
+settings.color_danger	エラー
+settings.colors_invalid	各欄に6桁の16進カラーを入力してください。
+settings.colors_reset	既定に戻す
+settings.colors_save	配色を保存
+providers.browse_models	モデルを閲覧
+providers.search_models	モデル名または ID を検索…
+providers.catalog_local	ゲートウェイに設定済みのモデル
+providers.catalog_upstream	上流のモデル一覧
+providers.models_empty	一致するモデルがありません
+providers.copy_model	ID をコピー
+providers.advanced	詳細設定
+providers.auth_env	API キーの環境変数
+providers.route_alias	モデルのルート別名
+providers.auth_method	認証方式
+providers.auth_none	認証なし
+providers.header_refs	ヘッダー参照（ヘッダー=環境変数）
+providers.advanced_upgrade	認証とヘッダー参照の編集にはゲートウェイの更新が必要です。
+providers.models_range	{total} モデル中 {start}–{end} 件
+providers.models_loaded	モデル一覧を読み込みました
+providers.models_failed	モデル一覧を読み込めませんでした

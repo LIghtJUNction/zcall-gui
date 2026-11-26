@@ -314,14 +314,14 @@ impl App {
         let bar = Rect::new(x, 356., width, 8.);
         c.rect(bar, 4., LINE);
         if total > 0 {
-            c.rect(bar, 4., BLUE_PALE);
+            c.rect(bar, 4., ACCENT_SOFT);
             let input_width = (width as f64 * input_share) as f32;
             if input_width > 0. {
-                c.rect(Rect::new(x, 356., input_width, 8.), 4., BLUE);
+                c.rect(Rect::new(x, 356., input_width, 8.), 4., ACCENT);
             }
         }
         for (index, (label, tokens, color)) in [
-            ("usage.input", summary.input, BLUE),
+            ("usage.input", summary.input, ACCENT),
             ("usage.output", summary.output, MUTED),
         ]
         .iter()

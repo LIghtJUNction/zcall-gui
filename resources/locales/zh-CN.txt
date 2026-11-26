@@ -303,3 +303,31 @@ providers.oauth_code_help	请输入浏览器显示的验证码。
 providers.oauth_update_gateway	请更新网关以保存 OAuth 供应商。
 providers.oauth_other_plugin	使用其他 OAuth 插件
 providers.oauth_invalid_name	供应商 ID 只支持英文字母、数字、点、连字符和下划线。
+settings.custom_colors	自定义配色
+settings.colors_help	输入十六进制颜色，实时预览当前模式。
+settings.color_background	背景
+settings.color_surface	卡片和面板
+settings.color_text	文字
+settings.color_muted	次要文字
+settings.color_accent	强调色
+settings.color_success	成功状态
+settings.color_danger	错误状态
+settings.colors_invalid	每项需填写六位十六进制颜色。
+settings.colors_reset	恢复默认
+settings.colors_save	保存配色
+providers.browse_models	浏览模型
+providers.search_models	搜索模型名称或 ID…
+providers.catalog_local	网关已配置的模型
+providers.catalog_upstream	上游模型目录
+providers.models_empty	没有匹配的模型
+providers.copy_model	复制 ID
+providers.advanced	高级配置
+providers.auth_env	API 密钥环境变量
+providers.route_alias	模型路由别名
+providers.auth_method	认证方式
+providers.auth_none	无认证
+providers.header_refs	请求头引用（请求头=环境变量）
+providers.advanced_upgrade	更新网关后即可编辑认证方式和请求头引用。
+providers.models_range	第 {start}–{end} 项，共 {total} 个模型
+providers.models_loaded	模型目录已加载
+providers.models_failed	无法加载模型目录

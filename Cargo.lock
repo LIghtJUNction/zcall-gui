@@ -85,6 +85,7 @@ dependencies = [
  "zconv",
  "zgpui",
  "zhex",
+ "zi18n",
  "zsys",
 ]
 
@@ -102,6 +103,11 @@ source = "git+https://github.com/LIghtJUNction/zgpui.git#bd482f6868718b9766840db
 name = "zhex"
 version = "0.1.3"
 source = "git+https://github.com/LIghtJUNction/zhex.git#52515207f9d97a2580182169b611b4763366b328"
+
+[[package]]
+name = "zi18n"
+version = "0.1.0"
+source = "git+https://github.com/LIghtJUNction/zi18n.git#755549f82fa513c4e4f2f5aaf6fdeea8da4a6347"
 
 [[package]]
 name = "zsys"

@@ -215,14 +215,26 @@ class BootstrapTests(unittest.TestCase):
         file = cls.root / "fixture.rs"
         file.write_text(source, encoding="utf-8")
         cls.program = cls.root / ("fixture-bin.exe" if os.name == "nt" else "fixture-bin")
-        rustc = os.environ.get("RUSTC") or shutil.which("rustc")
-        if not rustc:
-            raise RuntimeError("The native fixture requires the release toolchain's rustc")
-        compiled = subprocess.run([rustc, "--edition=2024", str(file), "-o", str(cls.program)],
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120)
-        if compiled.returncode:
-            raise RuntimeError("Offline Rust fixture failed to compile:\n" +
-                               compiled.stderr.decode("utf-8", errors="replace"))
+        manifest = cls.root / "Cargo.toml"
+        manifest.write_text(
+            (ROOT / "Cargo.toml").read_text(encoding="utf-8")
+            + '\n[[bin]]\nname = "zcall-gui-bootstrap-fixture"\npath = "fixture.rs"\n',
+            encoding="utf-8",
+        )
+        shutil.copy2(ROOT / "Cargo.lock", cls.root / "Cargo.lock")
+        shutil.copytree(ROOT / ".cargo", cls.root / ".cargo")
+        metadata = subprocess.check_output(
+            ["cargo", "metadata", "--no-deps", "--format-version", "1", "--locked", "--offline"],
+            cwd=ROOT, text=True,
+        )
+        target = Path(json.loads(metadata)["target_directory"])
+        subprocess.run(
+            ["cargo", "build", "--locked", "--offline", "--release", "--manifest-path",
+             str(manifest), "--target-dir", str(target)],
+            cwd=ROOT, check=True, timeout=180,
+        )
+        suffix = ".exe" if os.name == "nt" else ""
+        shutil.copy2(target / "release" / ("zcall-gui-bootstrap-fixture" + suffix), cls.program)
         cls.bin = cls.root / "bin"
         cls.bin.mkdir()
         shutil.copy2(cls.program, cls.bin / ("curl.exe" if os.name == "nt" else "curl"))

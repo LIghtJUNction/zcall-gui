@@ -1,5 +1,6 @@
 use crate::{App, Backend, Json, Reply, json, tr, words};
 use std::{
+    collections::BTreeMap,
     io::{BufRead, BufReader, Read, Write},
     process::{Child, Command, Stdio},
     sync::mpsc,
@@ -45,6 +46,52 @@ pub(super) fn endpoint_matches(query: &str, candidate: &str) -> bool {
         let mut chars = candidate.chars();
         token.chars().all(|wanted| chars.any(|c| c == wanted))
     })
+}
+
+pub(super) struct PluginMethod<'a> {
+    pub provider: &'a str,
+    pub name: &'a str,
+    pub label: &'a str,
+    pub method: usize,
+    pub endpoint: &'a str,
+    pub protocol: usize,
+}
+
+pub(super) fn plugin_methods<'a>(catalog: &'a Json, query: &str) -> Vec<PluginMethod<'a>> {
+    let mut methods = Vec::new();
+    for row in catalog.get("providers").array() {
+        let provider = row.get("id").text();
+        if provider.is_empty() {
+            continue;
+        }
+        let name = crate::value(row, "name", provider);
+        let endpoint = row.get("api").text();
+        let endpoint = if endpoint.starts_with("https://") {
+            endpoint
+        } else {
+            ""
+        };
+        let protocol = match row.get("npm").text() {
+            "@ai-sdk/anthropic" => 2,
+            "@ai-sdk/google" | "@ai-sdk/google-vertex" => 3,
+            _ => 0,
+        };
+        for (method, option) in row.get("methods").array().iter().enumerate() {
+            let label = option.get("label").text();
+            let description = format!("{name} {provider} {label}");
+            if option.get("type").text() == "oauth" && endpoint_matches(query, &description) {
+                methods.push(PluginMethod {
+                    provider,
+                    name,
+                    label,
+                    method,
+                    endpoint,
+                    protocol,
+                });
+            }
+        }
+    }
+    methods
 }
 
 struct Session {
@@ -234,8 +281,9 @@ fn configure_lmm(backend: &Backend, domain: &str, providers: &[Json]) -> Result<
 
 struct Login {
     name: String,
-    domain: String,
+    base: String,
     plugin: String,
+    method: Option<usize>,
     protocol: &'static str,
 }
 
@@ -255,6 +303,62 @@ fn available_name(requested: &str, providers: &[Json]) -> String {
     unreachable!("finite provider list");
 }
 
+fn prompt_inputs(
+    session: &mut Session,
+    provider: &str,
+    method: usize,
+    sender: &mpsc::Sender<Reply>,
+    answers: &mpsc::Receiver<String>,
+) -> Result<Json, String> {
+    let mut inputs = BTreeMap::new();
+    let mut rejected = false;
+    for _ in 0..32 {
+        let params = Json::object([
+            ("provider".into(), Json::String(provider.into())),
+            ("method".into(), Json::Number(method.to_string())),
+            ("inputs".into(), Json::Object(inputs.clone())),
+        ]);
+        let response = session.call("prompt", params)?;
+        let prompt = response.get("prompt");
+        if prompt == &Json::Null {
+            return Ok(Json::Object(inputs));
+        }
+        let key = prompt.get("field").text();
+        if key.is_empty() {
+            return Err(tr("providers.oauth_prompt_unsupported").into());
+        }
+        let mut ui_prompt = prompt.clone();
+        if let Json::Object(properties) = &mut ui_prompt {
+            properties.insert("rejected".into(), Json::Bool(rejected));
+        }
+        sender
+            .send(Reply {
+                label: "OAuth prompt".into(),
+                result: Ok(ui_prompt),
+                refresh: false,
+                starts_gateway: false,
+            })
+            .map_err(|_| tr("providers.oauth_cancelled"))?;
+        let answer = answers
+            .recv_timeout(Duration::from_secs(180))
+            .map_err(|_| tr("providers.oauth_cancelled"))?;
+        let validation = session.call(
+            "validate",
+            Json::object([
+                ("provider".into(), Json::String(provider.into())),
+                ("method".into(), Json::Number(method.to_string())),
+                ("key".into(), Json::String(key.into())),
+                ("value".into(), Json::String(answer.clone())),
+            ]),
+        )?;
+        rejected = !validation.get("error").text().is_empty();
+        if !rejected {
+            inputs.insert(key.into(), Json::String(answer));
+        }
+    }
+    Err(tr("providers.oauth_unavailable").into())
+}
+
 fn login(
     backend: &Backend,
     login: Login,
@@ -267,9 +371,12 @@ fn login(
     }
     let providers = providers.get("providers").array();
     let name = available_name(&login.name, providers);
-    let base = format!("{}/v1", login.domain);
     if login.plugin == "lmm" {
-        configure_lmm(backend, &login.domain, providers)?;
+        let domain = login
+            .base
+            .strip_suffix("/v1")
+            .ok_or_else(|| tr("providers.oauth_invalid_domain").to_owned())?;
+        configure_lmm(backend, domain, providers)?;
     }
     let mut session = Session::start(backend)?;
     let options = session.call("providers", Json::object([]))?;
@@ -281,17 +388,27 @@ fn login(
                 && (login.plugin != "lmm" || row.get("spec").text() == LMM_REPO)
         })
         .ok_or_else(|| tr("providers.oauth_missing_plugin").to_owned())?;
-    let method = provider
-        .get("methods")
-        .array()
-        .iter()
-        .position(|method| method.get("type").text() == "oauth")
+    let methods = provider.get("methods").array();
+    let method = login
+        .method
+        .or_else(|| {
+            methods
+                .iter()
+                .position(|method| method.get("type").text() == "oauth")
+        })
+        .filter(|index| {
+            methods
+                .get(*index)
+                .is_some_and(|method| method.get("type").text() == "oauth")
+        })
         .ok_or_else(|| tr("providers.oauth_missing_plugin").to_owned())?;
+    let inputs = prompt_inputs(&mut session, &login.plugin, method, sender, &code)?;
     let started = session.call(
         "authorize",
         Json::object([
             ("provider".into(), Json::String(login.plugin.clone())),
             ("method".into(), Json::Number(method.to_string())),
+            ("inputs".into(), inputs),
         ]),
     )?;
     if !started.get("ok").boolean() || started.get("session").text().is_empty() {
@@ -302,13 +419,19 @@ fn login(
         open_browser(url)?;
     }
     let mut params = vec![("session".into(), started.get("session").clone())];
-    if started.get("method").text() == "code" {
-        let _ = sender.send(Reply {
-            label: "OAuth code".into(),
-            result: Ok(Json::String(started.get("instructions").text().to_owned())),
-            refresh: false,
-            starts_gateway: false,
-        });
+    let paste_code = started.get("method").text() == "code";
+    let _ = sender.send(Reply {
+        label: if paste_code {
+            "OAuth code"
+        } else {
+            "OAuth browser"
+        }
+        .into(),
+        result: Ok(Json::String(started.get("instructions").text().to_owned())),
+        refresh: false,
+        starts_gateway: false,
+    });
+    if paste_code {
         let entered = code
             .recv_timeout(Duration::from_secs(180))
             .map_err(|_| tr("providers.oauth_cancelled"))?;
@@ -320,35 +443,72 @@ fn login(
     if !finished.get("ok").boolean() || provider.is_empty() || account.is_empty() {
         return Err(tr("providers.oauth_cancelled").into());
     }
-    backend.run(
-        &words(&[
-            "providers",
-            "add",
-            &name,
-            "--base-url",
-            &base,
-            "--protocol",
-            login.protocol,
-            "--plugin",
-            provider,
-            "--plugin-account",
-            account,
-        ]),
-        None,
-    )
+    let binding = Json::object([
+        ("needs_endpoint".into(), Json::Bool(true)),
+        ("name".into(), Json::String(name)),
+        ("protocol".into(), Json::String(login.protocol.into())),
+        ("plugin".into(), Json::String(provider.into())),
+        ("account".into(), Json::String(account.into())),
+    ]);
+    let endpoint;
+    let base = if login.base.is_empty() {
+        endpoint = session
+            .call(
+                "providerEndpoint",
+                Json::object([
+                    ("provider".into(), Json::String(provider.into())),
+                    ("account".into(), Json::String(account.into())),
+                ]),
+            )
+            .unwrap_or_default();
+        let url = endpoint.get("baseURL").text();
+        if url.is_empty() {
+            return Ok(binding);
+        }
+        url
+    } else {
+        &login.base
+    };
+    backend.run(&binding_args(&binding, base), None)
+}
+
+fn binding_args(binding: &Json, endpoint: &str) -> Vec<String> {
+    words(&[
+        "providers",
+        "add",
+        binding.get("name").text(),
+        "--base-url",
+        endpoint,
+        "--protocol",
+        binding.get("protocol").text(),
+        "--plugin",
+        binding.get("plugin").text(),
+        "--plugin-account",
+        binding.get("account").text(),
+    ])
 }
 
 impl App {
     pub(super) fn start_oauth(&mut self) {
-        let result = issuer(&self.provider.url);
-        let domain = match result {
-            Ok(domain) => domain,
+        let endpoint = if self.provider.url.trim().is_empty() && self.provider.plugin_id != "lmm" {
+            Ok(self.provider.plugin_endpoint.clone())
+        } else {
+            issuer(&self.provider.url).map(|domain| format!("{domain}/v1"))
+        };
+        let base = match endpoint {
+            Ok(base) => base,
             Err(error) => {
                 self.notice = error;
                 self.failed = true;
                 return;
             }
         };
+        if self.provider.pending_oauth_binding != Json::Null {
+            let args = binding_args(&self.provider.pending_oauth_binding, &base);
+            self.action("Save provider", args, None);
+            self.repaint = true;
+            return;
+        }
         let plugin = self.provider.plugin_id.trim().to_owned();
         let name = if self.provider.name.trim().is_empty() {
             plugin.clone()
@@ -357,14 +517,16 @@ impl App {
         };
         let login_options = Login {
             name,
-            domain,
+            base,
             plugin,
+            method: self.provider.oauth_method,
             protocol: crate::protocols()[self.provider.protocol],
         };
         let (input, code) = mpsc::channel();
         self.oauth_input = Some(input);
         self.oauth_code.clear();
         self.oauth_instructions.clear();
+        self.oauth_expects_code = false;
         self.busy = true;
         self.failed = false;
         self.repaint = true;
@@ -410,6 +572,17 @@ mod tests {
             ["lmm", "lmm-2"].map(|name| Json::object([("name".into(), Json::String(name.into()))]));
         assert_eq!(available_name("lmm", &providers), "lmm-3");
         assert_eq!(available_name("other", &providers), "other");
+    }
+
+    #[test]
+    fn picker_preserves_original_method_indexes_and_exact_endpoint() {
+        let catalog = json::parse(r#"{"providers":[{"id":"fixture","name":"Fixture Provider","api":"https://api.fixture.test/special/v2","methods":[{"type":"api","label":"Key"},{"type":"oauth","label":"Browser"},{"type":"oauth","label":"Device"}]}]}"#).unwrap();
+        let methods = plugin_methods(&catalog, "fixture");
+        assert_eq!(methods.len(), 2);
+        assert_eq!(methods[0].method, 1);
+        assert_eq!(methods[1].method, 2);
+        assert_eq!(methods[1].endpoint, "https://api.fixture.test/special/v2");
+        assert!(plugin_methods(&catalog, "key").is_empty());
     }
 
     #[test]

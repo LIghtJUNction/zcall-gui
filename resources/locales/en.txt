@@ -286,7 +286,6 @@ agents.changed_disconnected	Disconnected · configuration changed
 providers.oauth_mode	OAuth sign-in
 providers.api_key_mode	API key setup
 providers.oauth_domain	Domain
-providers.oauth_plugin_id	Plugin provider ID
 providers.oauth_login	Sign in with OAuth
 providers.oauth_wait	Complete authorization in your browser.
 providers.oauth_code	Authorization code
@@ -331,3 +330,12 @@ providers.advanced_upgrade	Update the gateway to edit auth or header references.
 providers.models_range	{start}–{end} of {total} models
 providers.models_loaded	Model catalog loaded
 providers.models_failed	Could not load the model catalog
+providers.oauth_choose_plugin	Choose an OAuth provider
+providers.oauth_no_plugins	No OAuth methods from enabled plugins
+providers.oauth_copy_instructions	Copy instructions
+providers.oauth_prompt_unsupported	Update the compatibility helper to answer this plugin’s sign-in questions.
+providers.oauth_prompt_invalid	The plugin rejected the answer.
+providers.oauth_magpie_market	Magpie provider plugins
+providers.oauth_no_endpoint	The account was authorized. Enter an endpoint to configure this provider.
+providers.oauth_search	Search providers or plugins
+providers.oauth_plugin_endpoint	Provided by the plugin

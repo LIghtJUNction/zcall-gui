@@ -286,7 +286,6 @@ agents.changed_disconnected	未接入网关（配置被外部修改）
 providers.oauth_mode	OAuth 登录
 providers.api_key_mode	API Key 设置
 providers.oauth_domain	域名
-providers.oauth_plugin_id	插件供应商 ID
 providers.oauth_login	使用 OAuth 登录
 providers.oauth_wait	请在浏览器中完成授权。
 providers.oauth_code	授权码
@@ -331,3 +330,12 @@ providers.advanced_upgrade	更新网关后即可编辑认证方式和请求头�
 providers.models_range	第 {start}–{end} 项，共 {total} 个模型
 providers.models_loaded	模型目录已加载
 providers.models_failed	无法加载模型目录
+providers.oauth_choose_plugin	选择 OAuth 供应商
+providers.oauth_no_plugins	已启用的插件未提供 OAuth 登录方式
+providers.oauth_copy_instructions	复制授权说明
+providers.oauth_prompt_unsupported	请更新兼容组件以处理此插件的登录问题。
+providers.oauth_prompt_invalid	插件不接受这个回答，请重试。
+providers.oauth_magpie_market	Magpie 供应商插件
+providers.oauth_no_endpoint	账号已授权。请填写接口地址以配置此供应商。
+providers.oauth_search	搜索供应商或插件
+providers.oauth_plugin_endpoint	由插件提供

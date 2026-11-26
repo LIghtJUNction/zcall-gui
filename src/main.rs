@@ -63,6 +63,15 @@ struct ProviderForm {
     protocol: usize,
     oauth: bool,
     plugin_id: String,
+    oauth_method: Option<usize>,
+    plugin_endpoint: String,
+    pending_oauth_binding: Json,
+    plugin_picker: bool,
+    plugin_catalog: Json,
+    plugin_market: Json,
+    browse_market: bool,
+    plugin_query: String,
+    plugin_offset: usize,
     endpoint_menu: bool,
     endpoint_filter: bool,
 }
@@ -115,6 +124,9 @@ struct App {
     oauth_input: Option<mpsc::Sender<String>>,
     oauth_code: String,
     oauth_instructions: String,
+    oauth_expects_code: bool,
+    oauth_prompt: Json,
+    oauth_prompt_offset: usize,
     provider_query: String,
     provider_models: Option<provider_models::Browser>,
     plugin: PluginForm,
@@ -148,6 +160,8 @@ fn value<'a>(j: &'a Json, key: &str, fallback: &'a str) -> &'a str {
 }
 fn human(s: &str) -> &str {
     match s {
+        "Magpie provider market" | "Resolve Magpie plugin" => tr("providers.oauth_magpie_market"),
+        "Discover OAuth plugins" => tr("providers.oauth_choose_plugin"),
         "OAuth provider" => tr("providers.oauth_login"),
         "Save provider" => tr("action.save_provider"),
         "Fetch provider models" => tr("providers.browse_models"),
@@ -190,6 +204,9 @@ impl App {
             oauth_input: None,
             oauth_code: String::new(),
             oauth_instructions: String::new(),
+            oauth_expects_code: false,
+            oauth_prompt: Json::Null,
+            oauth_prompt_offset: 0,
             provider_query: String::new(),
             provider_models: None,
             plugin: PluginForm::default(),
@@ -326,14 +343,62 @@ impl App {
                 self.accept_usage_recording(reply.result);
                 continue;
             }
-            if reply.label == "OAuth code" {
+            if matches!(
+                reply.label.as_str(),
+                "Discover OAuth plugins" | "Magpie provider market" | "Resolve Magpie plugin"
+            ) {
+                match reply.result {
+                    Ok(data) if reply.label == "Resolve Magpie plugin" => {
+                        let source = data.get("source").text();
+                        let name = data.get("name").text();
+                        if (source.starts_with("npm:") || source.starts_with("magpie:"))
+                            && !name.is_empty()
+                        {
+                            let spec = source.split('#').next().unwrap_or(source);
+                            let title = format!("{} · {}", tr("action.install_plugin"), spec);
+                            self.ask(
+                                &title,
+                                words(&["plugins", "install", source, "--name", name]),
+                            );
+                        }
+                    }
+                    Ok(data) if reply.label == "Magpie provider market" => {
+                        self.provider.plugin_market = data;
+                        self.notice = tr("status.refreshed").into();
+                    }
+                    Ok(data) => {
+                        self.provider.plugin_catalog = data;
+                        self.notice = tr("status.refreshed").into();
+                    }
+                    Err(error) => {
+                        self.notice = i18n::message("error.action", &[("error", &error)]);
+                        self.failed = true;
+                    }
+                }
+                continue;
+            }
+            if reply.label == "OAuth prompt" {
                 self.busy = true;
+                self.oauth_code.clear();
+                self.oauth_prompt_offset = 0;
+                self.oauth_prompt = reply.result.unwrap_or_default();
+                continue;
+            }
+            if matches!(reply.label.as_str(), "OAuth code" | "OAuth browser") {
+                self.busy = true;
+                self.oauth_expects_code = reply.label == "OAuth code";
+                self.oauth_prompt = Json::Null;
                 self.oauth_instructions = reply.result.map_or_else(
                     |_| tr("providers.oauth_code_help").to_owned(),
                     |data| {
                         let text = data.text();
                         if text.is_empty() {
-                            tr("providers.oauth_code_help").into()
+                            tr(if self.oauth_expects_code {
+                                "providers.oauth_code_help"
+                            } else {
+                                "providers.oauth_wait"
+                            })
+                            .into()
                         } else {
                             text.into()
                         }
@@ -343,6 +408,7 @@ impl App {
             }
             if reply.label == "OAuth provider" {
                 self.oauth_input = None;
+                self.oauth_prompt = Json::Null;
                 self.oauth_code.clear();
                 self.oauth_instructions.clear();
             }
@@ -359,6 +425,13 @@ impl App {
                 continue;
             }
             match reply.result {
+                Ok(data)
+                    if reply.label == "OAuth provider" && data.get("needs_endpoint").boolean() =>
+                {
+                    self.provider.pending_oauth_binding = data;
+                    self.notice = tr("providers.oauth_no_endpoint").into();
+                    self.failed = true;
+                }
                 Ok(data) if reply.label == "refresh" => {
                     if data.get("installation") != &Json::Null {
                         self.accept_installation(data.get("installation").clone(), false, false);

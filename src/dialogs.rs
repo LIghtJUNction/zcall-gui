@@ -496,7 +496,13 @@ impl App {
             }),
             &mut self.provider.url,
             if self.provider.oauth {
-                LMM_DOMAIN
+                if self.provider.plugin_id == "lmm" {
+                    LMM_DOMAIN
+                } else if self.provider.plugin_endpoint.is_empty() {
+                    tr("providers.oauth_plugin_endpoint")
+                } else {
+                    &self.provider.plugin_endpoint
+                }
             } else {
                 tr("providers.endpoint_hint")
             },
@@ -585,6 +591,9 @@ impl App {
                 self.provider.url = if self.provider.oauth { host } else { url }.into();
                 if self.provider.oauth {
                     self.provider.plugin_id = plugin.into();
+                    self.provider.oauth_method = None;
+                    self.provider.plugin_endpoint.clear();
+                    self.provider.pending_oauth_binding = Json::Null;
                 } else if self.provider.name.trim().is_empty() && !self.provider_edit {
                     self.provider.name = [
                         "lmm",
@@ -629,11 +638,32 @@ impl App {
         let x = r.x + 32.;
         let width = r.w - 64.;
         c.text(tr("providers.oauth_mode"), x, 100., 27, true, TEXT);
+        if self.provider.plugin_picker {
+            self.oauth_plugin_picker(c, r, enabled);
+            return;
+        }
         if self.busy {
+            if self.oauth_prompt != Json::Null {
+                self.oauth_plugin_prompt(c, r);
+                return;
+            }
             if self.oauth_instructions.is_empty() {
                 c.text(tr("providers.oauth_wait"), x, 161., 14, false, MUTED);
             } else {
                 c.ellipsis(&self.oauth_instructions, x, 159., width, 13, false, MUTED);
+                if !self.oauth_expects_code {
+                    if self.ui.button(
+                        c,
+                        9180,
+                        Rect::new(x, 203., 170., 40.),
+                        tr("providers.oauth_copy_instructions"),
+                        Style::Secondary,
+                        true,
+                    ) {
+                        self.ui.clipboard = Some(self.oauth_instructions.clone());
+                    }
+                    return;
+                }
                 field(
                     &mut self.ui,
                     c,
@@ -677,31 +707,27 @@ impl App {
             return;
         }
         self.provider_endpoint(c, x, 153., width, enabled);
-        if self.provider.plugin_id == "lmm" {
-            if self.ui.button(
-                c,
-                9179,
-                Rect::new(x, 304., width, 40.),
-                tr("providers.oauth_other_plugin"),
-                Style::Quiet,
-                enabled,
-            ) {
-                self.provider.plugin_id.clear();
-                self.repaint = true;
-            }
-        } else {
-            field(
-                &mut self.ui,
-                c,
-                9173,
-                x,
-                276.,
-                width,
-                tr("providers.oauth_plugin_id"),
-                &mut self.provider.plugin_id,
-                "",
-                false,
-                enabled,
+        if self.ui.button(
+            c,
+            9179,
+            Rect::new(x, 304., width, 40.),
+            if self.provider.plugin_id == "lmm" {
+                tr("providers.oauth_other_plugin")
+            } else {
+                &self.provider.plugin_id
+            },
+            Style::Secondary,
+            enabled,
+        ) {
+            self.provider.plugin_picker = true;
+            self.provider.browse_market = false;
+            self.provider.plugin_offset = 0;
+            self.provider.plugin_query.clear();
+            self.repaint = true;
+            self.action(
+                "Discover OAuth plugins",
+                words(&["plugins", "providers"]),
+                None,
             );
         }
         let lmm = self.provider.plugin_id.trim() == "lmm";
@@ -775,18 +801,417 @@ impl App {
             self.repaint = true;
             self.provider.endpoint_menu = false;
         }
-        let ready = !self.provider.url.trim().is_empty()
+        let pending = self.provider.pending_oauth_binding != Json::Null;
+        let ready = (!self.provider.url.trim().is_empty()
+            || (!pending && self.provider.oauth_method.is_some()))
             && !self.provider.plugin_id.trim().is_empty()
             && (!lmm || installed == Some(true));
         if self.ui.button(
             c,
             9178,
             Rect::new(x + width - 172., r.h - 87., 172., 44.),
-            tr("providers.oauth_login"),
+            tr(if pending {
+                "action.save_provider"
+            } else {
+                "providers.oauth_login"
+            }),
             Style::Primary,
             enabled && ready,
         ) {
             self.start_oauth();
+        }
+    }
+    fn oauth_plugin_prompt(&mut self, c: &mut Canvas<'_>, r: Rect) {
+        let x = r.x + 32.;
+        let width = r.w - 64.;
+        let prompt = &self.oauth_prompt;
+        let is_select = prompt.get("type").text() == "select";
+        let mut selected = None;
+        if is_select {
+            c.ellipsis(prompt.get("message").text(), x, 155., width, 14, true, TEXT);
+            let options = prompt.get("options").array();
+            let count = ((r.h - 322.) / 43.).floor().clamp(1., 6.) as usize;
+            let offset = self.oauth_prompt_offset;
+            for (index, option) in options.iter().skip(offset).take(count).enumerate() {
+                let row = Rect::new(x, 195. + index as f32 * 43., width, 39.);
+                if self
+                    .ui
+                    .button(c, 9240 + index as u64, row, "", Style::Secondary, true)
+                {
+                    selected = Some(option.get("value").text().to_owned());
+                }
+                c.ellipsis(
+                    option.get("label").text(),
+                    row.x + 10.,
+                    row.y + 11.,
+                    row.w - 20.,
+                    14,
+                    false,
+                    TEXT,
+                );
+            }
+            if options.len() > count
+                && self.ui.button(
+                    c,
+                    9247,
+                    Rect::new(x, r.h - 145., 48., 37.),
+                    "‹",
+                    Style::Quiet,
+                    offset > 0,
+                )
+            {
+                self.oauth_prompt_offset = offset.saturating_sub(count);
+                self.repaint = true;
+            }
+            if options.len() > count
+                && self.ui.button(
+                    c,
+                    9248,
+                    Rect::new(x + 52., r.h - 145., 48., 37.),
+                    "›",
+                    Style::Quiet,
+                    offset + count < options.len(),
+                )
+            {
+                self.oauth_prompt_offset += count;
+                self.repaint = true;
+            }
+        } else {
+            c.ellipsis(prompt.get("message").text(), x, 155., width, 14, true, TEXT);
+            self.ui.input(
+                c,
+                9250,
+                Rect::new(x, 187., width, 46.),
+                &mut self.oauth_code,
+                prompt.get("placeholder").text(),
+                true,
+                true,
+            );
+            if self.ui.button(
+                c,
+                9251,
+                Rect::new(x + width - 142., r.h - 87., 142., 44.),
+                tr("action.next"),
+                Style::Primary,
+                true,
+            ) {
+                selected = Some(std::mem::take(&mut self.oauth_code));
+            }
+        }
+        if prompt.get("rejected").boolean() {
+            c.text(
+                tr("providers.oauth_prompt_invalid"),
+                x,
+                r.h - 182.,
+                13,
+                false,
+                RED,
+            );
+        }
+        if self.ui.button(
+            c,
+            9252,
+            Rect::new(x, r.h - 87., 110., 44.),
+            tr("action.cancel"),
+            Style::Quiet,
+            true,
+        ) {
+            self.oauth_input = None;
+            self.oauth_prompt = Json::Null;
+            self.oauth_code.clear();
+            self.repaint = true;
+        } else if let Some(answer) = selected {
+            if let Some(input) = &self.oauth_input {
+                let _ = input.send(answer);
+            }
+            self.oauth_prompt = Json::Null;
+            self.repaint = true;
+        }
+    }
+    fn oauth_plugin_picker(&mut self, c: &mut Canvas<'_>, r: Rect, enabled: bool) {
+        let x = r.x + 32.;
+        let width = r.w - 64.;
+        if self.provider.browse_market {
+            self.oauth_magpie_market(c, r, enabled);
+            return;
+        }
+        let old = self.provider.plugin_query.clone();
+        field(
+            &mut self.ui,
+            c,
+            9181,
+            x,
+            155.,
+            width,
+            tr("providers.oauth_choose_plugin"),
+            &mut self.provider.plugin_query,
+            tr("providers.oauth_search"),
+            false,
+            enabled,
+        );
+        if self.provider.plugin_query != old {
+            self.provider.plugin_offset = 0;
+            self.repaint = true;
+        }
+        let options = provider_oauth::plugin_methods(
+            &self.provider.plugin_catalog,
+            &self.provider.plugin_query,
+        );
+        if options.is_empty() && !self.busy && !self.failed {
+            c.text(tr("providers.oauth_no_plugins"), x, 250., 13, false, MUTED);
+        }
+        let page_size = ((r.h - 390.) / 43.).floor().clamp(1., 6.) as usize;
+        let offset = self.provider.plugin_offset;
+        for (index, option) in options.iter().skip(offset).take(page_size).enumerate() {
+            let row = Rect::new(x, 244. + index as f32 * 43., width, 39.);
+            if self
+                .ui
+                .button(c, 9200 + index as u64, row, "", Style::Secondary, enabled)
+            {
+                self.provider.plugin_id = option.provider.into();
+                self.provider.oauth_method = Some(option.method);
+                self.provider.plugin_endpoint = option.endpoint.into();
+                self.provider.pending_oauth_binding = Json::Null;
+                self.provider.url = if option.provider == "lmm" {
+                    LMM_DOMAIN.into()
+                } else {
+                    String::new()
+                };
+                self.provider.protocol = option.protocol;
+                self.provider.endpoint_menu = false;
+                self.provider.plugin_picker = false;
+                self.repaint = true;
+                return;
+            }
+            let label = format!("{} · {}", option.name, option.label);
+            c.ellipsis(
+                &label,
+                row.x + 10.,
+                row.y + 11.,
+                row.w - 20.,
+                14,
+                false,
+                TEXT,
+            );
+        }
+        if options.len() > page_size
+            && self.ui.button(
+                c,
+                9182,
+                Rect::new(x, r.h - 154., 48., 37.),
+                "‹",
+                Style::Quiet,
+                enabled && offset > 0,
+            )
+        {
+            self.provider.plugin_offset = offset.saturating_sub(page_size);
+            self.repaint = true;
+        }
+        if options.len() > page_size
+            && self.ui.button(
+                c,
+                9183,
+                Rect::new(x + 52., r.h - 154., 48., 37.),
+                "›",
+                Style::Quiet,
+                enabled && offset + page_size < options.len(),
+            )
+        {
+            self.provider.plugin_offset += page_size;
+            self.repaint = true;
+        }
+        self.drawer_notice(c, Rect { h: r.h + 40., ..r });
+        if self.ui.button(
+            c,
+            9184,
+            Rect::new(x, r.h - 87., 110., 44.),
+            tr("action.back"),
+            Style::Quiet,
+            enabled,
+        ) {
+            self.provider.plugin_picker = false;
+            self.repaint = true;
+        }
+        if self.ui.button(
+            c,
+            9186,
+            Rect::new(x + width - 180., r.h - 151., 180., 38.),
+            tr("providers.oauth_magpie_market"),
+            Style::Secondary,
+            enabled,
+        ) {
+            self.provider.browse_market = true;
+            self.provider.plugin_query.clear();
+            self.provider.plugin_offset = 0;
+            self.repaint = true;
+            self.action(
+                "Magpie provider market",
+                words(&["plugins", "provider-market"]),
+                None,
+            );
+        }
+        if self.ui.button(
+            c,
+            9185,
+            Rect::new(x + width - 165., r.h - 87., 165., 44.),
+            tr("action.install_plugin"),
+            Style::Primary,
+            enabled,
+        ) {
+            self.provider.plugin_picker = false;
+            self.plugin = PluginForm::default();
+            self.plugin_panel = 2;
+            self.repaint = true;
+        }
+    }
+    fn oauth_magpie_market(&mut self, c: &mut Canvas<'_>, r: Rect, enabled: bool) {
+        let x = r.x + 32.;
+        let width = r.w - 64.;
+        let previous = self.provider.plugin_query.clone();
+        field(
+            &mut self.ui,
+            c,
+            9300,
+            x,
+            155.,
+            width,
+            tr("providers.oauth_magpie_market"),
+            &mut self.provider.plugin_query,
+            tr("providers.oauth_search"),
+            false,
+            enabled,
+        );
+        if self.provider.plugin_query != previous {
+            self.provider.plugin_offset = 0;
+            self.repaint = true;
+        }
+        let search = &self.provider.plugin_query;
+        let listings =
+            self.provider
+                .plugin_market
+                .get("plugins")
+                .array()
+                .iter()
+                .filter(|item| {
+                    let candidate =
+                        format!("{} {}", item.get("name").text(), item.get("package").text());
+                    provider_oauth::endpoint_matches(search, &candidate)
+                        || item.get("providers").array().iter().any(|provider| {
+                            provider_oauth::endpoint_matches(search, provider.text())
+                        })
+                })
+                .collect::<Vec<_>>();
+        let offset = self.provider.plugin_offset;
+        let count = ((r.h - 390.) / 43.).floor().clamp(1., 6.) as usize;
+        for (index, item) in listings.iter().skip(offset).take(count).enumerate() {
+            let pkg = item.get("package").text();
+            let rect = Rect::new(x, 244. + index as f32 * 43., width, 39.);
+            let installed = self
+                .state
+                .get("plugins")
+                .get("plugins")
+                .array()
+                .iter()
+                .find(|plugin| {
+                    let source = plugin.get("source").text();
+                    source
+                        .strip_prefix("npm:")
+                        .or_else(|| source.strip_prefix("magpie:"))
+                        .and_then(|spec| spec.split('#').next())
+                        .and_then(|spec| spec.rsplit_once('@'))
+                        .is_some_and(|(name, _)| name == pkg)
+                });
+            let label = match installed {
+                Some(plugin) if plugin.get("enabled").boolean() => {
+                    format!("{} · {}", item.get("name").text(), tr("plugins.enabled"))
+                }
+                Some(_) => format!(
+                    "{} · {}",
+                    item.get("name").text(),
+                    tr("action.enable_plugin")
+                ),
+                None => format!(
+                    "{} · {}",
+                    item.get("name").text(),
+                    tr("action.install_plugin")
+                ),
+            };
+            if self
+                .ui
+                .button(c, 9310 + index as u64, rect, "", Style::Secondary, enabled)
+            {
+                if let Some(plugin) = installed {
+                    if plugin.get("enabled").boolean() {
+                        self.provider.browse_market = false;
+                        self.provider.plugin_query.clear();
+                        self.provider.plugin_offset = 0;
+                        self.action(
+                            "Discover OAuth plugins",
+                            words(&["plugins", "providers"]),
+                            None,
+                        );
+                    } else {
+                        let args = words(&["plugins", "enable", plugin.get("name").text()]);
+                        self.ask(tr("action.enable_plugin"), args);
+                    }
+                } else {
+                    let args = words(&["plugins", "provider-market", pkg]);
+                    self.action("Resolve Magpie plugin", args, None);
+                }
+                self.repaint = true;
+                return;
+            }
+            c.ellipsis(
+                &label,
+                rect.x + 10.,
+                rect.y + 11.,
+                rect.w - 20.,
+                14,
+                false,
+                TEXT,
+            );
+        }
+        let nav_y = r.h - 143.;
+        if self.ui.button(
+            c,
+            9320,
+            Rect::new(x, nav_y, 48., 37.),
+            "‹",
+            Style::Quiet,
+            enabled && offset > 0,
+        ) {
+            self.provider.plugin_offset = offset.saturating_sub(count);
+            self.repaint = true;
+        }
+        if self.ui.button(
+            c,
+            9321,
+            Rect::new(x + 52., nav_y, 48., 37.),
+            "›",
+            Style::Quiet,
+            enabled && offset + count < listings.len(),
+        ) {
+            self.provider.plugin_offset += count;
+            self.repaint = true;
+        }
+        self.drawer_notice(c, Rect { h: r.h + 40., ..r });
+        if self.ui.button(
+            c,
+            9322,
+            Rect::new(x, r.h - 87., 110., 44.),
+            tr("action.back"),
+            Style::Quiet,
+            enabled,
+        ) {
+            self.provider.browse_market = false;
+            self.provider.plugin_query.clear();
+            self.provider.plugin_offset = 0;
+            self.repaint = true;
+            self.action(
+                "Discover OAuth plugins",
+                words(&["plugins", "providers"]),
+                None,
+            );
         }
     }
     pub(super) fn plugin_dialog(&mut self, c: &mut Canvas<'_>) {

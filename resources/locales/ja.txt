@@ -286,7 +286,6 @@ agents.changed_disconnected	未接続（外部で設定変更）
 providers.oauth_mode	OAuth ログイン
 providers.api_key_mode	API キー設定
 providers.oauth_domain	ドメイン
-providers.oauth_plugin_id	プラグインのプロバイダー ID
 providers.oauth_login	OAuth でログイン
 providers.oauth_wait	ブラウザーで認可を完了してください。
 providers.oauth_code	認可コード
@@ -331,3 +330,12 @@ providers.advanced_upgrade	認証とヘッダー参照の編集にはゲート�
 providers.models_range	{total} モデル中 {start}–{end} 件
 providers.models_loaded	モデル一覧を読み込みました
 providers.models_failed	モデル一覧を読み込めませんでした
+providers.oauth_choose_plugin	OAuth プロバイダーを選択
+providers.oauth_no_plugins	有効なプラグインに OAuth ログインがありません
+providers.oauth_copy_instructions	手順をコピー
+providers.oauth_prompt_unsupported	プラグインのログイン質問に答えるには互換ヘルパーを更新してください。
+providers.oauth_prompt_invalid	プラグインが回答を拒否しました。
+providers.oauth_magpie_market	Magpie プロバイダープラグイン
+providers.oauth_no_endpoint	アカウントは認可されました。プロバイダーを設定するにはエンドポイントを入力してください。
+providers.oauth_search	プロバイダーやプラグインを検索
+providers.oauth_plugin_endpoint	プラグインから取得

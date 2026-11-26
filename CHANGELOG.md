@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8
+
+- Fetch locked dependencies for GUI release packages [skip ci]
+
 ## 0.1.7
 
 - Share Windows private-file checks and creation protection with zsys, retaining handle-based reads, owner/current-account/SYSTEM restrictions, non-inheriting creation and existing error messages. Route JSON string output through zconv while preserving control-byte spelling.

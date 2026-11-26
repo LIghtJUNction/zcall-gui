@@ -79,9 +79,6 @@ privacy.secrets_help	替换识别到的密钥、令牌与访问凭据。
 privacy.personal	密钥与个人信息
 privacy.personal_help	同时处理支持识别的邮箱、手机号等信息。
 status.current	当前
-privacy.boundaries	保护有边界
-privacy.boundaries_help	请仍确认内容适合发送给当前供应商。
-privacy.model_auto	模型辅助识别已开启
 updates.gateway	网关
 status.not_found	未检测到
 updates.gui	控制台
@@ -376,3 +373,18 @@ agent_config.hint_gemini	JSON 配置和 .env 环境变量分开编辑。
 agent_config.hint_provider	选择对应的供应商或模型配置文件，按文档核对字段层级。
 agent_config.hint_mcp	此文件用于 MCP 设置。更换模型请使用工具自己的供应商设置。
 agent_config.hint_default	按工具的设置说明核对字段名和取值类型。
+privacy.advanced	高级设置
+privacy.stats	隐私统计
+privacy.stats_unavailable	无法读取隐私统计。
+privacy.stats_empty	还没有隐私检查记录。
+privacy.stats_totals	最近有记录的日期 · 检查 {checked} 次 · 检出 {masked} 次
+privacy.stats_partial	部分日期的统计无法读取。
+privacy.custom_word_count	已配置 {count} 个自定义词
+privacy.option_model	模型辅助识别
+privacy.option_model_help	使用已配置的本地识别模型。
+privacy.option_case	忽略大小写
+privacy.option_case_help	匹配自定义词时忽略字母大小写。
+privacy.option_whole	匹配完整词
+privacy.option_whole_help	仅匹配有词边界的自定义词。
+privacy.option_shape	保留格式
+privacy.option_shape_help	替换受支持的值时保留大致格式。

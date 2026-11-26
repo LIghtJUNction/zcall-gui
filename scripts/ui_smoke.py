@@ -97,6 +97,7 @@ elif a[:2]==['providers','list']:r={'providers':s['providers']}
 elif a[:2]==['agents','list'] or a[:2]==['agents','detect']:r={'agents':[{'name':'claude','installed':True,'configured':s['agent_configured'],'restorable':s['agent_configured'],'writable':True,'route':s.get('agent_route'),'path':'~/.claude/settings.json'},{'name':'codex','installed':True,'configured':False,'writable':True,'path':'~/.codex/config.toml'},{'name':'cursor','installed':True,'configured':False,'writable':False}]}
 elif a[:2]==['plugins','list']:r={'plugins':[{'name':'privacy','path':'/usr/lib/zcalld/plugins/privacy.so','kind':'native','enabled':s['plugin_enabled'],'version':'0.1.0'}]}
 elif a[:2]==['privacy','show']:r={'mode':s['mode'],'enabled':s['mode']!='off','model_auto':False}
+elif a[:2]==['privacy','stats']:r={'days':[{'date':'2026-11-26','checked':21,'masked':5}]}
 elif a[:1]==['models']:r={'object':'list','data':s['routes']}
 elif a[:2]==['usage','summary']:r={'requests':1250,'failed':5,'input_tokens':480000,'output_tokens':96000,'cache_read_tokens':160000,'cache_write_tokens':24000,'reasoning_tokens':18000,'recording_configured':True}
 elif a[:2]==['update','check']:r={'latest':'0.2.0','available':False}
@@ -109,6 +110,7 @@ else:
         s['agent_configured']=True;s['agent_route']=route
     if a[:2]==['agents','revert']:s['agent_configured']=False;s['agent_route']=None
     if a[:2]==['plugins','enable']:s['plugin_enabled']=True
+    if a[:2]==['plugins','disable']:s['plugin_enabled']=False
     if a[:2]==['privacy','set']:s['mode']=a[2]
     (root/'state.json').write_text(json.dumps(s));r={'ok':True}
 print(json.dumps(r))
@@ -160,7 +162,8 @@ print(json.dumps(r))
         for page in [1,2,3,4,6,0]:
             navigate(80,142+page*48,page,"sidebar-"+str(page))
         assert len({item["header_sha256"] for item in navigation})==6,"Page content did not change with navigation"
-        assert len(calls())==reads_before_navigation,"Navigation unexpectedly invoked the CLI"
+        navigation_reads = calls()[reads_before_navigation:]
+        assert len(navigation_reads) == 1 and navigation_reads[0]["args"][:2] == ["privacy", "stats"], navigation_reads
         navigate(80,382,5,"sidebar-usage")
         wait_for(lambda:count(["usage","summary"])==1,"Usage page did not request local accounting")
         time.sleep(.2);shot("usage")
@@ -290,9 +293,13 @@ print(json.dumps(r))
             before=count(["models"]);click(1012,713);ready(before)
         click(90,286);shot("plugins")
         if not args.real_cli:
-            click(450,180);before=count(["models"]);click(710,300);confirm()
-            wait_for(lambda:count(["plugins","enable","privacy"])==1,"Plugin enable did not invoke CLI");ready(before)
-        click(90,334);before=count(["models"]);click(600,417)
+            for action in ["enable", "disable"]:
+                before = count(["models"])
+                click(948, 179)
+                wait_for(lambda: count(["plugins", action, "privacy"]) == 1,
+                         f"One-click plugin {action} did not invoke CLI")
+                ready(before)
+        click(90,334);before=count(["models"]);click(600,320)
         wait_for(lambda:count(["privacy","set","personal"])==1,"Privacy action did not invoke CLI");ready(before);shot("privacy")
         if args.real_cli:
             data=json.loads(subprocess.check_output([actual,"privacy","show","--json","--config",str(config)],env=env))

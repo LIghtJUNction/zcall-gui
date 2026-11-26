@@ -524,12 +524,14 @@ impl App {
             agent_identity::draw(c, name, Rect::new(x + 20., y + 18., 40., 40.));
             let label_x = x + 80.;
             let actions = writable && (installed || configured);
-            let reserved = if compact || (!actions && !restorable) {
+            let reserved = if compact {
                 22.
             } else if restorable {
-                264.
+                392.
+            } else if actions {
+                298.
             } else {
-                170.
+                154.
             };
             let label_width = (x + width - reserved - label_x).max(0.);
             c.ellipsis(
@@ -580,21 +582,26 @@ impl App {
                     ),
                     label_x,
                     y + 64.,
-                    (width - 102.).max(0.),
+                    label_width,
                     12,
                     false,
                     MUTED,
                 );
             }
+            let action_y = if compact { y + 96. } else { y + 20. };
+            let edit_x = if compact {
+                x + 18.
+            } else if restorable {
+                x + width - 378.
+            } else if actions {
+                x + width - 284.
+            } else {
+                x + width - 154.
+            };
             if self.ui.button(
                 c,
                 21000 + index as u64,
-                Rect::new(
-                    x + width - 154.,
-                    y + if compact { 54. } else { 59. },
-                    132.,
-                    27.,
-                ),
+                Rect::new(edit_x, action_y, 114., 38.),
                 tr("agent_config.open"),
                 Style::Quiet,
                 enabled,
@@ -602,7 +609,6 @@ impl App {
                 self.open_agent_config(name);
                 return;
             }
-            let action_y = y + if compact { 96. } else { 20. };
             if actions
                 && self.ui.button(
                     c,
@@ -923,11 +929,37 @@ impl App {
             let y = 140. + (index - self.scroll) as f32 * 90.;
             let r = Rect::new(x, y, width, 77.);
             card(c, r);
+            let on = item.get("enabled").boolean();
+            let action = if on { "disable" } else { "enable" };
+            let title = tr(if on {
+                "action.disable_plugin"
+            } else {
+                "action.enable_plugin"
+            });
+            if self.ui.button(
+                c,
+                31000 + index as u64,
+                Rect::new(x + width - 153., y + 20., 103., 37.),
+                title,
+                Style::Secondary,
+                enabled,
+            ) {
+                self.action(
+                    title,
+                    words(&["plugins", action, item.get("name").text()]),
+                    None,
+                );
+                return;
+            }
+            let body = Rect::new(x, y, width - 160., 77.);
+            let chevron = Rect::new(x + width - 41., y + 20., 30., 37.);
             if self
                 .ui
-                .button(c, 30000 + index as u64, r, "", Style::Quiet, enabled)
+                .button(c, 30000 + index as u64, body, "", Style::Quiet, enabled)
+                || self
+                    .ui
+                    .button(c, 32000 + index as u64, chevron, "›", Style::Quiet, enabled)
             {
-                self.selected_plugin = item.clone();
                 self.plugin.name = item.get("name").text().into();
                 self.plugin.revision.clear();
                 self.plugin_panel = 1;
@@ -941,36 +973,28 @@ impl App {
                 true,
                 TEXT,
             );
-            c.text(
+            c.ellipsis(
                 &format!(
-                    "{} · {}",
+                    "{} · {} · {}",
                     if item.get("kind").text() == "native" {
                         tr("plugins.native")
                     } else {
                         tr("plugins.community")
                     },
-                    value(item, "version", tr("plugins.unversioned"))
+                    value(item, "version", tr("plugins.unversioned")),
+                    tr(if on {
+                        "status.enabled"
+                    } else {
+                        "status.disabled"
+                    })
                 ),
                 x + 22.,
                 y + 45.,
+                width - 190.,
                 13,
                 false,
                 MUTED,
             );
-            let on = item.get("enabled").boolean();
-            c.text(
-                if on {
-                    tr("status.enabled")
-                } else {
-                    tr("status.disabled")
-                },
-                x + width - 100.,
-                y + 28.,
-                13,
-                false,
-                if on { SUCCESS } else { MUTED },
-            );
-            c.text("›", x + width - 31., y + 24., 24, false, MUTED);
         }
     }
     pub(super) fn privacy(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
@@ -985,6 +1009,18 @@ impl App {
             },
         );
         let enabled = self.enabled();
+        if self.ui.button(
+            c,
+            819,
+            Rect::new(x + width - 154., 35., 154., 42.),
+            tr("privacy.advanced"),
+            Style::Secondary,
+            enabled,
+        ) {
+            self.privacy_panel = true;
+            self.repaint = true;
+            return;
+        }
         let modes = [
             ("off", tr("privacy.off"), tr("privacy.off_help")),
             ("secrets", tr("privacy.secrets"), tr("privacy.secrets_help")),
@@ -995,9 +1031,9 @@ impl App {
             ),
         ];
         for (index, (id, title, description)) in modes.iter().enumerate() {
-            let y = 139. + index as f32 * 115.;
+            let y = 125. + index as f32 * 82.;
             let selected = mode == *id;
-            let r = Rect::new(x, y, width, 99.);
+            let r = Rect::new(x, y, width, 72.);
             c.rect(r, 8., if selected { ACCENT_SOFT } else { LINE });
             c.rect(
                 r.inset(1.),
@@ -1012,45 +1048,44 @@ impl App {
                 self.action("Set privacy mode", words(&["privacy", "set", id]), None);
             }
             c.rect(
-                Rect::new(x + 24., y + 27., 20., 20.),
+                Rect::new(x + 24., y + 19., 20., 20.),
                 10.,
                 if selected { ACCENT } else { MUTED },
             );
-            c.rect(Rect::new(x + 26., y + 29., 16., 16.), 8., SURFACE);
+            c.rect(Rect::new(x + 26., y + 21., 16., 16.), 8., SURFACE);
             if selected {
-                c.rect(Rect::new(x + 30., y + 33., 8., 8.), 4., ACCENT);
+                c.rect(Rect::new(x + 30., y + 25., 8., 8.), 4., ACCENT);
             }
-            c.text(title, x + 62., y + 20., 19, true, TEXT);
-            c.text(description, x + 62., y + 57., 14, false, MUTED);
+            c.text(title, x + 62., y + 12., 19, true, TEXT);
+            c.ellipsis(description, x + 62., y + 44., width - 77., 13, false, MUTED);
             if selected {
                 c.text(
                     tr("privacy.saved"),
                     x + width - 56.,
-                    y + 27.,
+                    y + 19.,
                     12,
                     true,
                     ACCENT,
                 );
             }
         }
-        let pending = self.privacy_needs_restart();
-        let runtime_notice = self.privacy_runtime_notice();
-        let boundary_y = if runtime_notice.is_some() { 570. } else { 510. };
-        if let Some(notice) = runtime_notice {
+        let mut chart_top = 387.;
+        if let Some(notice) = self.privacy_runtime_notice() {
+            let pending = self.privacy_needs_restart();
             c.ellipsis(
                 notice,
                 x + 2.,
-                510.,
+                380.,
                 if pending { width - 172. } else { width },
-                14,
+                13,
                 false,
-                TEXT,
+                MUTED,
             );
             if pending
                 && self.ui.button(
                     c,
                     810,
-                    Rect::new(x + width - 154., 496., 154., 40.),
+                    Rect::new(x + width - 154., 370., 154., 36.),
                     tr("service.title"),
                     Style::Quiet,
                     enabled,
@@ -1058,26 +1093,9 @@ impl App {
             {
                 self.service_panel = true;
             }
+            chart_top += 40.;
         }
-        c.text(tr("privacy.boundaries"), x + 2., boundary_y, 17, true, TEXT);
-        c.text(
-            tr("privacy.boundaries_help"),
-            x + 2.,
-            boundary_y + 34.,
-            14,
-            false,
-            MUTED,
-        );
-        if state.get("model_auto").boolean() {
-            c.text(
-                tr("privacy.model_auto"),
-                x + 2.,
-                boundary_y + 70.,
-                13,
-                false,
-                MUTED,
-            );
-        }
+        self.privacy_chart(c, x, chart_top, width);
     }
     pub(super) fn updates(&mut self, c: &mut Canvas<'_>, x: f32, width: f32) {
         let enabled = self.enabled();

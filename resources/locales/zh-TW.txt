@@ -79,9 +79,6 @@ privacy.secrets_help	替換辨識到的金鑰、權杖與存取憑證。
 privacy.personal	金鑰與個人資訊
 privacy.personal_help	同時處理可辨識的電子郵件、手機號碼等資訊。
 status.current	目前
-privacy.boundaries	保護有界限
-privacy.boundaries_help	仍請確認內容適合傳送給目前供應商。
-privacy.model_auto	模型輔助辨識已開啟
 updates.gateway	閘道
 status.not_found	未偵測到
 updates.gui	控制台
@@ -376,3 +373,18 @@ agent_config.hint_gemini	JSON 設定和 .env 環境變數分開編輯。
 agent_config.hint_provider	選擇相應的供應商或模型設定檔，依文件核對欄位層級。
 agent_config.hint_mcp	這個檔案用於 MCP 設定。更換模型請使用工具的供應商設定。
 agent_config.hint_default	依工具的設定說明核對欄位名稱與值的型別。
+privacy.advanced	進階設定
+privacy.stats	隱私統計
+privacy.stats_unavailable	無法讀取隱私統計。
+privacy.stats_empty	尚無隱私檢查紀錄。
+privacy.stats_totals	最近有紀錄的日期 · 檢查 {checked} 次 · 偵測 {masked} 次
+privacy.stats_partial	部分日期的統計無法讀取。
+privacy.custom_word_count	已設定 {count} 個自訂詞
+privacy.option_model	模型輔助辨識
+privacy.option_model_help	使用已設定的本機辨識模型。
+privacy.option_case	忽略大小寫
+privacy.option_case_help	比對自訂詞時忽略字母大小寫。
+privacy.option_whole	比對完整詞
+privacy.option_whole_help	只比對具有詞邊界的自訂詞。
+privacy.option_shape	保留格式
+privacy.option_shape_help	替換支援的值時保留大致格式。

@@ -779,9 +779,10 @@ impl App {
                 Style::Secondary,
                 enabled,
             ) {
-                self.ask(
+                self.action(
                     tr("action.enable_plugin"),
                     words(&["plugins", "enable", LMM_PLUGIN]),
+                    None,
                 );
             }
         } else if self.ui.button(
@@ -1166,7 +1167,7 @@ impl App {
                         );
                     } else {
                         let args = words(&["plugins", "enable", plugin.get("name").text()]);
-                        self.ask(tr("action.enable_plugin"), args);
+                        self.action(tr("action.enable_plugin"), args, None);
                     }
                 } else if !item.get("source").text().is_empty() {
                     let source = item.get("source").text();
@@ -1279,8 +1280,20 @@ impl App {
             return;
         }
         if self.plugin_panel == 1 {
-            let item = self.selected_plugin.clone();
-            let name = value(&item, "name", "plugin");
+            let Some(item) = self
+                .state
+                .get("plugins")
+                .get("plugins")
+                .array()
+                .iter()
+                .find(|item| item.get("name").text() == self.plugin.name)
+                .cloned()
+            else {
+                self.plugin_panel = 0;
+                self.repaint = true;
+                return;
+            };
+            let name = item.get("name").text();
             let on = item.get("enabled").boolean();
             c.ellipsis(name, x, 100., width, 27, true, TEXT);
             c.text(
@@ -1310,9 +1323,10 @@ impl App {
                 Style::Primary,
                 enabled,
             ) {
-                self.ask(
+                self.action(
                     title,
                     words(&["plugins", if on { "disable" } else { "enable" }, name]),
+                    None,
                 );
             }
             field(

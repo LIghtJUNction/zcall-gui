@@ -13,6 +13,7 @@ mod ink;
 mod json;
 mod package_update;
 mod pages;
+mod privacy_page;
 mod provider_models;
 mod provider_oauth;
 mod settings;
@@ -146,7 +147,6 @@ struct App {
     provider_panel: u8,
     provider_edit: bool,
     plugin_panel: u8,
-    selected_plugin: Json,
     service_panel: bool,
     protocol_menu: bool,
     preferences: settings::Preferences,
@@ -155,6 +155,8 @@ struct App {
     repaint: bool,
     executable: Option<std::path::PathBuf>,
     privacy_restart_pending: bool,
+    privacy_panel: bool,
+    privacy_stats: Json,
 }
 fn words(args: &[&str]) -> Vec<String> {
     args.iter().map(|s| (*s).into()).collect()
@@ -173,6 +175,7 @@ fn human(s: &str) -> &str {
         "Test provider" => tr("action.test_provider"),
         "Sync AI tool status" => tr("action.detect_agents"),
         "Set privacy mode" => tr("action.privacy"),
+        privacy_page::STATS => tr("privacy.stats"),
         "Check gateway update" => tr("action.check_gateway"),
         "Check GUI update" => tr("action.check_gui"),
         "Update GUI" => tr("action.update_gui"),
@@ -228,7 +231,6 @@ impl App {
             provider_panel: 0,
             provider_edit: false,
             plugin_panel: 0,
-            selected_plugin: Json::Null,
             service_panel: false,
             protocol_menu: false,
             preferences,
@@ -237,6 +239,8 @@ impl App {
             repaint: false,
             executable: std::env::current_exe().ok(),
             privacy_restart_pending: false,
+            privacy_panel: false,
+            privacy_stats: Json::Null,
         }
     }
     fn modal(&self) -> bool {
@@ -247,6 +251,7 @@ impl App {
             || self.provider_panel > 0
             || self.plugin_panel > 0
             || self.service_panel
+            || self.privacy_panel
             || self.settings_panel
             || self.route_picker.is_some()
             || self.install_details
@@ -420,6 +425,19 @@ impl App {
                 self.oauth_prompt = Json::Null;
                 self.oauth_code.clear();
                 self.oauth_instructions.clear();
+            }
+            if reply.label == privacy_page::STATS {
+                self.failed = reply.result.is_err();
+                self.notice = if self.failed {
+                    tr("privacy.stats_unavailable").into()
+                } else {
+                    String::new()
+                };
+                self.privacy_stats = match reply.result {
+                    Ok(value) => value,
+                    Err(error) => Json::object([("error".into(), Json::String(error))]),
+                };
+                continue;
             }
             if agent_config::handles(&reply.label) {
                 self.accept_agent_config(&reply.label, reply.result);
@@ -666,11 +684,16 @@ impl App {
         });
     }
     fn draw(&mut self, c: &mut Canvas<'_>, event: Option<Event>) {
+        if self.page == 4 && self.privacy_stats == Json::Null && !self.busy {
+            self.action(privacy_page::STATS, words(&["privacy", "stats"]), None);
+        }
         if self.page == USAGE_PAGE && self.usage == Json::Null && !self.busy {
             self.refresh_usage();
         }
         if matches!(event, Some(Event::Key { code: 27, .. })) {
-            if self.agent_config.is_some() {
+            if self.privacy_panel {
+                self.privacy_panel = false;
+            } else if self.agent_config.is_some() {
                 self.close_agent_config();
             } else if self.protocol_menu {
                 self.protocol_menu = false;
@@ -910,6 +933,9 @@ impl App {
         }
         if self.plugin_panel > 0 {
             self.plugin_dialog(c);
+        }
+        if self.privacy_panel {
+            self.privacy_options(c);
         }
         if self.service_panel {
             self.service_dialog(c);

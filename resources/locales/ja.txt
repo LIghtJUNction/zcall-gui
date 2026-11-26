@@ -79,9 +79,6 @@ privacy.secrets_help	検出したキー、トークン、認証情報を置換�
 privacy.personal	認証情報と個人情報
 privacy.personal_help	対応するメールアドレスや電話番号も処理します。
 status.current	現在
-privacy.boundaries	保護には限界があります
-privacy.boundaries_help	送信前に内容が適切か確認してください。
-privacy.model_auto	モデルによる検出が有効です
 updates.gateway	ゲートウェイ
 status.not_found	未検出
 updates.gui	アプリ
@@ -376,3 +373,18 @@ agent_config.hint_gemini	JSON 設定と .env の環境変数は別のファイ�
 agent_config.hint_provider	対象の設定ファイルを選択し、項目の階層をドキュメントで確認してください。
 agent_config.hint_mcp	これは MCP 設定です。モデルを変更するにはツールのプロバイダー設定を使います。
 agent_config.hint_default	ツールの設定リファレンスでキー名と値の型を確認してください。
+privacy.advanced	詳細設定
+privacy.stats	プライバシー統計
+privacy.stats_unavailable	プライバシー統計を読み込めませんでした。
+privacy.stats_empty	プライバシーチェックの記録はまだありません。
+privacy.stats_totals	直近の記録日 · チェック {checked} 件 · 検出 {masked} 件
+privacy.stats_partial	一部の日別統計を読み込めませんでした。
+privacy.custom_word_count	登録済みのカスタム語句 · {count} 件
+privacy.option_model	モデルによる検出
+privacy.option_model_help	設定済みのローカルモデルを使用します。
+privacy.option_case	大文字と小文字を区別しない
+privacy.option_case_help	カスタム語句の照合時に文字の大小を無視します。
+privacy.option_whole	単語全体を照合
+privacy.option_whole_help	カスタム語句を単語境界で照合します。
+privacy.option_shape	形式を維持
+privacy.option_shape_help	対象の値を置き換えるときに大まかな形式を保ちます。

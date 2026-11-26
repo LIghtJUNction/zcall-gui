@@ -79,9 +79,6 @@ privacy.secrets_help	Replace recognized keys, tokens and credentials.
 privacy.personal	Secrets and personal data
 privacy.personal_help	Also handle supported email and phone patterns.
 status.current	Current
-privacy.boundaries	Protection has limits
-privacy.boundaries_help	Review content before sending it to a provider.
-privacy.model_auto	Model-assisted detection is enabled
 updates.gateway	Gateway
 status.not_found	Not found
 updates.gui	App
@@ -376,3 +373,18 @@ agent_config.hint_gemini	Keep JSON settings separate from environment variables 
 agent_config.hint_provider	Use the file for the provider or model settings you want to edit. Check the documented nesting.
 agent_config.hint_mcp	This file is for MCP settings. Use the tool’s provider settings to change its model.
 agent_config.hint_default	Use the tool’s settings reference to check the field names and value types.
+privacy.advanced	Advanced settings
+privacy.stats	Privacy activity
+privacy.stats_unavailable	Privacy counters could not be read.
+privacy.stats_empty	No privacy checks have been recorded yet.
+privacy.stats_totals	Recent recorded days · {checked} checked · {masked} with detections
+privacy.stats_partial	Some daily counters could not be read.
+privacy.custom_word_count	Custom terms configured · {count}
+privacy.option_model	Model-assisted detection
+privacy.option_model_help	Use the configured local recognition model.
+privacy.option_case	Ignore letter case
+privacy.option_case_help	Apply case-insensitive matching to custom terms.
+privacy.option_whole	Match whole words
+privacy.option_whole_help	Require word boundaries when matching custom terms.
+privacy.option_shape	Preserve format
+privacy.option_shape_help	Keep the general shape of supported replaced values.

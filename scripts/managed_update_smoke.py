@@ -26,15 +26,7 @@ with tempfile.TemporaryDirectory(prefix="zcall-managed-ui-") as temp:
         path.chmod(0o755)
         return path
     program("pacman", "import sys\nprint('zcalld-bin')\n")
-    program("paru", """import pathlib,sys,json,time
-p=pathlib.Path(__file__).parent.parent
-with (p/'helper.jsonl').open('a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
-deadline=time.monotonic()+15
-while not (p/'allow-exit').exists():
- if time.monotonic()>=deadline:raise SystemExit(98)
- time.sleep(.02)
-raise SystemExit(int((p/'exit-code').read_text()))
-""")
+    program("paru", "raise AssertionError('GUI must delegate gateway updates to zcalld')\n")
     program("xdg-terminal-exec", """import os,pathlib,sys,json
 p=pathlib.Path(__file__).parent.parent
 with (p/'terminal.jsonl').open('a') as f:f.write(json.dumps(sys.argv[1:])+'\\n')
@@ -42,11 +34,18 @@ a=sys.argv[1:]
 if a[0]=='--':a=a[1:]
 os.execv(a[0],a)
 """)
-    cli = program("zcalld", """import pathlib,sys,json
+    cli = program("zcalld", """import pathlib,sys,json,time
 p=pathlib.Path(__file__).parent.parent
 a=sys.argv[1:]
 if a==['--version']:
  print('zcalld 0.2.0');raise SystemExit(0)
+if a==['update','apply']:
+ with (p/'helper.jsonl').open('a') as f:f.write(json.dumps(a)+'\\n')
+ deadline=time.monotonic()+15
+ while not (p/'allow-exit').exists():
+  if time.monotonic()>=deadline:raise SystemExit(98)
+  time.sleep(.02)
+ raise SystemExit(int((p/'exit-code').read_text()))
 with (p/'calls.jsonl').open('a') as f:f.write(json.dumps(a)+'\\n')
 if a[:1]==['status']:r={'version':'0.2.0','healthy':False}
 elif a[:2]==['update','check']:
@@ -80,12 +79,9 @@ print(json.dumps(r))
     def notice_color():
         return pixels().getpixel((201,718))[:3]
     def red_notice():
-        r,g,b=notice_color()
-        # Distinguish a red error from the warm copper busy/accent color.
-        return r>120 and r-g>70 and r-b>70
+        return notice_color() == (165,46,39)
     def busy_notice():
-        r,g,b=notice_color()
-        return r>g>b and 35<=r-g<=65 and g-b>25
+        return notice_color() == (153,79,44)
     try:
         window=""
         def locate():
@@ -123,12 +119,13 @@ print(json.dumps(r))
         time.sleep(.3)
         pixels().save(output/"success.png")
         helpers=lines("helper.jsonl")
-        assert helpers==[["-Syu","zcalld-bin"],["-Syu","zcalld-bin"]],helpers
+        assert helpers==[["update","apply"],["update","apply"]],helpers
         assert not (temp/"must-not-execute").exists(),"JSON command was executed"
         for args in lines("terminal.jsonl"):
+            assert args[6:] == [str(cli),"update","apply"],args
             result=pathlib.Path(args[5])
             assert result.name=="result" and not result.parent.exists(),args
-        report={"scope":"private native Xvfb window; inert pacman, paru and terminal fixtures",
+        report={"scope":"private native Xvfb window; inert zcalld and terminal fixtures",
                 "actual_system_upgrade":False,"helper_arguments":helpers,
                 "busy_distinct_from_error":True,"busy_indicator_rgb":busy_color,
                 "failure_indicator_rgb":failed_color,

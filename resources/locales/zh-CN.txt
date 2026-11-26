@@ -175,7 +175,7 @@ overview.providers_count	已配置的供应商
 overview.agents_count	检测到的 AI 工具
 action.connect_tools	接入 AI 工具
 overview.add_help	先添加供应商，再接入常用 AI 工具。
-agents.selection_help	选择 AI 工具，再选择它要使用的模型或路由。
+agents.selection_help	点击「接入」即可连接网关，之后可手动更换路由。
 agents.no_routes	先添加供应商，再连接工具
 agents.routes_unavailable	暂时无法读取可用路由
 agents.no_routes_help	添加供应商和模型后，刷新此列表。

@@ -104,6 +104,7 @@ else:
     if a[:2]==['providers','add']:s['providers'].append({'name':a[2],'base_url':option('--base-url'),'protocol':option('--protocol'),'configured':True})
     if a[:2]==['agents','apply']:
         route=option('--route')
+        if not route and s['routes']:route=s['routes'][0]['id']
         if route not in {m['id'] for m in s['routes']}:print(json.dumps({'error':'route not available'}));raise SystemExit(1)
         s['agent_configured']=True;s['agent_route']=route
     if a[:2]==['agents','revert']:s['agent_configured']=False;s['agent_route']=None
@@ -234,9 +235,28 @@ print(json.dumps(r))
         assert count(["agents","revert","claude"])==0,"Restore must require confirmation"
         confirm()
         wait_for(lambda:count(["agents","revert","claude"])==1,"Agent restore did not invoke CLI");ready(before)
+        if args.real_cli:
+            assert original_agent.read_bytes() == before_gui_bytes
+            old_row = agent_row()
+            original_agent.write_bytes(original_bytes)
+            click(965, 56)
+            wait_for(lambda: agent_row() != old_row, "Disconnected fixture did not repaint")
+        before = count(["models"])
+        click(976, 227)
+        shot("agent-connect-clicked")
+        wait_for(lambda: count(["agents", "apply", "claude"]) == 2,
+                 "Connect did not directly apply the Agent configuration")
+        connect = [call for call in calls() if call["args"][:3] == ["agents", "apply", "claude"]][-1]
+        assert "--route" not in connect["args"], connect
+        ready(before)
+        click(872, 227)
+        before = count(["models"])
+        confirm()
+        wait_for(lambda: count(["agents", "revert", "claude"]) == 2, "Connected Agent could not be restored")
+        ready(before)
         catalog_unavailable=False
         if args.real_cli:
-            assert original_agent.read_bytes()==before_gui_bytes,"Restore lost the pre-change user configuration"
+            assert original_agent.read_bytes()==original_bytes,"Restore lost the pre-change user configuration"
             assert json.loads(original_agent.read_text())["theme"]=="preserve-user-value"
             assert original_agent.stat().st_mode&0o777==0o600
             saved=config.read_text();lines=[];in_route=False

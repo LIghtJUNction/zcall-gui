@@ -175,7 +175,7 @@ overview.providers_count	設定済みプロバイダー
 overview.agents_count	検出した AI ツール
 action.connect_tools	AI ツールを接続
 overview.add_help	プロバイダーを追加して、AI ツールを接続します。
-agents.selection_help	AIツールを選び、使用するモデルまたはルートを選択します。
+agents.selection_help	AIツールをゲートウェイに接続します。ルートは後から変更できます。
 agents.no_routes	ツールを接続する前にプロバイダーを追加
 agents.routes_unavailable	利用可能なルートを読み取れません
 agents.no_routes_help	プロバイダーとモデルを追加して、一覧を更新してください。

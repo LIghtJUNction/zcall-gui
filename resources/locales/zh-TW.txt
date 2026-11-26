@@ -175,7 +175,7 @@ overview.providers_count	已設定的供應商
 overview.agents_count	偵測到的 AI 工具
 action.connect_tools	連接 AI 工具
 overview.add_help	先新增供應商，再連接常用 AI 工具。
-agents.selection_help	選擇 AI 工具，再選擇它要使用的模型或路由。
+agents.selection_help	點選「接入」即可連線到閘道，之後可手動更換路由。
 agents.no_routes	先新增供應商，再連接工具
 agents.routes_unavailable	暫時無法讀取可用路由
 agents.no_routes_help	新增供應商和模型後，重新整理此清單。

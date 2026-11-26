@@ -601,7 +601,18 @@ impl App {
                     enabled && installed && writable && has_routes,
                 )
             {
-                self.open_route_picker(item);
+                if configured {
+                    self.open_route_picker(item);
+                } else {
+                    self.action(
+                        &i18n::message(
+                            "action.connect_named",
+                            &[("name", agent_identity::display_name(name))],
+                        ),
+                        words(&["agents", "apply", name]),
+                        None,
+                    );
+                }
                 return;
             }
             if restorable

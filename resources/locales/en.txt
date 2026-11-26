@@ -175,7 +175,7 @@ overview.providers_count	Configured providers
 overview.agents_count	Detected AI tools
 action.connect_tools	Connect AI tools
 overview.add_help	Add a provider, then connect your AI tools.
-agents.selection_help	Choose an AI tool, then select its model or route.
+agents.selection_help	Connect an AI tool to the gateway. You can change its route later.
 agents.no_routes	Add a provider before connecting a tool
 agents.routes_unavailable	Available routes could not be read
 agents.no_routes_help	Add a provider and model, then refresh this list.

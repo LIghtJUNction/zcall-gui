@@ -358,3 +358,21 @@ virtual.clear_metadata	清除元数据
 virtual.order	按优先级
 virtual.rotate	轮询
 virtual.duplicate	这个模型 ID 已存在。
+agent_config.open	编辑配置
+agent_config.docs	官方文档
+agent_config.copy	复制提示词给 Agent
+agent_config.saved	配置已保存
+agent_config.valid	语法检查通过
+agent_config.copied	提示词已复制
+agent_config.help	Tab 补全匹配的键，Ctrl+S 检查并保存。
+agent_config.discard_hint	还有未保存的修改。可放弃修改或保存后关闭。
+agent_config.discard	放弃修改
+agent_config.check	检查语法
+agent_config.save	保存
+agent_config.prompt	请帮我配置 {agent}。先查看以下本地文件：{nl}{paths}{nl}官方文档：{url}{nl}如果目标不够明确，请先问我。只修改必要的配置，保留其他设置，并按官方文档检查。回复中不要泄露凭据。
+agent_config.hint_codex	model 放在顶层，base_url 和 wire_api 放在选中的 model_providers 条目里。
+agent_config.hint_claude	网关环境变量放在 env 对象里，保留无关的权限设置。
+agent_config.hint_gemini	JSON 配置和 .env 环境变量分开编辑。
+agent_config.hint_provider	选择对应的供应商或模型配置文件，按文档核对字段层级。
+agent_config.hint_mcp	此文件用于 MCP 设置。更换模型请使用工具自己的供应商设置。
+agent_config.hint_default	按工具的设置说明核对字段名和取值类型。

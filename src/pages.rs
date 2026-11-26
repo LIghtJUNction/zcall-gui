@@ -586,6 +586,22 @@ impl App {
                     MUTED,
                 );
             }
+            if self.ui.button(
+                c,
+                21000 + index as u64,
+                Rect::new(
+                    x + width - 154.,
+                    y + if compact { 54. } else { 59. },
+                    132.,
+                    27.,
+                ),
+                tr("agent_config.open"),
+                Style::Quiet,
+                enabled,
+            ) {
+                self.open_agent_config(name);
+                return;
+            }
             let action_y = y + if compact { 96. } else { 20. };
             if actions
                 && self.ui.button(

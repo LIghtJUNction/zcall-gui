@@ -245,7 +245,7 @@ impl Drop for Session {
     }
 }
 
-fn open_browser(url: &str) -> Result<(), String> {
+pub(super) fn open_browser(url: &str) -> Result<(), String> {
     let Some(rest) = url.strip_prefix("https://") else {
         return Err(tr("providers.oauth_bad_link").into());
     };

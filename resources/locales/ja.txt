@@ -358,3 +358,21 @@ virtual.clear_metadata	メタデータを消去
 virtual.order	優先順
 virtual.rotate	ラウンドロビン
 virtual.duplicate	このモデル ID は既に存在します。
+agent_config.open	設定を編集
+agent_config.docs	公式ドキュメント
+agent_config.copy	エージェント用の指示をコピー
+agent_config.saved	設定を保存しました
+agent_config.valid	構文チェックに合格しました
+agent_config.copied	指示をコピーしました
+agent_config.help	Tab でキーを補完し、Ctrl+S で検証して保存します。
+agent_config.discard_hint	未保存の変更があります。破棄するか、保存してから閉じてください。
+agent_config.discard	変更を破棄
+agent_config.check	構文チェック
+agent_config.save	保存
+agent_config.prompt	{agent} の設定を手伝ってください。まず次のローカルファイルを確認してください。{nl}{paths}{nl}公式ドキュメント: {url}{nl}目的が不明な場合は確認してください。必要な設定だけ変更し、他の設定を保持して公式ドキュメントに従って検証してください。応答に認証情報を含めないでください。
+agent_config.hint_codex	model は最上位に、base_url と wire_api は選択した model_providers 項目に設定します。
+agent_config.hint_claude	ゲートウェイの環境変数を env に設定します。無関係な権限設定は保持します。
+agent_config.hint_gemini	JSON 設定と .env の環境変数は別のファイルで編集します。
+agent_config.hint_provider	対象の設定ファイルを選択し、項目の階層をドキュメントで確認してください。
+agent_config.hint_mcp	これは MCP 設定です。モデルを変更するにはツールのプロバイダー設定を使います。
+agent_config.hint_default	ツールの設定リファレンスでキー名と値の型を確認してください。

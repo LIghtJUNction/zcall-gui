@@ -6,6 +6,20 @@ The application uses [zgpui](https://github.com/LIghtJUNction/zgpui) through its
 
 Release verification uses [RustCrypto sha2](https://github.com/RustCrypto/hashes) for SHA-256 and [zhex](https://github.com/LIghtJUNction/zhex) for lowercase hexadecimal output. The GUI and gateway helper verification share this implementation, while their existing download, confirmation and installation flows remain separate.
 
+## Edit AI tool configurations
+
+Open **AI tools → Edit configuration** on a tool's card. The editor reads the
+actual user files identified by the installed gateway's `agents config` command.
+Use the file arrows for tools with more than one config. The native editor
+provides syntax highlighting and suggested keys for common settings. Tab
+completes a matching key. **Check syntax** validates without saving and
+Ctrl+S validates before writing. A change on disk after opening the editor
+causes Save to fail so the external edit is preserved.
+
+**Official docs** opens the tool's reference. **Copy prompt for an Agent**
+copies the local file paths and editing instructions without copying contents
+or credentials.
+
 ## Build and run
 
 ```sh

@@ -1,5 +1,6 @@
 #![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
 use ink::{ACCENT, ACCENT_SOFT, SUCCESS};
+mod agent_config;
 mod agent_identity;
 mod agent_logos;
 mod backend;
@@ -132,6 +133,7 @@ struct App {
     provider_query: String,
     provider_models: Option<provider_models::Browser>,
     virtual_models: Option<virtual_models::Panel>,
+    agent_config: Option<agent_config::Editor>,
     plugin: PluginForm,
     route_picker: Option<AgentRoutePicker>,
     confirm: Option<Action>,
@@ -213,6 +215,7 @@ impl App {
             provider_query: String::new(),
             provider_models: None,
             virtual_models: None,
+            agent_config: None,
             plugin: PluginForm::default(),
             route_picker: None,
             confirm: None,
@@ -240,6 +243,7 @@ impl App {
         self.confirm.is_some()
             || self.provider_models.is_some()
             || self.virtual_models.is_some()
+            || self.agent_config.is_some()
             || self.provider_panel > 0
             || self.plugin_panel > 0
             || self.service_panel
@@ -416,6 +420,10 @@ impl App {
                 self.oauth_prompt = Json::Null;
                 self.oauth_code.clear();
                 self.oauth_instructions.clear();
+            }
+            if agent_config::handles(&reply.label) {
+                self.accept_agent_config(&reply.label, reply.result);
+                continue;
             }
             if matches!(
                 reply.label.as_str(),
@@ -662,7 +670,9 @@ impl App {
             self.refresh_usage();
         }
         if matches!(event, Some(Event::Key { code: 27, .. })) {
-            if self.protocol_menu {
+            if self.agent_config.is_some() {
+                self.close_agent_config();
+            } else if self.protocol_menu {
                 self.protocol_menu = false;
             } else if self.route_picker.is_some() {
                 self.route_picker = None;
@@ -710,6 +720,7 @@ impl App {
                 };
             }
         }
+        let editor_event = self.agent_config.is_some().then(|| event.clone()).flatten();
         self.ui.begin(event);
         let sidebar = 166.;
         c.rect(Rect::new(0., 0., sidebar, c.height), 0., SURFACE);
@@ -888,7 +899,9 @@ impl App {
         ) {
             self.refresh();
         }
-        if self.virtual_models.is_some() {
+        if self.agent_config.is_some() {
+            self.agent_config_dialog(c, editor_event.as_ref());
+        } else if self.virtual_models.is_some() {
             self.virtual_models_dialog(c);
         } else if self.provider_models.is_some() {
             self.provider_models_dialog(c);

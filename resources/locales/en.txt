@@ -358,3 +358,21 @@ virtual.clear_metadata	Clear metadata
 virtual.order	Priority order
 virtual.rotate	Round robin
 virtual.duplicate	This model ID already exists.
+agent_config.open	Edit configuration
+agent_config.docs	Official docs
+agent_config.copy	Copy prompt for an Agent
+agent_config.saved	Configuration saved
+agent_config.valid	Syntax checked
+agent_config.copied	Prompt copied
+agent_config.help	Tab completes a matching key. Ctrl+S checks and saves.
+agent_config.discard_hint	There are unsaved changes. Use Discard to close or Save to keep them.
+agent_config.discard	Discard changes
+agent_config.check	Check syntax
+agent_config.save	Save
+agent_config.prompt	Help me configure {agent}. Review these local files first:{nl}{paths}{nl}Official documentation: {url}{nl}Ask what I want to change if unclear. Edit only the required settings, preserve unrelated entries, validate against the documentation, and keep credentials out of your reply.
+agent_config.hint_codex	Put model at the top level. Put base_url and wire_api under the selected model_providers entry.
+agent_config.hint_claude	Set gateway environment variables under env. Leave unrelated permission settings intact.
+agent_config.hint_gemini	Keep JSON settings separate from environment variables in .env.
+agent_config.hint_provider	Use the file for the provider or model settings you want to edit. Check the documented nesting.
+agent_config.hint_mcp	This file is for MCP settings. Use the tool’s provider settings to change its model.
+agent_config.hint_default	Use the tool’s settings reference to check the field names and value types.

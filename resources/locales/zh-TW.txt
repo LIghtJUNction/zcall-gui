@@ -6,7 +6,7 @@ nav.privacy	隱私
 nav.updates	更新
 action.save_provider	儲存供應商
 action.test_provider	測試連線
-action.detect_agents	偵測工具
+action.detect_agents	同步狀態
 action.privacy	更新隱私設定
 action.check_gateway	檢查閘道更新
 action.check_gui	檢查控制台更新
@@ -55,7 +55,7 @@ status.configured	已設定
 status.needs_setup	待設定
 agents.route	預設路由
 agents.empty	尚未偵測到工具
-agents.empty_help	安裝支援的工具後，按「偵測工具」。
+agents.empty_help	安裝支援的工具後，按「同步狀態」。
 agents.connected	已接入閘道
 agents.available	可接入
 agents.not_installed	未偵測到安裝
@@ -92,7 +92,7 @@ action.update_now	立即更新
 action.check_update	檢查更新
 action.update_gateway	更新閘道
 updates.verify	更新前會驗證下載檔案。
-updates.managed_help	套件安裝會開啟終端，依提示確認系統升級。
+updates.managed_help	套件更新會開啟終端，更新所選應用程式。
 status.processing	正在處理…
 providers.details	供應商詳細資訊
 providers.edit	編輯供應商
@@ -158,7 +158,7 @@ settings.help	只影響控制台，不修改閘道設定。
 status.package_wait	請在終端完成升級與授權。
 updates.no_pacman	此安裝需要使用原來的套件管理器更新。
 updates.not_owned	找不到此程式對應的 Arch 套件。
-updates.no_helper	請先安裝 paru 或 yay，再使用終端更新。
+updates.no_helper	請先安裝 paru 或 yay，再更新此套件。
 updates.no_terminal	找不到終端，請安裝或設定 xdg-terminal-exec。
 updates.start_failed	無法啟動更新：{error}
 updates.terminal_closed	更新終端已關閉或未啟動，尚未確認升級完成。
@@ -280,3 +280,6 @@ usage.recording_off_help	啟用本機請求與 Token 記錄後，重新啟動閘
 usage.recording_unknown	記錄設定狀態未知
 usage.recording_unknown_help	目前閘道版本不提供記錄設定狀態，更新後可在這裡管理。
 usage.open_updates	前往更新
+agents.synced	工具狀態已同步
+agents.changed_connected	已接入閘道（設定被外部修改）
+agents.changed_disconnected	未接入閘道（設定被外部修改）

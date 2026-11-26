@@ -133,7 +133,7 @@ fn human(s: &str) -> &str {
     match s {
         "Save provider" => tr("action.save_provider"),
         "Test provider" => tr("action.test_provider"),
-        "Detect AI tools" => tr("action.detect_agents"),
+        "Sync AI tool status" => tr("action.detect_agents"),
         "Set privacy mode" => tr("action.privacy"),
         "Check gateway update" => tr("action.check_gateway"),
         "Check GUI update" => tr("action.check_gui"),
@@ -325,6 +325,18 @@ impl App {
                         self.failed = false;
                     }
                 }
+                Ok(data) if reply.label == "Sync AI tool status" => {
+                    if let (Json::Object(state), Json::Array(_)) =
+                        (&mut self.state, data.get("agents"))
+                    {
+                        state.insert("agents".into(), data);
+                        self.notice = tr("agents.synced").into();
+                        self.failed = false;
+                    } else {
+                        self.notice = tr("error.invalid_response").into();
+                        self.failed = true;
+                    }
+                }
                 Ok(data) if reply.label.starts_with("Core installer ") => {
                     let prepare = reply.label == "Core installer prepare";
                     let completed = core_install_ui::committed(&data);
@@ -437,12 +449,12 @@ impl App {
         let sender = self.sender.clone();
         let backend = self.backend.clone();
         std::thread::spawn(move || {
-            let owners = if gui {
-                &["zcall-gui", "zcall-gui-bin"]
+            let result = if gui {
+                package_update::apply(&binary, &["zcall-gui", "zcall-gui-bin"])
             } else {
-                &["zcalld", "zcalld-bin"]
+                package_update::gateway(&binary)
             };
-            let result = package_update::apply(&binary, owners).map(|version| {
+            let result = result.map(|version| {
                 Json::object([
                     ("state".into(), backend.refresh()),
                     (

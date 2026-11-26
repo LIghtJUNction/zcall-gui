@@ -42,7 +42,7 @@ On Linux, **Install user service** then verifies or creates the user unit for th
 
 - **Overview:** see the gateway state and one next step: add a provider or connect your AI tools. Click either count to open its list; service controls stay in Service settings.
 - **Providers:** search by name, model, protocol or endpoint; add or update an endpoint, select a protocol, set a default model, test it, or remove it. API keys are masked and sent to the CLI through stdin.
-- **AI tools:** detect supported tools, apply a gateway route, or revert an earlier configuration change.
+- **AI tools:** sync the current gateway connection and route from tool configuration, apply a route, or restore a previous configuration when it still matches what the gateway wrote.
 - **Plugins:** inspect enabled state, install a local library or pinned remote source, enable/disable, update or remove a plugin. Newly installed native code requires a separate enable action.
 - **Privacy:** select off, secret sanitization, or secret plus personal information sanitization.
 - **Usage:** inspect recorded upstream attempts, including retries, successful and failed attempts, input/output tokens, cache and reasoning details, and attempt success rate. The page reads local accounting on first open or when you select Refresh; other pages do not scan usage history. Enable or disable local recording from this page, then explicitly restart the service to apply the saved setting. Disabling recording preserves existing history. Older gateways without detail counters still show their supported totals; a missing recording-status field is shown as unknown.
@@ -99,7 +99,7 @@ zcall-gui --core-install rollback
 
 These commands return JSON. `prepare` obtains the official metadata and verified helper; `apply` is the explicit installation action. `status` only reads local installation state. Native bootstrap needs system `curl` and `tar`; Windows uses native file-handle security APIs to set and verify private cache permissions. The GUI and installer require no Python runtime. A core release without the complete archive and installer protocol is rejected before installation.
 
-Managed paths remain on their package-manager update route. For AUR packages, the existing native terminal preserves package review, authorization, source-versus-binary package identity, and actual exit status.
+Managed paths remain on their package-manager update route. For AUR gateway packages, the native terminal runs `zcalld update apply`. The CLI detects the installed source or binary package and passes that package to paru or yay for review and authorization.
 
 ### GUI executable
 

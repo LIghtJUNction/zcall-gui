@@ -6,7 +6,7 @@ nav.privacy	プライバシー
 nav.updates	更新
 action.save_provider	保存
 action.test_provider	接続テスト
-action.detect_agents	ツールを検出
+action.detect_agents	状態を同期
 action.privacy	プライバシー設定
 action.check_gateway	ゲートウェイの更新確認
 action.check_gui	アプリの更新確認
@@ -92,7 +92,7 @@ action.update_now	更新する
 action.check_update	更新を確認
 action.update_gateway	ゲートウェイを更新
 updates.verify	インストール前にダウンロードを検証します。
-updates.managed_help	パッケージ版は端末を開き、通常のシステム更新を確認します。
+updates.managed_help	端末を開いて選択したアプリのパッケージを更新します。
 status.processing	処理中…
 providers.details	接続先の詳細
 providers.edit	接続先を編集
@@ -158,7 +158,7 @@ settings.help	ゲートウェイの設定には影響しません。
 status.package_wait	端末で更新と認証を完了してください。
 updates.no_pacman	このインストールは元のパッケージ管理ツールで更新してください。
 updates.not_owned	この実行ファイルに対応する Arch パッケージが見つかりません。
-updates.no_helper	アプリから AUR を更新するには paru または yay をインストールしてください。
+updates.no_helper	このパッケージを更新するには paru または yay をインストールしてください。
 updates.no_terminal	端末が見つかりません。xdg-terminal-exec を設定してください。
 updates.start_failed	更新を開始できませんでした：{error}
 updates.terminal_closed	更新端末が閉じられたか起動できず、完了を確認できませんでした。
@@ -280,3 +280,6 @@ usage.recording_off_help	ローカルの使用量記録を有効にして、ゲ�
 usage.recording_unknown	記録設定の状態は不明です
 usage.recording_unknown_help	このバージョンでは記録設定を取得できません。更新すると管理できます。
 usage.open_updates	更新を開く
+agents.synced	ツールの状態を同期しました
+agents.changed_connected	接続済み（外部で設定変更）
+agents.changed_disconnected	未接続（外部で設定変更）

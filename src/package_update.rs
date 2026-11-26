@@ -15,6 +15,21 @@ pub fn apply(binary: &Path, packages: &[&str]) -> Result<String, String> {
     }
 }
 
+pub fn gateway(binary: &Path) -> Result<String, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let path = std::env::var_os("PATH").unwrap_or_default();
+        let terminal = std::env::var_os("TERMINAL");
+        linux::Plan::gateway(binary, &path, terminal.as_deref())?
+            .run(std::time::Duration::from_secs(7200))
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = binary;
+        Err(crate::i18n::tr("updates.no_terminal").into())
+    }
+}
+
 #[cfg(target_os = "linux")]
 mod linux {
     use crate::i18n::{message, tr};
@@ -99,8 +114,8 @@ trap 'exit 143' TERM
 
     pub(super) struct Plan {
         executable: PathBuf,
-        helper: PathBuf,
-        package: String,
+        command: PathBuf,
+        args: Vec<OsString>,
         terminal: PathBuf,
         terminal_args: Vec<OsString>,
     }
@@ -131,8 +146,25 @@ trap 'exit 143' TERM
                 terminal(path, preferred).ok_or(tr("updates.no_terminal"))?;
             Ok(Self {
                 executable,
-                helper,
-                package,
+                command: helper,
+                args: vec!["-S".into(), "--needed".into(), "--".into(), package.into()],
+                terminal,
+                terminal_args,
+            })
+        }
+
+        pub(super) fn gateway(
+            binary: &Path,
+            path: &OsStr,
+            preferred: Option<&OsStr>,
+        ) -> Result<Self, String> {
+            let executable = find(binary.as_os_str(), path).ok_or(tr("updates.not_owned"))?;
+            let (terminal, terminal_args) =
+                terminal(path, preferred).ok_or(tr("updates.no_terminal"))?;
+            Ok(Self {
+                command: executable.clone(),
+                executable,
+                args: vec!["update".into(), "apply".into()],
                 terminal,
                 terminal_args,
             })
@@ -147,9 +179,8 @@ trap 'exit 143' TERM
                 .args(&self.terminal_args)
                 .args(["/bin/sh", "-c", WRAPPER, "zcall-package-update"])
                 .arg(&result)
-                .arg(&self.helper)
-                .arg("-Syu")
-                .arg(&self.package)
+                .arg(&self.command)
+                .args(&self.args)
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
@@ -289,19 +320,41 @@ trap 'exit 143' TERM
         }
 
         #[test]
-        fn source_and_binary_packages_use_literal_normal_upgrade() {
+        fn source_and_binary_packages_use_targeted_upgrade() {
             let _fixture = PROCESS_FIXTURES.lock().unwrap();
             for (owner, helper) in [("zcall-gui", "paru"), ("zcall-gui-bin", "yay")] {
                 let (root, plan) = fixture(owner, 0, helper);
                 assert_eq!(plan.run(Duration::from_secs(5)).unwrap(), "zcall-gui 0.1.0");
                 assert_eq!(
                     fs::read_to_string(root.0.join(format!("{helper}.args"))).unwrap(),
-                    format!("-Syu\n{owner}\n")
+                    format!("-S\n--needed\n--\n{owner}\n")
                 );
                 let args = fs::read_to_string(root.0.join("xdg-terminal-exec.args")).unwrap();
                 let result = args.lines().find(|s| s.ends_with("/result")).unwrap();
                 assert!(!Path::new(result).parent().unwrap().exists());
             }
+        }
+
+        #[test]
+        fn gateway_terminal_runs_the_selected_executable_and_update_subcommand() {
+            let _fixture = PROCESS_FIXTURES.lock().unwrap();
+            let (root, _) = fixture("zcall-gui", 0, "paru");
+            script(
+                &root.0,
+                "zcalld",
+                r#"if [ "$1" = '--version' ]; then
+    printf 'zcalld 0.4.4\n'
+else
+    printf '%s\n' "$@" > "$(dirname "$0")/gateway.args"
+fi"#,
+            );
+            let plan = Plan::gateway(Path::new("zcalld"), root.0.as_os_str(), None).unwrap();
+            assert_eq!(plan.run(Duration::from_secs(5)).unwrap(), "zcalld 0.4.4");
+            assert_eq!(
+                fs::read_to_string(root.0.join("gateway.args")).unwrap(),
+                "update\napply\n"
+            );
+            assert!(!root.0.join("paru.args").exists());
         }
 
         #[test]

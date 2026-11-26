@@ -360,12 +360,12 @@ impl App {
         if self.ui.button(
             c,
             501,
-            Rect::new(x + width - 130., 35., 130., 42.),
+            Rect::new(x + width - 166., 35., 166., 42.),
             tr("action.detect_agents"),
             Style::Secondary,
             enabled,
         ) {
-            self.action("Detect AI tools", words(&["agents", "detect"]), None);
+            self.action("Sync AI tool status", words(&["agents", "detect"]), None);
         }
         if has_routes {
             c.ellipsis(
@@ -439,13 +439,15 @@ impl App {
             let configured = item.get("configured").boolean();
             let installed = item.get("installed").boolean();
             let writable = item.get("writable").boolean();
+            let changed = item.get("changed").boolean();
+            let restorable = item.get("restorable").boolean();
             c.rect(Rect::new(x, y, width, stride - 12.), 10., SURFACE);
             agent_identity::draw(c, name, Rect::new(x + 20., y + 18., 40., 40.));
             let label_x = x + 80.;
             let actions = writable && (installed || configured);
-            let reserved = if compact || !actions {
+            let reserved = if compact || (!actions && !restorable) {
                 22.
-            } else if configured {
+            } else if restorable {
                 264.
             } else {
                 170.
@@ -460,14 +462,18 @@ impl App {
                 true,
                 TEXT,
             );
-            let status_color = if installed && configured && writable {
+            let status_color = if configured && writable && !changed {
                 GREEN
             } else {
                 MUTED
             };
             c.rect(Rect::new(label_x, y + 45., 5., 5.), 2.5, status_color);
             c.ellipsis(
-                if !installed {
+                if changed && configured {
+                    tr("agents.changed_connected")
+                } else if changed {
+                    tr("agents.changed_disconnected")
+                } else if !installed && !configured {
                     tr("agents.not_installed")
                 } else if !writable {
                     tr("agents.read_only")
@@ -519,8 +525,7 @@ impl App {
                 self.open_route_picker(item);
                 return;
             }
-            if configured
-                && writable
+            if restorable
                 && self.ui.button(
                     c,
                     20001 + index as u64 * 2,

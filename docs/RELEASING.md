@@ -124,14 +124,14 @@ Use a fresh ignored _release/aur checkout for the retry. The script does not for
 
 ## Updating an AUR installation from the app
 
-On the Updates page, check for a release, then select **Update in terminal**.
-The app asks pacman which package owns the selected executable and preserves
-the source or binary package choice. It launches the installed paru or yay
-with **-Syu** and that package name in a native terminal. This is a normal Arch
-system upgrade: review the package list and authorize it in the terminal.
-No confirmation is bypassed. The app displays the helper exit status and reads
-the installed executable version after success; reopen the app after updating
-its own package. The running gateway service is controlled separately.
+Select **Update in terminal** on the Updates page. The gateway card opens a
+native terminal and runs the selected binary with `zcalld update apply`. The
+CLI asks pacman which package owns the executable, then calls paru or yay
+with `-S --needed -- <package>`. The GUI card uses the same package-targeted
+operation for its own package. Review and authorize the transaction in the
+terminal. The GUI reads the executable version after the command succeeds.
+Reopen the app after updating its package. The running gateway service is
+controlled separately.
 
 Install paru or yay and a terminal emulator to use this button.
 The default terminal can be selected with xdg-terminal-exec or a recognized

@@ -158,7 +158,7 @@ pub fn apply() -> Result<Json, String> {
     let current = std::env::current_exe().map_err(|e| e.to_string())?;
     if managed(&current) {
         return Err(
-            "System-managed installation: use your package manager (Arch: yay -Syu zcall-gui-bin)."
+            "System-managed installation: use your package manager (Arch: yay -S --needed -- zcall-gui-bin)."
                 .into(),
         );
     }

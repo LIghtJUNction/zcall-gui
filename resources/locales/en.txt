@@ -6,7 +6,7 @@ nav.privacy	Privacy
 nav.updates	Updates
 action.save_provider	Save provider
 action.test_provider	Test connection
-action.detect_agents	Detect tools
+action.detect_agents	Sync status
 action.privacy	Privacy settings
 action.check_gateway	Check gateway update
 action.check_gui	Check app update
@@ -55,7 +55,7 @@ status.configured	Configured
 status.needs_setup	Needs setup
 agents.route	Default route
 agents.empty	No tools found
-agents.empty_help	Install a supported tool, then select Detect tools.
+agents.empty_help	Install a supported tool, then select Sync status.
 agents.connected	Using gateway
 agents.available	Ready to connect
 agents.not_installed	Not installed
@@ -92,7 +92,7 @@ action.update_now	Update now
 action.check_update	Check updates
 action.update_gateway	Update gateway
 updates.verify	Downloaded files are verified before installation.
-updates.managed_help	Package installs open a terminal for the normal system upgrade.
+updates.managed_help	Package updates open a terminal to update the selected application.
 status.processing	Working…
 providers.details	Provider details
 providers.edit	Edit provider
@@ -158,7 +158,7 @@ settings.help	These choices affect this app only.
 status.package_wait	Complete the upgrade and authorization in the terminal.
 updates.no_pacman	Update this installation with its original package manager.
 updates.not_owned	This executable is not owned by a supported Arch package.
-updates.no_helper	Install paru or yay to update AUR packages from this app.
+updates.no_helper	Install paru or yay to update this package.
 updates.no_terminal	No terminal found. Install or configure xdg-terminal-exec.
 updates.start_failed	Could not start the update: {error}
 updates.terminal_closed	The update terminal closed or did not start; completion was not confirmed.
@@ -280,3 +280,6 @@ usage.recording_off_help	Enable local request and token records, then restart th
 usage.recording_unknown	Recording configuration unavailable
 usage.recording_unknown_help	This gateway does not report recording settings. Update it to manage recording here.
 usage.open_updates	Open updates
+agents.synced	Tool status synced
+agents.changed_connected	Connected · configuration changed
+agents.changed_disconnected	Disconnected · configuration changed

@@ -94,7 +94,7 @@ s=json.loads((root/'state.json').read_text()) if (root/'state.json').exists() el
 def option(k,default=''):return a[a.index(k)+1] if k in a else default
 if a[:1]==['status']:r={'version':'0.2.0','listen':'127.0.0.1:9415','healthy':False}
 elif a[:2]==['providers','list']:r={'providers':s['providers']}
-elif a[:2]==['agents','list'] or a[:2]==['agents','detect']:r={'agents':[{'name':'claude','installed':True,'configured':s['agent_configured'],'writable':True,'route':s.get('agent_route'),'path':'~/.claude/settings.json'},{'name':'codex','installed':True,'configured':False,'writable':True,'path':'~/.codex/config.toml'},{'name':'cursor','installed':True,'configured':False,'writable':False}]}
+elif a[:2]==['agents','list'] or a[:2]==['agents','detect']:r={'agents':[{'name':'claude','installed':True,'configured':s['agent_configured'],'restorable':s['agent_configured'],'writable':True,'route':s.get('agent_route'),'path':'~/.claude/settings.json'},{'name':'codex','installed':True,'configured':False,'writable':True,'path':'~/.codex/config.toml'},{'name':'cursor','installed':True,'configured':False,'writable':False}]}
 elif a[:2]==['plugins','list']:r={'plugins':[{'name':'privacy','path':'/usr/lib/zcalld/plugins/privacy.so','kind':'native','enabled':s['plugin_enabled'],'version':'0.1.0'}]}
 elif a[:2]==['privacy','show']:r={'mode':s['mode'],'enabled':s['mode']!='off','model_auto':False}
 elif a[:1]==['models']:r={'object':'list','data':s['routes']}
@@ -206,6 +206,30 @@ print(json.dumps(r))
         assert apply["args"][apply["args"].index("--route")+1]=="writing-special",apply
         assert count(["agents","apply","codex"])==0,"Picker allowed a background Agent click"
         shot("agents-current-route")
+        if args.real_cli:
+            def agent_row():
+                return ImageGrab.grab(bbox=(270, 200, 930, 267), xdisplay=display).tobytes()
+            old_row = agent_row()
+            applied_bytes = original_agent.read_bytes()
+            changed = json.loads(applied_bytes)
+            changed["env"]["ANTHROPIC_MODEL"] = "externally-selected"
+            changed["model"] = "externally-selected"
+            changed_bytes = json.dumps(changed).encode()
+            original_agent.write_bytes(changed_bytes)
+            before_reads = count(["models"])
+            before_sync = count(["agents", "detect"])
+            click(965, 56)
+            wait_for(lambda: count(["agents", "detect"]) == before_sync + 1, "Sync status did not run detection")
+            wait_for(lambda: agent_row() != old_row, "External configuration did not repaint the Agent row")
+            assert count(["models"]) == before_reads, "Sync status unexpectedly refreshed unrelated data"
+            assert original_agent.read_bytes() == changed_bytes, "Sync overwrote external configuration"
+            click(872, 227)
+            confirm()
+            assert count(["agents", "revert", "claude"]) == 0, "External configuration unexpectedly offered restore"
+            shot("agents-external-sync")
+            original_agent.write_bytes(applied_bytes)
+            click(965, 56)
+            wait_for(lambda: agent_row() == old_row, "Synced Agent row did not recover")
         before=count(["models"]);click(872,227)
         assert count(["agents","revert","claude"])==0,"Restore must require confirmation"
         confirm()
